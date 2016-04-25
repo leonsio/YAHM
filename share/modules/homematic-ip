@@ -1,0 +1,52 @@
+#/bin/bash
+
+echo "noch nicht fertig"
+exit
+
+apt-get install git subversion bc gcc-4.7
+cd /usr/share/yahm/tools
+wget https://raw.githubusercontent.com/leonsio/rpi-headers/master/rpi-headers
+
+# aktuelle Kernel Headers runterladen
+/usr/share/yahm/tools/rpi-headers
+
+# Ordner anlegen
+mkdir /usr/share/eq3/OCCU
+cd /usr/share/eq3/OCCU
+
+# ab git 2.9 koennen wir auch teile auschecken
+#git init
+#git remote add origin https://github.com/eq-3/occu.git
+#git config core.sparsecheckout true
+#echo "KernelDrivers/*" >> .git/info/sparse-checkout
+#git pull --depth=1 origin master
+
+# nehmen stattdessen svn :D
+svn export https://github.com/eq-3/occu/trunk/KernelDrivers
+
+# Makedatei anlegen
+cat > "/usr/share/eq3/OCCU/KernelDrivers/Makefile" <<EOF
+obj-m	+= eq3_char_loop.c
+
+ 
+all:
+	make -C /lib/modules/\$(shell uname -r)/build M=\$(PWD) modules
+ 
+clean:
+	make -C /lib/modules/\$(shell uname -r)/build M=\$(PWD) clean
+
+EOF
+
+# AKtuelle Konfig vorberieten
+modprobe configs
+# Ins Build verzeichniss wechseln
+cd /lib/modules/$(uname -r)/build
+gzip -dc /proc/config.gz > .config
+# Vorbereitung
+make oldconfig
+
+
+# Modul bauen
+cd /usr/share/eq3/OCCU/KernelDrivers/
+make clean
+insmod eq3_char_loop.ko
