@@ -1,0 +1,40 @@
+#!/bin/bash
+#
+#
+#
+#
+
+source /opt/YAHM/share/modules/common.inc
+
+#Default Settings
+LXCNAME=yahm
+
+
+while getopts "fvn:" OPTION
+do
+    case $OPTION in
+        f)
+            echo "force"
+            exit
+            ;;
+        v)
+            echo "verbose"
+            exit
+            ;;
+        n)
+            LXCNAME=$OPTARG
+            echo $LXCNAME
+            exit
+            ;;
+        \?)
+            echo "Flags:"
+            echo "-n name for the container"
+            exit
+            ;;
+    esac
+done
+
+check_yahm_name $LXCNAME
+#echo $?
+
+echo $LXCNAME

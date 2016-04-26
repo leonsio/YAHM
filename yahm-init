@@ -57,7 +57,7 @@ Debian:jessie)	DIST="debian";;
 esac
 
 progress "Updating sources"
-#apt-get -q=2 update
+apt-get -q=2 update
 
 progress "Installing dependencies" 
 packages="wget python git lxc liblzo2-dev bridge-utils python-lzo python-setuptools patch gzip openssl"
@@ -80,6 +80,9 @@ git clone --recursive https://github.com/leonsio/YAHM.git 2>/dev/null >/dev/null
 progress "Installing UBI Reader"
 cd /opt/YAHM/share/tools/ubi_reader
 python setup.py install 2>/dev/null >/dev/null
+
+# create lib folder
+mkdir /var/lib/yahm
 
 # Info
 info "Please use yahm-lxc to create new container, yahm-network for network configuration and lxc-enable for additional modules" 
