@@ -1,0 +1,85 @@
+#!/usr/bin/env
+#
+# @todo Nach jedem Skript Fehler abfangen
+#
+#
+
+LSB_RELEASE="/usr/bin/lsb_release"
+
+# Check if we can use colours in our output
+use_colour=0
+[ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null && use_colour=1
+
+# Some useful functions
+progress() {
+	[ $use_colour -eq 1 ] && echo -ne "\033[01;32m"
+	echo "$@" >&2
+	[ $use_colour -eq 1 ] && echo -ne "\033[00m"
+}
+
+info() {
+	[ $use_colour -eq 1 ] && echo -ne "\033[01;34m"
+	echo "$@" >&2
+	[ $use_colour -eq 1 ] && echo -ne "\033[00m"
+}
+
+die () {
+	[ $use_colour -eq 1 ] && echo -ne "\033[01;31m"
+	echo "$@" >&2
+	[ $use_colour -eq 1 ] && echo -ne "\033[00m"
+	exit 1
+}
+
+install_package() {
+	package=$1
+	info "install ${package}"
+	apt-get -qq -y install $package 2>&1 > /dev/null
+	return $?
+}
+
+[ "x$(id -un)" == "xroot" ] || die "Sorry, this script must be run as root."
+
+[ -x $LSB_RELEASE ] || install_package "lsb-release"
+
+# check architecture
+test "`dpkg --print-architecture`" == "armhf" || die "This Repos is only for armhf."
+
+DIST_ID="$($LSB_RELEASE -is)"
+CODENAME="$($LSB_RELEASE -cs)"
+DIST=""
+
+
+# Check the distribution is in the supported list
+case "$DIST_ID:$CODENAME" in
+Raspbian:jessie) DIST="debian";;
+Debian:jessie)	DIST="debian";;
+*)		die "Sorry, this script does not support your distribution/release ($DIST_ID $CODENAME)." ;;
+esac
+
+progress "Updating sources"
+#apt-get -q=2 update
+
+progress "Installing dependencies" 
+packages="wget python git lxc liblzo2-dev bridge-utils python-lzo python-setuptools patch gzip openssl"
+for P in $packages
+do
+    dpkg -s "$P" >/dev/null 2>&1 && {
+	info $P is installed
+    } || {
+        install_package "$P"
+    }
+done
+
+# checkout all files
+progress "Downloading all files from repository"
+mkdir -p /opt
+cd /opt
+git clone --recursive https://github.com/leonsio/YAHM.git 2>/dev/null >/dev/null
+
+# install UBI reader
+progress "Installing UBI Reader"
+cd /opt/YAHM/share/tools/ubi_reader
+python setup.py install 2>/dev/null >/dev/null
+
+# Info
+info "Please use yahm-lxc to create new container, yahm-network for network configuration and lxc-enable for additional modules" 

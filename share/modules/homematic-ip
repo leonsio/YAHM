@@ -3,12 +3,10 @@
 echo "noch nicht fertig"
 exit
 
-apt-get install git subversion bc gcc-4.7
-cd /usr/share/yahm/tools
-wget https://raw.githubusercontent.com/leonsio/rpi-headers/master/rpi-headers
+apt-get install subversion bc gcc-4.7
 
 # aktuelle Kernel Headers runterladen
-/usr/share/yahm/tools/rpi-headers
+/opt/YAHM/share/tools/rpi-headers
 
 # Ordner anlegen
 mkdir /usr/share/eq3/OCCU
