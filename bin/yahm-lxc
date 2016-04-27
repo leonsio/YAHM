@@ -38,10 +38,11 @@ exit 1
 source /opt/YAHM/share/include.sh
 
 # Homematic URLs
-curFWdl="http://update.homematic.com/firmware/download?cmd=download&product=HM-CCU2&serial=0"
+#curFWdl="http://update.homematic.com/firmware/download?cmd=download&product=HM-CCU2&serial=0"
+curFWdl="http://www.eq-3.de/Downloads/Software/HM-CCU2-Firmware_Updates/HM-CCU2-${CCU2Version}/HM-CCU2-${CCU2Version}.tgz"
 checkVersion="http://update.homematic.com/firmware/download?cmd=js_check_version&serial=0&product=HM-CCU2"
 
-CCU2Version=`curl -s "$checkVersion" | cut -d"'" -f2 `
+#CCU2Version=`curl --connect-timeout 3  -s "$checkVersion" | cut -d"'" -f2 `
 
 remove_lxc_container()
 {

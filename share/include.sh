@@ -6,6 +6,7 @@
 
 #Default Settings
 LXCNAME=yahm
+CCU2Version="2.17.15"
 YAHM_DIR=/opt/YAHM/
 OPTIND=1
 IS_FORCE=0
