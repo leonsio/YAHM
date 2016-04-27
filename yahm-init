@@ -59,7 +59,7 @@ progress "Updating sources"
 apt-get -q=2 update
 
 progress "Installing dependencies" 
-packages="wget python git lxc liblzo2-dev bridge-utils python-lzo patch gzip openssl"
+packages="wget dos2unix python git lxc liblzo2-dev bridge-utils python-lzo patch gzip openssl"
 for P in $packages
 do
     dpkg -s "$P" >/dev/null 2>&1 && {

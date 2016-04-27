@@ -1,8 +1,14 @@
 #!/bin/bash
 #
+# Leonid Kogan <leon@leonsio.com>
+# Yet Another Homematic Management 
 #
+# LXC management script, create new lxc container from CCU2 image 
 #
-#
+
+
+# Stop on Errors
+set -e
 
 # Hilfe Output
 show_help ()
@@ -17,8 +23,8 @@ Usage Example:
 
 Flags:
 -n        - LXC container name.
--f        - Force operation (delete/update).
--v        - Verbose output (not implemented yet)
+-f        - Force operation (no halt on errors).
+-v        - Verbose output 
 
 Commands:
 install   - Create new lxc instance with actual ccu2 image.
@@ -37,8 +43,45 @@ checkVersion="http://update.homematic.com/firmware/download?cmd=js_check_version
 
 CCU2Version=`curl -s "$checkVersion" | cut -d"'" -f2 `
 
+remove_lxc_container()
+{
+    if [ `check_yahm_installed` -eq 0 ] && [ $IS_FORCE -ne 1 ]
+    then
+        die "No container installed"
+    else
+        info "Can not find any container, entering force mode"
+        set +e
+    fi
+
+    if [ `check_yahm_name $LXCNAME` -eq 0 ] && [ $IS_FORCE -ne 1 ]
+    then
+        die "Can not find $LXCNAME container"
+    else
+        info "Container $LXCNAME can not be found, entering force mode"
+        set +e
+    fi
+
+    progress "Stopping lxc container"
+    lxc-stop -k -n $LXCNAME
+
+    progress "Deleting LXC container"
+    rm -rf /var/lib/lxc/${LXCNAME}/
+
+    progress "Clean up"
+    rm -rf /var/lib/yahm/*
+}
+
 create_lxc_container()
 {
+    if [ `check_yahm_installed` -eq 1 ] && [ $IS_FORCE -ne 1 ]
+    then
+
+        die "YAHM instance is already installed"
+    else
+        progress "ATTENTION: FORCE-Switch is used, actual instance will be overwritten"
+        set +e
+    fi
+
     # Compatibility Check
     if [ `yahm_compatibility $CCU2Version` -eq 1 ]; then
         die "We dont have any patches for this version, please make git pull and try again"
@@ -53,23 +96,28 @@ create_lxc_container()
 
     progress "Downloading CCU Firmware"
     EQ3_FW="/tmp/YAHM/HM-CCU2-${CCU2Version}.tar.gz"
-    wget -q -O "$EQ3_FW" "$curFWdl"
+    wget $QUIET -O "$EQ3_FW" "$curFWdl"
     if [ ! -f "$EQ3_FW" ]; then
        echo "Can not download firmware. Are you connected to the internet?"
     fi
 
     progress "Extracting firmware"
-    tar xzf $EQ3_FW -C /tmp/YAHM/
+    tar $VERBOSE -xzf $EQ3_FW -C /tmp/YAHM/
 
     progress "Extract ubi image"
-    $YAHM_DIR/share/tools/ubi_reader/ubi_extract_files.py -q -k -o $LXC_ROOT /tmp/YAHM/rootfs.ubi
+    $YAHM_DIR/share/tools/ubi_reader/ubi_extract_files.py $QUIET -k -o $LXC_ROOT /tmp/YAHM/rootfs.ubi
 
     # most lxc commands use rootfs folder and not the config option
     ln -s $LXC_ROOT_FS $LXC_ROOT/rootfs
 
+    progress "Cleanup CCU2 source"
+    cd $LXC_ROOT_FS
+    find . -iname '*.ftl' | xargs dos2unix $QUIET
+    find . -iname '*.cgi' | xargs dos2unix $QUIET
+
     progress "Applying patch"
     cd $LXC_ROOT_FS
-    patch --input "${YAHM_DIR}share/tools/patches/${CCU2Version}.patch" -p1
+    patch $QUIET --input "${YAHM_DIR}share/tools/patches/${CCU2Version}.patch" -p1
 
     progress "Applying scripts"
     cd $LXC_ROOT_FS
@@ -86,8 +134,11 @@ create_lxc_container()
     # create lxc config file
     create_lxc_config
 
-    info "Container is created, please use 'lxc-start -n ${$LXCNAME} -d' to start and 'lxc-attach -n ${$LXCNAME}' for console access"
+    info "Container is created, please use 'lxc-start -n ${LXCNAME} -d' to start and 'lxc-attach -n ${LXCNAME}' for console access"
     info "For network configuration see yahm-network script"
+
+    echo $LXCNAME > /var/lib/yahm/container_name
+    touch /var/lib/yahm/is_installed
 }
 
 create_lxc_config()
@@ -100,6 +151,7 @@ lxc.mount.entry = sysfs sys sysfs defaults  0 0
 lxc.mount.entry = varfs var tmpfs defaults,size=196M 0 0
 lxc.mount.entry = devpts dev/pts devpts defaults,newinstance 0 0
 lxc.mount.entry = ${LXC_ROOT}/sd-mmcblk0  media/sd-mmcblk0/ none defaults,bind 0 0
+lxc.utsname = ${LXCNAME}
 lxc.start.auto = 1
 lxc.tty = 1
 lxc.pts = 1
@@ -119,7 +171,7 @@ lxc.cgroup.devices.allow = c 1:8 rwm
 lxc.cgroup.devices.allow = c 136:* rwm
 lxc.cgroup.devices.allow = c 5:2 rwm
 lxc.cgroup.devices.allow = c 10:200 rwm
-lxc.rootfs = ${LXC_ROOTFS}
+lxc.rootfs = ${LXC_ROOT_FS}
 #lxc.include = ${LXC_ROOT}/config.network
 EOF
 }
@@ -141,7 +193,8 @@ for key in "$@"; do
             break;
         ;;
         remove)
-            echo "remove"
+            shift
+            remove_lxc_container
             break;
         ;;
         *)

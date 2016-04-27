@@ -1,6 +1,6 @@
-diff -rupN root/bin/mountSD newroot/bin/mountSD
---- root/bin/mountSD	2016-04-05 21:00:10.000000000 +0200
-+++ newroot/bin/mountSD	2016-04-05 21:02:04.520172253 +0200
+diff -wrupN root/bin/mountSD newroot/bin/mountSD
+--- root/bin/mountSD	2016-04-27 18:08:24.520375804 +0200
++++ newroot/bin/mountSD	2016-04-27 17:24:17.486580164 +0200
 @@ -1,10 +1,11 @@
  #!/bin/sh
  echo "Starte mountSD: $@" > /tmp/dudu
@@ -16,15 +16,15 @@ diff -rupN root/bin/mountSD newroot/bin/mountSD
 -fi
 +# fi
  
-diff -rupN root/etc/config_templates/ntpclient newroot/etc/config_templates/ntpclient
---- root/etc/config_templates/ntpclient	2016-04-05 21:00:10.000000000 +0200
-+++ newroot/etc/config_templates/ntpclient	2016-04-05 21:02:04.540172139 +0200
+diff -wrupN root/etc/config_templates/ntpclient newroot/etc/config_templates/ntpclient
+--- root/etc/config_templates/ntpclient	2016-04-27 17:50:38.576909736 +0200
++++ newroot/etc/config_templates/ntpclient	2016-04-27 17:24:17.486580164 +0200
 @@ -1 +1 @@
 -NTPSERVERS='ntp.homematic.com'
 +NTPSERVERS='0.de.pool.ntp.org'
-diff -rupN root/etc/config_templates/rfd.conf newroot/etc/config_templates/rfd.conf
---- root/etc/config_templates/rfd.conf	2016-04-05 21:00:10.000000000 +0200
-+++ newroot/etc/config_templates/rfd.conf	2016-04-05 21:02:04.550172082 +0200
+diff -wrupN root/etc/config_templates/rfd.conf newroot/etc/config_templates/rfd.conf
+--- root/etc/config_templates/rfd.conf	2016-04-27 17:50:38.576909736 +0200
++++ newroot/etc/config_templates/rfd.conf	2016-04-27 17:24:27.756517577 +0200
 @@ -18,8 +18,8 @@ Firmware Dir = /firmware
  Replacemap File = /firmware/rftypes/replaceMap/rfReplaceMap.xml
  Fire NACK Error Events = true
@@ -39,9 +39,9 @@ diff -rupN root/etc/config_templates/rfd.conf newroot/etc/config_templates/rfd.c
 +#ComPortFile = /dev/mmd_bidcos
 +#AccessFile = /dev/null
 +#ResetFile = /dev/ccu2-ic200
-diff -rupN root/etc/fstab newroot/etc/fstab
---- root/etc/fstab	2016-04-05 21:00:10.000000000 +0200
-+++ newroot/etc/fstab	2016-04-05 21:02:04.550172082 +0200
+diff -wrupN root/etc/fstab newroot/etc/fstab
+--- root/etc/fstab	2016-04-27 17:50:38.576909736 +0200
++++ newroot/etc/fstab	2016-04-27 17:24:27.756517577 +0200
 @@ -1,13 +1,3 @@
  # /etc/fstab: static file system information.
  #
@@ -56,74 +56,9 @@ diff -rupN root/etc/fstab newroot/etc/fstab
 -varfs           /var           tmpfs    defaults,size=196M 0      0
 -debugfs 	/sys/kernel/debug debugfs 		  0 	0
 -ubi1:user	/usr/local	ubifs	defaults,noatime,rw,sync	0 0
-diff -rupN root/etc/init.d/_40UsbNetwork newroot/etc/init.d/_40UsbNetwork
---- root/etc/init.d/_40UsbNetwork	1970-01-01 01:00:00.000000000 +0100
-+++ newroot/etc/init.d/_40UsbNetwork	2016-04-05 21:02:04.550172082 +0200
-@@ -0,0 +1,52 @@
-+#!/bin/sh
-+#
-+# Starts Ethernet over USB
-+#
-+
-+
-+start() {
-+	export TZ=`cat /etc/config/TZ`
-+
-+	echo -n "Starting network over usb: "
-+		
-+	if [ ! -f /etc/udhcpd.usb0.conf ]; then
-+		echo "ERROR (file /etc/udhcp.usb0.conf not found)"
-+	elif [ ! -f /etc/dnsd.conf ]; then
-+		echo "ERROR (file /etc/dnsd.conf not found)"
-+	else
-+		ifconfig usb0 10.101.82.51 netmask 255.255.255.0
-+		udhcpd -S /etc/udhcpd.usb0.conf
-+		# disable DNS Server; CCU can only be access by ip address
-+		#dnsd -d -c /etc/dnsd.conf -i 10.101.82.51
-+		echo "OK"	
-+	fi		
-+}
-+
-+stop() {
-+	echo -n "Stopping network over usb: "
-+	killall udhcpd
-+	killall dnsd	
-+	echo "OK"
-+}
-+restart() {
-+	stop
-+	start
-+}
-+
-+case "$1" in
-+  start)
-+	start
-+	;;
-+  stop)
-+	stop
-+	;;
-+  restart|reload)
-+	restart
-+	;;
-+  *)
-+	echo "Usage: $0 {start|stop|restart}"
-+	exit 1
-+esac
-+
-+exit $?
-+
-diff -rupN root/etc/init.d/rcS newroot/etc/init.d/rcS
---- root/etc/init.d/rcS	2016-04-05 21:00:10.000000000 +0200
-+++ newroot/etc/init.d/rcS	2016-04-05 21:02:04.550172082 +0200
-@@ -25,3 +25,4 @@ for i in /etc/init.d/S??* ;do
-     esac
- done
- 
-+/bin/mountSD
-\ Kein Zeilenumbruch am Dateiende.
-diff -rupN root/etc/init.d/S00eQ3SystemStart newroot/etc/init.d/S00eQ3SystemStart
---- root/etc/init.d/S00eQ3SystemStart	2016-04-05 21:00:10.000000000 +0200
-+++ newroot/etc/init.d/S00eQ3SystemStart	2016-04-05 21:05:23.399030982 +0200
+diff -wrupN root/etc/init.d/S00eQ3SystemStart newroot/etc/init.d/S00eQ3SystemStart
+--- root/etc/init.d/S00eQ3SystemStart	2016-04-27 17:50:38.556909859 +0200
++++ newroot/etc/init.d/S00eQ3SystemStart	2016-04-27 17:24:27.906516663 +0200
 @@ -4,19 +4,19 @@
  #
  
@@ -161,9 +96,9 @@ diff -rupN root/etc/init.d/S00eQ3SystemStart newroot/etc/init.d/S00eQ3SystemStar
  }
  
  restart() {
-diff -rupN root/etc/init.d/S50eq3configd newroot/etc/init.d/S50eq3configd
---- root/etc/init.d/S50eq3configd	2016-04-05 21:00:10.000000000 +0200
-+++ newroot/etc/init.d/S50eq3configd	2016-04-05 21:08:16.958027843 +0200
+diff -wrupN root/etc/init.d/S50eq3configd newroot/etc/init.d/S50eq3configd
+--- root/etc/init.d/S50eq3configd	2016-04-27 17:50:38.556909859 +0200
++++ newroot/etc/init.d/S50eq3configd	2016-04-27 17:24:27.766517516 +0200
 @@ -3,10 +3,10 @@
  # Starts eq3configd.
  #
@@ -179,9 +114,9 @@ diff -rupN root/etc/init.d/S50eq3configd newroot/etc/init.d/S50eq3configd
  	if [ ! -e /etc/config/ids ] ; then
      		cp /var/ids /etc/config
  	fi
-diff -rupN root/etc/init.d/S61rfd newroot/etc/init.d/S61rfd
---- root/etc/init.d/S61rfd	2016-04-05 21:00:10.000000000 +0200
-+++ newroot/etc/init.d/S61rfd	2016-04-05 21:06:43.348569699 +0200
+diff -wrupN root/etc/init.d/S61rfd newroot/etc/init.d/S61rfd
+--- root/etc/init.d/S61rfd	2016-04-27 17:50:38.556909859 +0200
++++ newroot/etc/init.d/S61rfd	2016-04-27 17:24:27.766517516 +0200
 @@ -38,8 +38,8 @@ init() {
  start() {
  	echo -n "Starting rfd: "
@@ -193,9 +128,9 @@ diff -rupN root/etc/init.d/S61rfd newroot/etc/init.d/S61rfd
  	echo "Starting rfd"
  	start-stop-daemon -S -q -b -m -p $PIDFILE --exec /bin/rfd -- -f /etc/config/rfd.conf -l $LOGLEVEL_RFD
  	echo "OK"
-diff -rupN root/etc/init.d/S99eQ3SystemStarted newroot/etc/init.d/S99eQ3SystemStarted
---- root/etc/init.d/S99eQ3SystemStarted	2016-04-05 21:00:10.000000000 +0200
-+++ newroot/etc/init.d/S99eQ3SystemStarted	2016-04-05 21:07:29.938300250 +0200
+diff -wrupN root/etc/init.d/S99eQ3SystemStarted newroot/etc/init.d/S99eQ3SystemStarted
+--- root/etc/init.d/S99eQ3SystemStarted	2016-04-27 17:50:38.556909859 +0200
++++ newroot/etc/init.d/S99eQ3SystemStarted	2016-04-27 17:24:27.776517455 +0200
 @@ -4,19 +4,19 @@
  #
  
@@ -222,9 +157,18 @@ diff -rupN root/etc/init.d/S99eQ3SystemStarted newroot/etc/init.d/S99eQ3SystemSt
  }
  
  start() {
-diff -rupN root/etc/inittab newroot/etc/inittab
---- root/etc/inittab	2016-04-05 21:00:10.000000000 +0200
-+++ newroot/etc/inittab	2016-04-05 21:09:21.427653578 +0200
+diff -wrupN root/etc/init.d/rcS newroot/etc/init.d/rcS
+--- root/etc/init.d/rcS	2016-04-27 17:50:38.556909859 +0200
++++ newroot/etc/init.d/rcS	2016-04-27 17:24:27.766517516 +0200
+@@ -25,3 +25,4 @@ for i in /etc/init.d/S??* ;do
+     esac
+ done
+ 
++/bin/mountSD
+\ Kein Zeilenumbruch am Dateiende.
+diff -wrupN root/etc/inittab newroot/etc/inittab
+--- root/etc/inittab	2016-04-27 17:50:38.586909675 +0200
++++ newroot/etc/inittab	2016-04-27 17:24:27.776517455 +0200
 @@ -14,7 +14,7 @@
  # process   == program to run
  
@@ -259,9 +203,9 @@ diff -rupN root/etc/inittab newroot/etc/inittab
  
 +# create a console for lxc
 +tty1::respawn:/sbin/getty -L tty1 115200 linux
-diff -rupN root/opt/HMServer/pages/StorageSettingsDialog.ftl newroot/opt/HMServer/pages/StorageSettingsDialog.ftl
---- root/opt/HMServer/pages/StorageSettingsDialog.ftl	2016-04-05 21:00:11.000000000 +0200
-+++ newroot/opt/HMServer/pages/StorageSettingsDialog.ftl	2016-04-05 21:04:10.909448002 +0200
+diff -wrupN root/opt/HMServer/pages/StorageSettingsDialog.ftl newroot/opt/HMServer/pages/StorageSettingsDialog.ftl
+--- root/opt/HMServer/pages/StorageSettingsDialog.ftl	2016-04-27 18:07:08.390842454 +0200
++++ newroot/opt/HMServer/pages/StorageSettingsDialog.ftl	2016-04-27 18:06:27.831091072 +0200
 @@ -155,7 +155,7 @@
  						<td class="CLASS21112">${"$"}{dialogSettingsSDCardStatus}:</td>
  						<td>${SDCardStatus}</td>
@@ -271,9 +215,9 @@ diff -rupN root/opt/HMServer/pages/StorageSettingsDialog.ftl newroot/opt/HMServe
  						<td align="center" class="CLASS21112" colspan="2" >
  							<div class="popupControls CLASS21107">
  								<table>
-diff -rupN root/opt/mh/startup.sh newroot/opt/mh/startup.sh
---- root/opt/mh/startup.sh	2016-04-05 21:00:11.000000000 +0200
-+++ newroot/opt/mh/startup.sh	2016-04-05 21:02:04.540172139 +0200
+diff -wrupN root/opt/mh/startup.sh newroot/opt/mh/startup.sh
+--- root/opt/mh/startup.sh	2016-04-27 17:50:39.356904955 +0200
++++ newroot/opt/mh/startup.sh	2016-04-27 17:24:27.786517394 +0200
 @@ -19,9 +19,9 @@ if [ ! -e $USER_DIR ] ; then
  
  fi
@@ -287,9 +231,9 @@ diff -rupN root/opt/mh/startup.sh newroot/opt/mh/startup.sh
  
  
  l1=`ifconfig | grep 'eth0' | tr -s ' ' | cut -d ' ' -f5 | tr ':' '-'`
-diff -rupN root/www/config/cp_security.cgi newroot/www/config/cp_security.cgi
---- root/www/config/cp_security.cgi	2016-04-05 21:00:21.000000000 +0200
-+++ newroot/www/config/cp_security.cgi	2016-04-05 21:02:04.560172025 +0200
+diff -wrupN root/www/config/cp_security.cgi newroot/www/config/cp_security.cgi
+--- root/www/config/cp_security.cgi	2016-04-27 18:07:02.500878557 +0200
++++ newroot/www/config/cp_security.cgi	2016-04-27 18:06:35.941041361 +0200
 @@ -474,12 +474,12 @@ proc action_backup_restore_go {} {
      }
  		
@@ -300,12 +244,12 @@ diff -rupN root/www/config/cp_security.cgi newroot/www/config/cp_security.cgi
 -        	exec /usr/sbin/ubiattach -p /dev/mtd6
 -        	exec /usr/sbin/ubimkvol /dev/ubi1 -N user -m
 -        	exec mount /usr/local
-+		# exec umount /usr/local
-+        	# exec /usr/sbin/ubidetach -p /dev/mtd6
-+        	# exec /usr/sbin/ubiformat /dev/mtd6 -y
-+        	# exec /usr/sbin/ubiattach -p /dev/mtd6
-+        	# exec /usr/sbin/ubimkvol /dev/ubi1 -N user -m
-+        	# exec mount /usr/local
++		#exec umount /usr/local
++        	#exec /usr/sbin/ubidetach -p /dev/mtd6
++        	#exec /usr/sbin/ubiformat /dev/mtd6 -y
++        	#exec /usr/sbin/ubiattach -p /dev/mtd6
++        	#exec /usr/sbin/ubimkvol /dev/ubi1 -N user -m
++        	#exec mount /usr/local
  
  		if { [catch {exec tar xzf /tmp/usr_local.tar.gz} errorMessage] } {
  			# set msg "Beim Einspielen des Systembackups ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut. "
@@ -315,21 +259,19 @@ diff -rupN root/www/config/cp_security.cgi newroot/www/config/cp_security.cgi
  	if { "false" == $backuperror } {
 -        exec mount -o remount,ro /usr/local
 -        exec mount -o remount,rw /usr/local
-+        # exec mount -o remount,ro /usr/local
-+        # exec mount -o remount,rw /usr/local
++        #exec mount -o remount,ro /usr/local
++        #exec mount -o remount,rw /usr/local
          division {class="popupTitle"} {
              puts "\${dialogSettingsSecurityMessageSysBackupRestartSystemTitle}"
          }
-diff -rupN root/www/config/cp_software.cgi newroot/www/config/cp_software.cgi
---- root/www/config/cp_software.cgi	2016-04-05 21:00:21.000000000 +0200
-+++ newroot/www/config/cp_software.cgi	2016-04-05 21:02:04.560172025 +0200
-@@ -507,7 +507,9 @@ proc action_install_start {} {
+diff -wrupN root/www/config/cp_software.cgi newroot/www/config/cp_software.cgi
+--- root/www/config/cp_software.cgi	2016-04-27 18:08:25.920367223 +0200
++++ newroot/www/config/cp_software.cgi	2016-04-27 18:06:35.771042403 +0200
+@@ -507,7 +507,7 @@ proc action_install_start {} {
      if {[isOldCCU]} {
          exec /sbin/init -q
      } else {
 -        exec /bin/kill -SIGQUIT 1
-+        #exec /bin/kill -SIGQUIT 1
-+        # needed for lxccu restart
 +        exec /sbin/reboot
      }
  }

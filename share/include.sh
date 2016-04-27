@@ -8,6 +8,10 @@
 LXCNAME=yahm
 YAHM_DIR=/opt/YAHM/
 OPTIND=1
+IS_FORCE=0
+IS_VERBOSE=0
+QUIET="--quiet"
+VERBOSE=""
 
 while getopts "fvn:" OPTION
 do
@@ -17,6 +21,8 @@ do
             ;;
         v)
             IS_VERBOSE=1
+            QUIET=""
+            VERBOSE="-v"
             ;;
         n)
             LXCNAME=$OPTARG
