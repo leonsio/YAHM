@@ -1,4 +1,4 @@
-#!/usr/bin/env
+#!/bin/bash
 #
 # @todo Nach jedem Skript Fehler abfangen
 #
@@ -48,7 +48,6 @@ DIST_ID="$($LSB_RELEASE -is)"
 CODENAME="$($LSB_RELEASE -cs)"
 DIST=""
 
-
 # Check the distribution is in the supported list
 case "$DIST_ID:$CODENAME" in
 Raspbian:jessie) DIST="debian";;
@@ -60,7 +59,7 @@ progress "Updating sources"
 apt-get -q=2 update
 
 progress "Installing dependencies" 
-packages="wget python git lxc liblzo2-dev bridge-utils python-lzo python-setuptools patch gzip openssl"
+packages="wget python git lxc liblzo2-dev bridge-utils python-lzo patch gzip openssl"
 for P in $packages
 do
     dpkg -s "$P" >/dev/null 2>&1 && {
@@ -75,11 +74,6 @@ progress "Downloading all files from repository"
 mkdir -p /opt
 cd /opt
 git clone --recursive https://github.com/leonsio/YAHM.git 2>/dev/null >/dev/null
-
-# install UBI reader
-progress "Installing UBI Reader"
-cd /opt/YAHM/share/tools/ubi_reader
-python setup.py install 2>/dev/null >/dev/null
 
 # create lib folder
 mkdir /var/lib/yahm

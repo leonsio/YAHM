@@ -4,37 +4,152 @@
 #
 #
 
-source /opt/YAHM/share/modules/common.inc
+# Hilfe Output
+show_help ()
+{
+cat << EOF
+YAHM LXC management script
 
-#Default Settings
-LXCNAME=yahm
+Usage Example: 
 
+./yahm-lxc [FLAG] COMMAND
+./yahm-lxc  -n mycccu install
 
-while getopts "fvn:" OPTION
-do
-    case $OPTION in
-        f)
-            echo "force"
-            exit
-            ;;
-        v)
-            echo "verbose"
-            exit
-            ;;
-        n)
-            LXCNAME=$OPTARG
-            echo $LXCNAME
-            exit
-            ;;
-        \?)
-            echo "Flags:"
-            echo "-n name for the container"
-            exit
-            ;;
+Flags:
+-n        - LXC container name.
+-f        - Force operation (delete/update).
+-v        - Verbose output (not implemented yet)
+
+Commands:
+install   - Create new lxc instance with actual ccu2 image.
+update    - Updates lxc instance to the actual version.
+remove    - Removes lxc instance.
+EOF
+exit 1
+}
+
+# Include laden
+source /opt/YAHM/share/include.sh
+
+# Homematic URLs
+curFWdl="http://update.homematic.com/firmware/download?cmd=download&product=HM-CCU2&serial=0"
+checkVersion="http://update.homematic.com/firmware/download?cmd=js_check_version&serial=0&product=HM-CCU2"
+
+CCU2Version=`curl -s "$checkVersion" | cut -d"'" -f2 `
+
+create_lxc_container()
+{
+    # Compatibility Check
+    if [ `yahm_compatibility $CCU2Version` -eq 1 ]; then
+        die "We dont have any patches for this version, please make git pull and try again"
+    fi
+
+    LXC_ROOT=/var/lib/lxc/$LXCNAME
+    LXC_ROOT_FS=/var/lib/lxc/$LXCNAME/root
+    info "Creating new lxc container name: $LXCNAME, version $CCU2Version"
+    # Verzeichnis anlegen
+    mkdir -p $LXC_ROOT
+    mkdir -p /tmp/YAHM/
+
+    progress "Downloading CCU Firmware"
+    EQ3_FW="/tmp/YAHM/HM-CCU2-${CCU2Version}.tar.gz"
+    wget -q -O "$EQ3_FW" "$curFWdl"
+    if [ ! -f "$EQ3_FW" ]; then
+       echo "Can not download firmware. Are you connected to the internet?"
+    fi
+
+    progress "Extracting firmware"
+    tar xzf $EQ3_FW -C /tmp/YAHM/
+
+    progress "Extract ubi image"
+    $YAHM_DIR/share/tools/ubi_reader/ubi_extract_files.py -q -k -o $LXC_ROOT /tmp/YAHM/rootfs.ubi
+
+    # most lxc commands use rootfs folder and not the config option
+    ln -s $LXC_ROOT_FS $LXC_ROOT/rootfs
+
+    progress "Applying patch"
+    cd $LXC_ROOT_FS
+    patch --input "${YAHM_DIR}share/tools/patches/${CCU2Version}.patch" -p1
+
+    progress "Applying scripts"
+    cd $LXC_ROOT_FS
+    sh "${YAHM_DIR}share/tools/scripts/${CCU2Version}.sh"
+
+    progress "Creating SD card"
+    mkdir -p ${LXC_ROOT}/sd-mmcblk0
+    touch ${LXC_ROOT}/sd-mmcblk0/.initialised
+
+    # clean up download sources
+    progress "Clean Up"
+    rm -rf /tmp/YAHM
+
+    # create lxc config file
+    create_lxc_config
+
+    info "Container is created, please use 'lxc-start -n ${$LXCNAME} -d' to start and 'lxc-attach -n ${$LXCNAME}' for console access"
+    info "For network configuration see yahm-network script"
+}
+
+create_lxc_config()
+{
+        # lxc config file
+        progress "create lxc config file"
+        cat > "${LXC_ROOT}/config" <<EOF
+lxc.mount.entry = proc proc proc nodev,noexec,nosuid 0 0
+lxc.mount.entry = sysfs sys sysfs defaults  0 0
+lxc.mount.entry = varfs var tmpfs defaults,size=196M 0 0
+lxc.mount.entry = devpts dev/pts devpts defaults,newinstance 0 0
+lxc.mount.entry = ${LXC_ROOT}/sd-mmcblk0  media/sd-mmcblk0/ none defaults,bind 0 0
+lxc.start.auto = 1
+lxc.tty = 1
+lxc.pts = 1
+lxc.cgroup.devices.allow = a
+# /dev/null and zero
+lxc.cgroup.devices.allow = c 1:3 rwm
+lxc.cgroup.devices.allow = c 1:5 rwm
+# consoles
+lxc.cgroup.devices.allow = c 5:1 rwm
+lxc.cgroup.devices.allow = c 5:0 rwm
+lxc.cgroup.devices.allow = c 4:0 rwm
+lxc.cgroup.devices.allow = c 4:1 rwm
+# /dev/{,u}random
+lxc.cgroup.devices.allow = c 1:9 rwm
+lxc.cgroup.devices.allow = c 1:8 rwm
+# /dev/pts/* - pts namespaces are "coming soon"
+lxc.cgroup.devices.allow = c 136:* rwm
+lxc.cgroup.devices.allow = c 5:2 rwm
+lxc.cgroup.devices.allow = c 10:200 rwm
+lxc.rootfs = ${LXC_ROOTFS}
+#lxc.include = ${LXC_ROOT}/config.network
+EOF
+}
+
+if [[ $# != 1 ]]; then
+    show_help
+fi
+
+for key in "$@"; do
+    case $key in
+        install)
+            shift
+            create_lxc_container
+            break;
+        ;;
+        update)
+            echo "update"
+            shift
+            break;
+        ;;
+        remove)
+            echo "remove"
+            break;
+        ;;
+        *)
+            show_help
+            exit 0
+        ;;
     esac
 done
 
-check_yahm_name $LXCNAME
-#echo $?
 
-echo $LXCNAME
+

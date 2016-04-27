@@ -1,0 +1,336 @@
+diff -rupN root/bin/mountSD newroot/bin/mountSD
+--- root/bin/mountSD	2016-04-05 21:00:10.000000000 +0200
++++ newroot/bin/mountSD	2016-04-05 21:02:04.520172253 +0200
+@@ -1,10 +1,11 @@
+ #!/bin/sh
+ echo "Starte mountSD: $@" > /tmp/dudu
+-mount $@
+-if [ $? == 0 ] ; then
++# mount $@
++# if [ $? == 0 ] ; then
+ 	touch /var/status/SDmounted
++	touch /var/status/hasSD
+ 	if [ -f /media/sd-mmcblk0/.initialised ] ; then
+ 		touch /var/status/SDinitialised
+ 	fi
+-fi
++# fi
+ 
+diff -rupN root/etc/config_templates/ntpclient newroot/etc/config_templates/ntpclient
+--- root/etc/config_templates/ntpclient	2016-04-05 21:00:10.000000000 +0200
++++ newroot/etc/config_templates/ntpclient	2016-04-05 21:02:04.540172139 +0200
+@@ -1 +1 @@
+-NTPSERVERS='ntp.homematic.com'
++NTPSERVERS='0.de.pool.ntp.org'
+diff -rupN root/etc/config_templates/rfd.conf newroot/etc/config_templates/rfd.conf
+--- root/etc/config_templates/rfd.conf	2016-04-05 21:00:10.000000000 +0200
++++ newroot/etc/config_templates/rfd.conf	2016-04-05 21:02:04.550172082 +0200
+@@ -18,8 +18,8 @@ Firmware Dir = /firmware
+ Replacemap File = /firmware/rftypes/replaceMap/rfReplaceMap.xml
+ Fire NACK Error Events = true
+ 
+-[Interface 0]
+-Type = CCU2
+-ComPortFile = /dev/mmd_bidcos
+-AccessFile = /dev/null
+-ResetFile = /dev/ccu2-ic200
++#[Interface 0]
++#Type = CCU2
++#ComPortFile = /dev/mmd_bidcos
++#AccessFile = /dev/null
++#ResetFile = /dev/ccu2-ic200
+diff -rupN root/etc/fstab newroot/etc/fstab
+--- root/etc/fstab	2016-04-05 21:00:10.000000000 +0200
++++ newroot/etc/fstab	2016-04-05 21:02:04.550172082 +0200
+@@ -1,13 +1,3 @@
+ # /etc/fstab: static file system information.
+ #
+ # <file system> <mount pt>     <type>   <options>         <dump> <pass>
+-/dev/root       /              ext2     rw,noauto         0      1
+-proc            /proc          proc     defaults          0      0
+-devpts          /dev/pts       devpts   defaults,gid=5,mode=620   0      0
+-tmpfs           /dev/shm       tmpfs    mode=0777         0      0
+-tmpfs           /tmp           tmpfs    defaults          0      0
+-mediafs         /media         tmpfs    defaults          0      0
+-sysfs           /sys           sysfs    defaults          0      0
+-varfs           /var           tmpfs    defaults,size=196M 0      0
+-debugfs 	/sys/kernel/debug debugfs 		  0 	0
+-ubi1:user	/usr/local	ubifs	defaults,noatime,rw,sync	0 0
+diff -rupN root/etc/init.d/_40UsbNetwork newroot/etc/init.d/_40UsbNetwork
+--- root/etc/init.d/_40UsbNetwork	1970-01-01 01:00:00.000000000 +0100
++++ newroot/etc/init.d/_40UsbNetwork	2016-04-05 21:02:04.550172082 +0200
+@@ -0,0 +1,52 @@
++#!/bin/sh
++#
++# Starts Ethernet over USB
++#
++
++
++start() {
++	export TZ=`cat /etc/config/TZ`
++
++	echo -n "Starting network over usb: "
++		
++	if [ ! -f /etc/udhcpd.usb0.conf ]; then
++		echo "ERROR (file /etc/udhcp.usb0.conf not found)"
++	elif [ ! -f /etc/dnsd.conf ]; then
++		echo "ERROR (file /etc/dnsd.conf not found)"
++	else
++		ifconfig usb0 10.101.82.51 netmask 255.255.255.0
++		udhcpd -S /etc/udhcpd.usb0.conf
++		# disable DNS Server; CCU can only be access by ip address
++		#dnsd -d -c /etc/dnsd.conf -i 10.101.82.51
++		echo "OK"	
++	fi		
++}
++
++stop() {
++	echo -n "Stopping network over usb: "
++	killall udhcpd
++	killall dnsd	
++	echo "OK"
++}
++restart() {
++	stop
++	start
++}
++
++case "$1" in
++  start)
++	start
++	;;
++  stop)
++	stop
++	;;
++  restart|reload)
++	restart
++	;;
++  *)
++	echo "Usage: $0 {start|stop|restart}"
++	exit 1
++esac
++
++exit $?
++
+diff -rupN root/etc/init.d/rcS newroot/etc/init.d/rcS
+--- root/etc/init.d/rcS	2016-04-05 21:00:10.000000000 +0200
++++ newroot/etc/init.d/rcS	2016-04-05 21:02:04.550172082 +0200
+@@ -25,3 +25,4 @@ for i in /etc/init.d/S??* ;do
+     esac
+ done
+ 
++/bin/mountSD
+\ Kein Zeilenumbruch am Dateiende.
+diff -rupN root/etc/init.d/S00eQ3SystemStart newroot/etc/init.d/S00eQ3SystemStart
+--- root/etc/init.d/S00eQ3SystemStart	2016-04-05 21:00:10.000000000 +0200
++++ newroot/etc/init.d/S00eQ3SystemStart	2016-04-05 21:05:23.399030982 +0200
+@@ -4,19 +4,19 @@
+ #
+ 
+ CFG_TEMPLATE_DIR=/etc/config_templates
+-SERIAL=$(cat /sys/module/plat_eq3ccu2/parameters/board_serial)
++#SERIAL=$(cat /sys/module/plat_eq3ccu2/parameters/board_serial)
+ 
+ init() {
+ 	# power led on
+-	echo 255 > /sys/class/leds/power/brightness
+-	echo default-on > /sys/class/leds/power/trigger
++#	echo 255 > /sys/class/leds/power/brightness
++#	echo default-on > /sys/class/leds/power/trigger
+ 	# internet led off
+-	echo none > /sys/class/leds/internet/trigger
++#	echo none > /sys/class/leds/internet/trigger
+ 	# info led fast
+-	echo timer > /sys/class/leds/info/trigger
+-	echo 255 > /sys/class/leds/info/brightness
+-	echo 100 > /sys/class/leds/info/delay_off
+-	echo 100 > /sys/class/leds/info/delay_on
++#	echo timer > /sys/class/leds/info/trigger
++#	echo 255 > /sys/class/leds/info/brightness
++#	echo 100 > /sys/class/leds/info/delay_off
++#	echo 100 > /sys/class/leds/info/delay_on
+ 
+         chmod 775 /var
+         mkdir /var/log
+@@ -119,7 +119,7 @@ start() {
+ 
+ stop () {
+ 	start-stop-daemon -K -q -p /var/run/crond.pid
+-	/bin/update_firmware_pre
++#	/bin/update_firmware_pre
+ }
+ 
+ restart() {
+diff -rupN root/etc/init.d/S50eq3configd newroot/etc/init.d/S50eq3configd
+--- root/etc/init.d/S50eq3configd	2016-04-05 21:00:10.000000000 +0200
++++ newroot/etc/init.d/S50eq3configd	2016-04-05 21:08:16.958027843 +0200
+@@ -3,10 +3,10 @@
+ # Starts eq3configd.
+ #
+ init () {
+-	radio_mac=$(cat /sys/module/plat_eq3ccu2/parameters/radio_mac)
+-	board_serial=$(cat /sys/module/plat_eq3ccu2/parameters/board_serial)
+-	echo "BidCoS-Address=$radio_mac" > /var/ids
+-	echo "SerialNumber=$board_serial" >> /var/ids
++#	radio_mac=$(cat /sys/module/plat_eq3ccu2/parameters/radio_mac)
++#	board_serial=$(cat /sys/module/plat_eq3ccu2/parameters/board_serial)
++#	echo "BidCoS-Address=$radio_mac" > /var/ids
++#	echo "SerialNumber=$board_serial" >> /var/ids
+ 	if [ ! -e /etc/config/ids ] ; then
+     		cp /var/ids /etc/config
+ 	fi
+diff -rupN root/etc/init.d/S61rfd newroot/etc/init.d/S61rfd
+--- root/etc/init.d/S61rfd	2016-04-05 21:00:10.000000000 +0200
++++ newroot/etc/init.d/S61rfd	2016-04-05 21:06:43.348569699 +0200
+@@ -38,8 +38,8 @@ init() {
+ start() {
+ 	echo -n "Starting rfd: "
+ 	init
+-	echo "Waiting for multimacd to get ready"
+-	eq3configcmd wait-for-file -f /dev/mmd_bidcos -p 1 -t 5
++#	echo "Waiting for multimacd to get ready"
++#	eq3configcmd wait-for-file -f /dev/mmd_bidcos -p 1 -t 5
+ 	echo "Starting rfd"
+ 	start-stop-daemon -S -q -b -m -p $PIDFILE --exec /bin/rfd -- -f /etc/config/rfd.conf -l $LOGLEVEL_RFD
+ 	echo "OK"
+diff -rupN root/etc/init.d/S99eQ3SystemStarted newroot/etc/init.d/S99eQ3SystemStarted
+--- root/etc/init.d/S99eQ3SystemStarted	2016-04-05 21:00:10.000000000 +0200
++++ newroot/etc/init.d/S99eQ3SystemStarted	2016-04-05 21:07:29.938300250 +0200
+@@ -4,19 +4,19 @@
+ #
+ 
+ CFG_TEMPLATE_DIR=/etc/config_templates
+-SERIAL=$(cat /sys/module/plat_eq3ccu2/parameters/board_serial)
++#SERIAL=$(cat /sys/module/plat_eq3ccu2/parameters/board_serial)
+ 
+ init() {
+ 	export TZ=`cat /etc/config/TZ`
+ 
+ 	# power led on
+-	echo 255 > /sys/class/leds/power/brightness
+-	echo default-on > /sys/class/leds/power/trigger
++#	echo 255 > /sys/class/leds/power/brightness
++#	echo default-on > /sys/class/leds/power/trigger
+ 	# internet led off
+-	echo none > /sys/class/leds/internet/trigger
++#	echo none > /sys/class/leds/internet/trigger
+ 	# info led off
+-	echo none > /sys/class/leds/info/trigger
+-	/bin/hss_led 2>&1 > /dev/null  &
++#	echo none > /sys/class/leds/info/trigger
++#	/bin/hss_led 2>&1 > /dev/null  &
+ }
+ 
+ start() {
+diff -rupN root/etc/inittab newroot/etc/inittab
+--- root/etc/inittab	2016-04-05 21:00:10.000000000 +0200
++++ newroot/etc/inittab	2016-04-05 21:09:21.427653578 +0200
+@@ -14,7 +14,7 @@
+ # process   == program to run
+ 
+ # Startup the system
+-null::sysinit:/bin/mount -t proc proc /proc
++#null::sysinit:/bin/mount -t proc proc /proc
+ #null::sysinit:/bin/mount -o remount,rw / # REMOUNT_ROOTFS_RW
+ null::sysinit:/bin/mkdir -p /dev/pts
+ null::sysinit:/bin/mkdir -p /dev/shm
+@@ -24,17 +24,19 @@ null::sysinit:/bin/hostname -F /etc/host
+ ::sysinit:/etc/init.d/rcS
+ 
+ # Put a getty on the serial port
+-ttyAMA0::respawn:/sbin/getty -L ttyAMA0 115200 vt100 # GENERIC_SERIAL
+-ttyGS0::respawn:/sbin/getty -L ttyGS0 115200 vt100 # USB SERIAL
++#ttyAMA0::respawn:/sbin/getty -L ttyAMA0 115200 vt100 # GENERIC_SERIAL
++#ttyGS0::respawn:/sbin/getty -L ttyGS0 115200 vt100 # USB SERIAL
+ 
+ # Stuff to do for the 3-finger salute
+ ::ctrlaltdel:/sbin/reboot
+ 
+ # Stuff to do for SIGQUIT 
+-::restart:/bin/update_firmware_run
++#::restart:/bin/update_firmware_run
+ 
+ # Stuff to do before rebooting
+ ::shutdown:/etc/init.d/rcK
+-null::shutdown:/bin/umount -a -r
+-null::shutdown:/sbin/swapoff -a
++#null::shutdown:/bin/umount -a -r
++#null::shutdown:/sbin/swapoff -a
+ 
++# create a console for lxc
++tty1::respawn:/sbin/getty -L tty1 115200 linux
+diff -rupN root/opt/HMServer/pages/StorageSettingsDialog.ftl newroot/opt/HMServer/pages/StorageSettingsDialog.ftl
+--- root/opt/HMServer/pages/StorageSettingsDialog.ftl	2016-04-05 21:00:11.000000000 +0200
++++ newroot/opt/HMServer/pages/StorageSettingsDialog.ftl	2016-04-05 21:04:10.909448002 +0200
+@@ -155,7 +155,7 @@
+ 						<td class="CLASS21112">${"$"}{dialogSettingsSDCardStatus}:</td>
+ 						<td>${SDCardStatus}</td>
+ 					</tr>
+-					<tr>
++					<tr style="display: none">
+ 						<td align="center" class="CLASS21112" colspan="2" >
+ 							<div class="popupControls CLASS21107">
+ 								<table>
+diff -rupN root/opt/mh/startup.sh newroot/opt/mh/startup.sh
+--- root/opt/mh/startup.sh	2016-04-05 21:00:11.000000000 +0200
++++ newroot/opt/mh/startup.sh	2016-04-05 21:02:04.540172139 +0200
+@@ -19,9 +19,9 @@ if [ ! -e $USER_DIR ] ; then
+ 
+ fi
+ 
+-mkdir -p /dev/net
+-mknod /dev/net/tun c 10 200
+-insmod $BASE_DIR/tun.ko
++#mkdir -p /dev/net
++#mknod /dev/net/tun c 10 200
++#insmod $BASE_DIR/tun.ko
+ 
+ 
+ l1=`ifconfig | grep 'eth0' | tr -s ' ' | cut -d ' ' -f5 | tr ':' '-'`
+diff -rupN root/www/config/cp_security.cgi newroot/www/config/cp_security.cgi
+--- root/www/config/cp_security.cgi	2016-04-05 21:00:21.000000000 +0200
++++ newroot/www/config/cp_security.cgi	2016-04-05 21:02:04.560172025 +0200
+@@ -474,12 +474,12 @@ proc action_backup_restore_go {} {
+     }
+ 		
+ 	if { "false" == $ccu1_backup } {	# backup for version >= 2
+-		exec umount /usr/local
+-        	exec /usr/sbin/ubidetach -p /dev/mtd6
+-        	exec /usr/sbin/ubiformat /dev/mtd6 -y
+-        	exec /usr/sbin/ubiattach -p /dev/mtd6
+-        	exec /usr/sbin/ubimkvol /dev/ubi1 -N user -m
+-        	exec mount /usr/local
++		# exec umount /usr/local
++        	# exec /usr/sbin/ubidetach -p /dev/mtd6
++        	# exec /usr/sbin/ubiformat /dev/mtd6 -y
++        	# exec /usr/sbin/ubiattach -p /dev/mtd6
++        	# exec /usr/sbin/ubimkvol /dev/ubi1 -N user -m
++        	# exec mount /usr/local
+ 
+ 		if { [catch {exec tar xzf /tmp/usr_local.tar.gz} errorMessage] } {
+ 			# set msg "Beim Einspielen des Systembackups ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut. "
+@@ -566,8 +566,8 @@ proc action_backup_restore_go {} {
+ 	}
+ 	
+ 	if { "false" == $backuperror } {
+-        exec mount -o remount,ro /usr/local
+-        exec mount -o remount,rw /usr/local
++        # exec mount -o remount,ro /usr/local
++        # exec mount -o remount,rw /usr/local
+         division {class="popupTitle"} {
+             puts "\${dialogSettingsSecurityMessageSysBackupRestartSystemTitle}"
+         }
+diff -rupN root/www/config/cp_software.cgi newroot/www/config/cp_software.cgi
+--- root/www/config/cp_software.cgi	2016-04-05 21:00:21.000000000 +0200
++++ newroot/www/config/cp_software.cgi	2016-04-05 21:02:04.560172025 +0200
+@@ -507,7 +507,9 @@ proc action_install_start {} {
+     if {[isOldCCU]} {
+         exec /sbin/init -q
+     } else {
+-        exec /bin/kill -SIGQUIT 1
++        #exec /bin/kill -SIGQUIT 1
++        # needed for lxccu restart
++        exec /sbin/reboot
+     }
+ }
+ 
