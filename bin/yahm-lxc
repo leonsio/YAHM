@@ -37,12 +37,15 @@ exit 1
 # Include laden
 source /opt/YAHM/share/include.sh
 
-# Homematic URLs
-#curFWdl="http://update.homematic.com/firmware/download?cmd=download&product=HM-CCU2&serial=0"
-curFWdl="http://www.eq-3.de/Downloads/Software/HM-CCU2-Firmware_Updates/HM-CCU2-${CCU2Version}/HM-CCU2-${CCU2Version}.tgz"
+# Homematic URLs and fallback download links
+curFWdl="http://update.homematic.com/firmware/download?cmd=download&product=HM-CCU2&serial=0"
 checkVersion="http://update.homematic.com/firmware/download?cmd=js_check_version&serial=0&product=HM-CCU2"
-
-#CCU2Version=`curl --connect-timeout 3  -s "$checkVersion" | cut -d"'" -f2 `
+curVersion=$(wget -qO- -T 3 -t 1  "$checkVersion" | cut -d"'" -f2)
+if [ "$curVersion" != "" ] ; then
+    CCU2Version=$curVersion
+else
+    curFWdl="http://www.eq-3.de/Downloads/Software/HM-CCU2-Firmware_Updates/HM-CCU2-${CCU2Version}/HM-CCU2-${CCU2Version}.tgz"
+fi
 
 remove_lxc_container()
 {
@@ -76,11 +79,11 @@ create_lxc_container()
 {
     if [ `check_yahm_installed` -eq 1 ] && [ $IS_FORCE -ne 1 ]
     then
-
         die "YAHM instance is already installed"
-    else
+    fi
+
+    if [ $IS_FORCE -eq 1 ] ; then
         progress "ATTENTION: FORCE-Switch is used, actual instance will be overwritten"
-        set +e
     fi
 
     # Compatibility Check
