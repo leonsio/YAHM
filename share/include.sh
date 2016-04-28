@@ -28,6 +28,9 @@ do
         w)
             echo ""
             ;;
+        m)
+            MODULE=$OPTARG
+            ;;
         v)
             IS_VERBOSE=1
             QUIET=""
@@ -46,6 +49,8 @@ shift $((OPTIND-1))
 
 [ "$1" = "--" ] && shift
 
+LXC_ROOT=/var/lib/lxc/$LXCNAME
+LXC_ROOT_FS=/var/lib/lxc/$LXCNAME/root
 
 # Check if we can use colours in our output
 use_colour=0
@@ -54,19 +59,19 @@ use_colour=0
 # Some useful functions
 progress() {
 	[ $use_colour -eq 1 ] && echo -ne "\033[01;32m"
-	echo "$@" >&2
+	echo -e "$@" >&2
 	[ $use_colour -eq 1 ] && echo -ne "\033[00m"
 }
 
 info() {
 	[ $use_colour -eq 1 ] && echo -ne "\033[01;34m"
-	echo "$@" >&2
+	echo -e "$@" >&2
 	[ $use_colour -eq 1 ] && echo -ne "\033[00m"
 }
 
 die () {
 	[ $use_colour -eq 1 ] && echo -ne "\033[01;31m"
-	echo "$@" >&2
+	echo -e "$@" >&2
 	[ $use_colour -eq 1 ] && echo -ne "\033[00m"
 	exit 1
 }
@@ -145,5 +150,4 @@ countdown()
         : $((secs--))
     done
 }
-
 

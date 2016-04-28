@@ -1,1 +1,133 @@
 #!/bin/bash
+#
+# Leonid Kogan <leon@leonsio.com>
+# Yet Another Homematic Management 
+#
+# Module management script, install or remove modules for CCU2 container
+#
+
+
+# todo: Logik für installierte Module und check ob ein Modul installiert wurde
+
+
+# Stop on Errors
+set -e
+
+MODULE=""
+
+# Hilfe Output
+show_help ()
+{
+cat << EOF
+YAHM modules management script
+
+Usage Example: 
+
+./yahm-module [FLAG] COMMAND
+./yahm-module -n mycccu -m module_name enable
+
+Flags:
+-n          - LXC container name.
+-f          - Force operation (no halt on errors).
+-v          - Verbose output 
+-m          - Module name
+
+Commands:
+enable      -
+disable     -
+available   -
+installed   -
+EOF
+exit 1
+}
+PARAMETER="m:vfn:"
+
+# Include laden
+source /opt/YAHM/share/include.sh
+
+
+available_modules()
+{
+    local module
+    local description
+    progress "Avaible modules:"
+    files=`ls /opt/YAHM/share/modules/`
+    for file in $files
+    do
+        description=`cat /opt/YAHM/share/modules/${file}  | grep description -m1 | cut -d'"' -f2` 
+        printf "\t%-20s%s\n" "$file" "$description" 
+    done    
+}
+
+enable_modules()
+{
+    if [ "$MODULE" = "" ]
+    then
+        die "Please specify module name with -m MODULE, show avaible modules with 'yahm-modules available'"
+    fi
+
+    if [ ! -f "/opt/YAHM/share/modules/${MODULE}" ] 
+    then
+        die "Specified module can not be found"
+    fi
+
+    # Modul laden
+    source /opt/YAHM/share/modules/${MODULE}
+
+    progress "Installing module"
+    _module_install
+
+}
+
+disable_modules()
+{   
+    if [ "$MODULE" = "" ]
+    then
+        die "Please specify module name with -m MODULE, show avaible modules with 'yahm-modules available'"
+    fi
+    
+    if [ ! -f "/opt/YAHM/share/modules/${MODULE}" ]
+    then
+        die "Specified module can not be found"
+    fi
+    
+    # Modul laden
+    source /opt/YAHM/share/modules/${MODULE}
+    
+    progress "Removing module"
+    _module_remove
+}
+
+
+if [[ $# != 1 ]]; then
+    show_help
+fi
+
+for key in "$@"; do
+    case $key in
+        enable)
+            enable_modules
+            shift
+            break;
+        ;;
+        disable)
+            disable_modules
+            shift
+            break;
+        ;;
+        available)
+            available_modules
+            shift
+            break;
+        ;;  
+        installed)
+            shift
+            break;
+        ;;
+        *)
+            show_help
+            exit 0
+        ;;
+    esac
+done
+

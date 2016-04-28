@@ -1,7 +1,16 @@
 #!/bin/bash
+#
+# Homematic IP
+# 
 
-echo "noch nicht fertig"
-exit
+description="Homematic IP Unterstützung"
+
+
+_module_install()
+{
+    echo "noch nicht fertig"
+    exit
+
 
 apt-get install subversion bc gcc-4.7
 
@@ -48,3 +57,10 @@ make oldconfig
 cd /usr/share/eq3/OCCU/KernelDrivers/
 make clean
 insmod eq3_char_loop.ko
+}
+
+_module_remove()
+{
+    echo "noch nicht fertig"
+    exit
+}

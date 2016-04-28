@@ -73,7 +73,7 @@ remove_lxc_container()
     lxc-stop -k -n $LXCNAME
 
     progress "Deleting LXC container"
-    rm -rf /var/lib/lxc/${LXCNAME}/
+    rm -rf ${LXC_ROOT}
 
     progress "Clean up"
     rm -rf /var/lib/yahm/*
@@ -96,8 +96,6 @@ create_lxc_container()
         die "We dont have any patches for this version, please make git pull and try again"
     fi
 
-    LXC_ROOT=/var/lib/lxc/$LXCNAME
-    LXC_ROOT_FS=/var/lib/lxc/$LXCNAME/root
     info "Creating new lxc container name: $LXCNAME, version $CCU2Version"
     # Verzeichnis anlegen
     mkdir -p $LXC_ROOT
@@ -217,7 +215,7 @@ update_lxc_container()
 
     progress "Backup old LXC config"
     mkdir -p /tmp/yahm_backup/${LXCNAME}/
-    cp /var/lib/lxc/${LXCNAME}/conf* /tmp/yahm_backup/${LXCNAME}/
+    cp ${LXC_ROOT}/conf* /tmp/yahm_backup/${LXCNAME}/
 
     progress "Delete YAHM Container version: $installed_version"
     remove_lxc_container
@@ -226,7 +224,7 @@ update_lxc_container()
     create_lxc_container
 
     progress "Restore old LXC config"
-    cp /tmp/yahm_backup/${LXCNAME}/conf* /var/lib/lxc/${LXCNAME}/
+    cp /tmp/yahm_backup/${LXCNAME}/conf* ${LXC_ROOT}/
     rm -rf /tmp/yahm_backup/${LXCNAME}/
 
 }

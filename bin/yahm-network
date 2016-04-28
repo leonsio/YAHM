@@ -14,29 +14,37 @@ set -e
 show_help ()
 {
 cat << EOF
-YAHM LXC management script
+YAHM Network management script
 
 Usage Example: 
 
-./yahm-lxc [FLAG] COMMAND
-./yahm-lxc  -n mycccu install
+./yahm-network [FLAG] COMMAND
+./yahm-network -n mycccu -b mybridge attach
 
 Flags:
--n        - LXC container name.
--f        - Force operation (no halt on errors).
--v        - Verbose output 
+-n          - LXC container name.
+-f          - Force operation (no halt on errors).
+-v          - Verbose output 
+-b          - Bridge name
 
 Commands:
-install   - Create new lxc instance with actual ccu2 image.
-update    - Updates lxc instance to the actual version.
-remove    - Removes lxc instance.
+create      -
+delete      -
+attach      -
+dettach     -
+show        -
 EOF
 exit 1
 }
-PARAMETER="b:wn:"
+PARAMETER="b:wfvn:"
 
 # Include laden
 source /opt/YAHM/share/include.sh
+
+show_bridges()
+{
+    local container=$?
+}
 
 
 
@@ -58,11 +66,12 @@ for key in "$@"; do
             shift
             break;
         ;;  
-        remove)
+        delete)
             shift
             break;
         ;;
-        show_bridge)
+        show)
+            show_bridges
             shift
             break;
         ;; 
