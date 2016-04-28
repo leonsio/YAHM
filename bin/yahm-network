@@ -1,0 +1,75 @@
+#!/bin/bash
+#
+# Leonid Kogan <leon@leonsio.com>
+# Yet Another Homematic Management 
+#
+# Network management script, create new bridges for lxc containers
+#
+
+
+# Stop on Errors
+set -e
+
+# Hilfe Output
+show_help ()
+{
+cat << EOF
+YAHM LXC management script
+
+Usage Example: 
+
+./yahm-lxc [FLAG] COMMAND
+./yahm-lxc  -n mycccu install
+
+Flags:
+-n        - LXC container name.
+-f        - Force operation (no halt on errors).
+-v        - Verbose output 
+
+Commands:
+install   - Create new lxc instance with actual ccu2 image.
+update    - Updates lxc instance to the actual version.
+remove    - Removes lxc instance.
+EOF
+exit 1
+}
+PARAMETER="b:wn:"
+
+# Include laden
+source /opt/YAHM/share/include.sh
+
+
+
+if [[ $# != 1 ]]; then
+    show_help
+fi
+
+for key in "$@"; do
+    case $key in
+        create)
+            shift
+            break;
+        ;;
+        attach)
+            shift
+            break;
+        ;;
+        deattach)
+            shift
+            break;
+        ;;  
+        remove)
+            shift
+            break;
+        ;;
+        show_bridge)
+            shift
+            break;
+        ;; 
+        *)
+            show_help
+            exit 0
+        ;;
+    esac
+done
+

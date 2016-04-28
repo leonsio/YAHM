@@ -33,6 +33,7 @@ remove    - Removes lxc instance.
 EOF
 exit 1
 }
+PARAMETER="fvn:"
 
 # Include laden
 source /opt/YAHM/share/include.sh

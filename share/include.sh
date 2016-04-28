@@ -12,14 +12,21 @@ OPTIND=1
 IS_FORCE=0
 IS_VERBOSE=0
 QUIET="--quiet"
+BRIDGE="lxcbr0"
 VERBOSE=""
 
-while getopts "fvn:" OPTION
+while getopts "${PARAMETER}" OPTION
 do
     case $OPTION in
         f)
             IS_FORCE=1
             set +e
+            ;;
+        b)
+            BRIDGE=$OPTARG
+            ;;
+        w)
+            echo ""
             ;;
         v)
             IS_VERBOSE=1
