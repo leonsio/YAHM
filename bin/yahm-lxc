@@ -52,18 +52,21 @@ remove_lxc_container()
     if [ `check_yahm_installed` -eq 0 ] && [ $IS_FORCE -ne 1 ]
     then
         die "No container installed"
-    else
-        info "Can not find any container, entering force mode"
-        set +e
     fi
 
     if [ `check_yahm_name $LXCNAME` -eq 0 ] && [ $IS_FORCE -ne 1 ]
     then
         die "Can not find $LXCNAME container"
-    else
-        info "Container $LXCNAME can not be found, entering force mode"
-        set +e
     fi
+
+    if [ $IS_FORCE -eq 1 ]
+    then
+        info "Entering force mode"
+    fi
+
+    info "Deleting installed YAHM container: $LXCNAME version: $CCU2Version To cancel this operation type CTRL+C you have 5 seconds..."
+    countdown
+    info "... to late ;)"
 
     progress "Stopping lxc container"
     lxc-stop -k -n $LXCNAME
@@ -87,7 +90,8 @@ create_lxc_container()
     fi
 
     # Compatibility Check
-    if [ `yahm_compatibility $CCU2Version` -eq 1 ]; then
+    if [ `yahm_compatibility $CCU2Version` -eq 1 ] && [ $IS_FORCE -ne 1 ]
+    then
         die "We dont have any patches for this version, please make git pull and try again"
     fi
 
@@ -101,8 +105,9 @@ create_lxc_container()
     progress "Downloading CCU Firmware"
     EQ3_FW="/tmp/YAHM/HM-CCU2-${CCU2Version}.tar.gz"
     wget $QUIET -O "$EQ3_FW" "$curFWdl"
-    if [ ! -f "$EQ3_FW" ]; then
-       echo "Can not download firmware. Are you connected to the internet?"
+    if [ ! -f "$EQ3_FW" ] && [ $IS_FORCE -ne 1 ]
+    then
+       die "Can not download firmware. Are you connected to the internet?"
     fi
 
     progress "Extracting firmware"
@@ -180,6 +185,51 @@ lxc.rootfs = ${LXC_ROOT_FS}
 EOF
 }
 
+update_lxc_container()
+{
+
+    if [ `check_yahm_installed` -eq 0 ] && [ $IS_FORCE -ne 1 ]
+    then
+        die "YAHM is not installed"
+    fi
+
+    if [ `check_yahm_name $LXCNAME` -eq 0 ] && [ $IS_FORCE -ne 1 ]
+    then
+        die "Can not find $LXCNAME container"
+    fi
+
+    installed_version=`get_yahm_version ${LXCNAME}` 
+    if [ $(ver $installed_version) -ge $(ver $CCU2Version) ] && [ $IS_FORCE -ne 1 ]
+    then
+        die "Installed version $installed_version is greater than or equal to avaible version $CCU2Version"
+    fi
+
+    if [ $IS_FORCE -ne 1 ] 
+    then
+        die "We can not update existing installation, please make backup of your data inside CCU2 gui and then run this script with -f."
+    fi
+
+    info "Update skript do not make any backup, your data will be removed!!!!"
+    info "Updating to version $CCU2Version, existing installation will be overwritten. To cancel this operation type CTRL+C you have 5 seconds.... "
+    countdown
+    info "... to late ;)"
+
+    progress "Backup old LXC config"
+    mkdir -p /tmp/yahm_backup/${LXCNAME}/
+    cp /var/lib/lxc/${LXCNAME}/conf* /tmp/yahm_backup/${LXCNAME}/
+
+    progress "Delete YAHM Container version: $installed_version"
+    remove_lxc_container
+
+    progress "Create new YAHM Container version: $CCU2Version"
+    create_lxc_container
+
+    progress "Restore old LXC config"
+    cp /tmp/yahm_backup/${LXCNAME}/conf* /var/lib/lxc/${LXCNAME}/
+    rm -rf /tmp/yahm_backup/${LXCNAME}/
+
+}
+
 if [[ $# != 1 ]]; then
     show_help
 fi
@@ -192,7 +242,7 @@ for key in "$@"; do
             break;
         ;;
         update)
-            echo "update"
+            update_lxc_container
             shift
             break;
         ;;

@@ -19,6 +19,7 @@ do
     case $OPTION in
         f)
             IS_FORCE=1
+            set +e
             ;;
         v)
             IS_VERBOSE=1
@@ -102,7 +103,9 @@ check_yahm_installed()
 
 get_yahm_version()
 {
-    return
+    local container_name=$1
+    local yahm_version=`cat /var/lib/lxc/${container_name}/root/boot/VERSION  | cut -d'=' -f2` 
+    echo $yahm_version
 }
 
 yahm_compatibility()
@@ -120,4 +123,20 @@ yahm_compatibility()
 
     echo 0
 }
+
+ver() 
+{ 
+   printf "%03d%03d%03d%03d" $(echo "$1" | tr '.' ' ') 
+}
+
+countdown()
+{
+    secs=$((5))
+    while [ $secs -gt 0 ]; do
+        echo -ne "$secs\033[0K\r"
+        sleep 1
+        : $((secs--))
+    done
+}
+
 
