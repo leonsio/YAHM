@@ -61,6 +61,17 @@ insmod eq3_char_loop.ko
 
 _module_remove()
 {
-    echo "noch nicht fertig"
+    progress "Removing HmIP-RF Interface"
+    if [ ! -f "${LXC_ROOT_FS}/usr/local/etc/config/InterfacesList.xml" ]
+    then
+        die "InterfacesList.xml can not be found, please start ${LXCNAME} first"
+    fi
+
+    cd ${LXC_ROOT_FS}/usr/local/etc/config/
+    xmlstarlet ed -d "/interfaces/ipc[name='HmIP-RF']" InterfacesList.xml > InterfacesList.xml.new
+    mv InterfacesList.xml InterfacesList.xml.bak
+    mv InterfacesList.xml.new InterfacesList.xml
+
+    info "Homematic-IP interface was removed, please restart CCU-LXC Container"
     exit
 }
