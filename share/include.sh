@@ -165,3 +165,17 @@ countdown()
     done
 }
 
+check_install_deb()
+{
+    progress "Installing dependencies"
+    packages=$1
+    for P in $packages
+    do
+        dpkg -s "$P" >/dev/null 2>&1 && {
+        info $P is installed
+        } || {
+            install_package "$P"
+        }
+    done
+}
+

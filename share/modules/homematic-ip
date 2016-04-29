@@ -61,6 +61,8 @@ insmod eq3_char_loop.ko
 
 _module_remove()
 {
+    check_install_deb "xmlstarlet" 
+
     progress "Removing HmIP-RF Interface"
     if [ ! -f "${LXC_ROOT_FS}/usr/local/etc/config/InterfacesList.xml" ]
     then
