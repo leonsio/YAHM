@@ -41,10 +41,11 @@ source /opt/YAHM/share/include.sh
 curFWdl="http://update.homematic.com/firmware/download?cmd=download&product=HM-CCU2&serial=0"
 checkVersion="http://update.homematic.com/firmware/download?cmd=js_check_version&serial=0&product=HM-CCU2"
 curVersion=$(wget -qO- -T 3 -t 1  "$checkVersion" | cut -d"'" -f2)
-if [ "$curVersion" != "" ] ; then
-    CCU2Version=$curVersion
-else
+if [ "$curVersion" = "" ] || [ "$curVersion" = "n/a" ] 
+then
     curFWdl="http://www.eq-3.de/Downloads/Software/HM-CCU2-Firmware_Updates/HM-CCU2-${CCU2Version}/HM-CCU2-${CCU2Version}.tgz"
+else
+    CCU2Version=$curVersion
 fi
 
 remove_lxc_container()
@@ -102,10 +103,15 @@ create_lxc_container()
 
     progress "Downloading CCU Firmware"
     EQ3_FW="${YAHM_TMP}/HM-CCU2-${CCU2Version}.tar.gz"
-    wget $QUIET -O "$EQ3_FW" "$curFWdl"
+    wget $QUIET -O "$EQ3_FW" "$curFWdl" || info "Can not download file"
     if [ ! -f "$EQ3_FW" ] && [ $IS_FORCE -ne 1 ]
     then
        die "Can not download firmware. Are you connected to the internet?"
+    fi
+
+    if [ $(stat -c%s "${EQ3_FW}") -le 0 ] && [ $IS_FORCE -ne 1 ]
+    then
+        die "Can not download firmware. File size is to small, please take a look on ${EQ3_FW}"  
     fi
 
     progress "Extracting firmware"
