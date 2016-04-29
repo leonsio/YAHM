@@ -36,7 +36,9 @@ show        -
 EOF
 exit 1
 }
+
 PARAMETER="b:wfvn:"
+BRIDGE="yahmbr0"
 
 # Include laden
 source /opt/YAHM/share/include.sh
@@ -81,4 +83,3 @@ for key in "$@"; do
         ;;
     esac
 done
-

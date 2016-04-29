@@ -50,11 +50,11 @@ available_modules()
 {
     local module
     local description
-    progress "Avaible modules:"
-    files=`ls /opt/YAHM/share/modules/`
+    progress "Available modules:"
+    files=`ls ${YAHM_DIR}/share/modules/`
     for file in $files
     do
-        description=`cat /opt/YAHM/share/modules/${file}  | grep description -m1 | cut -d'"' -f2` 
+        description=`cat ${YAHM_DIR}/share/modules/${file}  | grep description -m1 | cut -d'"' -f2` 
         printf "\t%-20s%s\n" "$file" "$description" 
     done    
 }
@@ -63,16 +63,8 @@ enable_modules()
 {
     if [ "$MODULE" = "" ]
     then
-        die "Please specify module name with -m MODULE, show avaible modules with 'yahm-modules available'"
+        die "Please specify module name with -m MODULE, show available modules with 'yahm-modules available'"
     fi
-
-    if [ ! -f "/opt/YAHM/share/modules/${MODULE}" ] 
-    then
-        die "Specified module can not be found"
-    fi
-
-    # Modul laden
-    source /opt/YAHM/share/modules/${MODULE}
 
     progress "Installing module"
     _module_install
@@ -83,16 +75,8 @@ disable_modules()
 {   
     if [ "$MODULE" = "" ]
     then
-        die "Please specify module name with -m MODULE, show avaible modules with 'yahm-modules available'"
+        die "Please specify module name with -m MODULE, show available modules with 'yahm-modules available'"
     fi
-    
-    if [ ! -f "/opt/YAHM/share/modules/${MODULE}" ]
-    then
-        die "Specified module can not be found"
-    fi
-    
-    # Modul laden
-    source /opt/YAHM/share/modules/${MODULE}
     
     progress "Removing module"
     _module_remove

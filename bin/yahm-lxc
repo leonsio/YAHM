@@ -6,7 +6,6 @@
 # LXC management script, create new lxc container from CCU2 image 
 #
 
-
 # Stop on Errors
 set -e
 
@@ -76,7 +75,7 @@ remove_lxc_container()
     rm -rf ${LXC_ROOT}
 
     progress "Clean up"
-    rm -rf /var/lib/yahm/*
+    rm -rf ${YAHM_LIB}/*
 }
 
 create_lxc_container()
@@ -99,10 +98,10 @@ create_lxc_container()
     info "Creating new lxc container name: $LXCNAME, version $CCU2Version"
     # Verzeichnis anlegen
     mkdir -p $LXC_ROOT
-    mkdir -p /tmp/YAHM/
+    mkdir -p $YAHM_TMP
 
     progress "Downloading CCU Firmware"
-    EQ3_FW="/tmp/YAHM/HM-CCU2-${CCU2Version}.tar.gz"
+    EQ3_FW="${YAHM_TMP}/HM-CCU2-${CCU2Version}.tar.gz"
     wget $QUIET -O "$EQ3_FW" "$curFWdl"
     if [ ! -f "$EQ3_FW" ] && [ $IS_FORCE -ne 1 ]
     then
@@ -110,10 +109,10 @@ create_lxc_container()
     fi
 
     progress "Extracting firmware"
-    tar $VERBOSE -xzf $EQ3_FW -C /tmp/YAHM/
+    tar $VERBOSE -xzf $EQ3_FW -C $YAHM_TMP
 
     progress "Extract ubi image"
-    $YAHM_DIR/share/tools/ubi_reader/ubi_extract_files.py $QUIET -k -o $LXC_ROOT /tmp/YAHM/rootfs.ubi
+    $YAHM_DIR/share/tools/ubi_reader/ubi_extract_files.py $QUIET -k -o $LXC_ROOT "${YAHM_TMP}/rootfs.ubi"
 
     # most lxc commands use rootfs folder and not the config option
     ln -s $LXC_ROOT_FS $LXC_ROOT/rootfs
@@ -125,11 +124,11 @@ create_lxc_container()
 
     progress "Applying patch"
     cd $LXC_ROOT_FS
-    patch $QUIET --input "${YAHM_DIR}share/tools/patches/${CCU2Version}.patch" -p1
+    patch $QUIET --input "${YAHM_DIR}/share/tools/patches/${CCU2Version}.patch" -p1
 
     progress "Applying scripts"
     cd $LXC_ROOT_FS
-    sh "${YAHM_DIR}share/tools/scripts/${CCU2Version}.sh"
+    sh "${YAHM_DIR}/share/tools/scripts/${CCU2Version}.sh"
 
     progress "Creating SD card"
     mkdir -p ${LXC_ROOT}/sd-mmcblk0
@@ -137,7 +136,7 @@ create_lxc_container()
 
     # clean up download sources
     progress "Clean Up"
-    rm -rf /tmp/YAHM
+    rm -rf $YAHM_TMP
 
     # create lxc config file
     create_lxc_config
@@ -214,8 +213,8 @@ update_lxc_container()
     info "... to late ;)"
 
     progress "Backup old LXC config"
-    mkdir -p /tmp/yahm_backup/${LXCNAME}/
-    cp ${LXC_ROOT}/conf* /tmp/yahm_backup/${LXCNAME}/
+    mkdir -p ${YAHM_TMP}_conf/${LXCNAME}/
+    cp ${LXC_ROOT}/conf* ${YAHM_TMP}_conf/${LXCNAME}/
 
     progress "Delete YAHM Container version: $installed_version"
     remove_lxc_container
@@ -224,9 +223,8 @@ update_lxc_container()
     create_lxc_container
 
     progress "Restore old LXC config"
-    cp /tmp/yahm_backup/${LXCNAME}/conf* ${LXC_ROOT}/
-    rm -rf /tmp/yahm_backup/${LXCNAME}/
-
+    cp ${YAHM_TMP}_conf/${LXCNAME}/conf* ${LXC_ROOT}/
+    rm -rf ${YAHM_TMP}_conf/
 }
 
 if [[ $# != 1 ]]; then
