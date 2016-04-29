@@ -74,6 +74,11 @@ _module_remove()
     mv InterfacesList.xml InterfacesList.xml.bak
     mv InterfacesList.xml.new InterfacesList.xml
 
+    cd ${LXC_ROOT_FS}/etc/config_templates/
+    xmlstarlet ed -d "/interfaces/ipc[name='HmIP-RF']" InterfacesList.xml > InterfacesList.xml.new
+    mv InterfacesList.xml InterfacesList.xml.bak
+    mv InterfacesList.xml.new InterfacesList.xml
+
     info "Homematic-IP interface was removed, please restart CCU-LXC Container"
     exit
 }
