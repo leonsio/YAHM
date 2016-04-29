@@ -179,3 +179,10 @@ check_install_deb()
     done
 }
 
+install_package() {
+    package=$1
+    info "install ${package}"
+    apt-get -qq -y install $package 2>&1 > /dev/null
+    return $?
+}
+
