@@ -70,7 +70,7 @@ remove_lxc_container()
     info "... to late ;)"
 
     progress "Stopping lxc container"
-    lxc-stop -k -n $LXCNAME
+    lxc-stop -k -n $LXCNAME || info "Container can not be found or is not running"
 
     progress "Deleting LXC container"
     rm -rf ${LXC_ROOT}
@@ -157,7 +157,7 @@ create_lxc_container()
 create_lxc_config()
 {
         # lxc config file
-        progress "create lxc config file"
+        progress "Creating lxc config file"
         cat > "${LXC_ROOT}/config" <<EOF
 lxc.mount.entry = proc proc proc nodev,noexec,nosuid 0 0
 lxc.mount.entry = sysfs sys sysfs defaults  0 0

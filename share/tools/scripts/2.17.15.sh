@@ -31,7 +31,7 @@ touch ${ROOT}/usr/local/etc/config/no-coprocessor-update
 mv ${ROOT}/etc/init.d/S40UsbNetwork  ${ROOT}/etc/init.d/_S40UsbNetwork
 cat >> "${ROOT}/bin/update_firmware_run"  <<EOF
 log() {
-  logger -t homematic -p user.notice $1
+  logger -t homematic -p user.notice \$1
 }
 
 echo "YAHM: Entering addon install mode"

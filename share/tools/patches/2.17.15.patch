@@ -92,7 +92,7 @@ diff -wrupN root/etc/init.d/S00eQ3SystemStart newroot/etc/init.d/S00eQ3SystemSta
  stop () {
  	start-stop-daemon -K -q -p /var/run/crond.pid
 -	/bin/update_firmware_pre
-+#	/bin/update_firmware_pre
++   /bin/update_firmware_run
  }
  
  restart() {
