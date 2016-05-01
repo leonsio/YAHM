@@ -65,3 +65,8 @@ cd /var/
 /var/update_script CCU2
 
 EOF
+cat >> "${ROOT}/var/ids"  <<EOF
+BidCoS-Address=
+SerialNumber=
+EOF
+

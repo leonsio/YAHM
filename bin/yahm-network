@@ -10,6 +10,9 @@
 # Stop on Errors
 set -e
 
+# Default Parameter
+BRIDGE="yahmbr0"
+INTERFACE="eth0"
 # Hilfe Output
 show_help ()
 {
@@ -19,33 +22,33 @@ YAHM Network management script
 Usage Example: 
 
 ./yahm-network [FLAG] COMMAND
-./yahm-network -n mycccu -b mybridge attach
+./yahm-network -n mycccu -b mybridge attach_bridge
 
 Flags:
 -n          - LXC container name.
 -f          - Force operation (no halt on errors).
 -v          - Verbose output 
 -b          - Bridge name
+-i          - Interface name
 
 Commands:
-create      -
-delete      -
-attach      -
-dettach     -
-show        -
+create_bridge      -
+delete_bridge     -
+attach_bridge      -
+dettach_bridge     -
+show_bridge        -
 EOF
 exit 1
 }
 
-PARAMETER="b:wfvn:"
-BRIDGE="yahmbr0"
+PARAMETER="b:i:wfvn:"
 
 # Include laden
 source /opt/YAHM/share/include.sh
 
 show_bridges()
 {
-    local container=$?
+    brctl show
 }
 
 
@@ -56,23 +59,23 @@ fi
 
 for key in "$@"; do
     case $key in
-        create)
+        create_bridge)
             shift
             break;
         ;;
-        attach)
+        attach_bridge)
             shift
             break;
         ;;
-        deattach)
+        deattach_bridge)
             shift
             break;
         ;;  
-        delete)
+        delete_bridge)
             shift
             break;
         ;;
-        show)
+        show_bridge)
             show_bridges
             shift
             break;
