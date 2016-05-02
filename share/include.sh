@@ -13,6 +13,7 @@ fi
 LXCNAME=yahm
 CCU2Version="2.17.15"
 YAHM_DIR=/opt/YAHM
+YAHM_TOOLS=/opt/YAHM/share/tools
 YAHM_TMP=/tmp/YAHM
 YAHM_LIB=/var/lib/yahm
 OPTIND=1
@@ -20,6 +21,7 @@ IS_FORCE=0
 IS_VERBOSE=0
 QUIET="--quiet"
 VERBOSE=""
+DRY_RUN=0
 
 # Check if we can use colours in our output
 use_colour=0
@@ -55,8 +57,14 @@ do
         b)
             BRIDGE=$OPTARG
             ;;
+        i)
+            INTERFACE=$OPTARG
+            ;;
         w)
-            echo "write to file"
+            WRITE=1
+            ;;
+        d)
+            DRY_RUN=1
             ;;
         m)
             MODULE=$OPTARG

@@ -160,33 +160,58 @@ create_lxc_config()
         progress "Creating lxc config file"
         cat > "${LXC_ROOT}/config" <<EOF
 lxc.mount.entry = proc proc proc nodev,noexec,nosuid 0 0
-lxc.mount.entry = sysfs sys sysfs defaults  0 0
+lxc.mount.entry = sysfs sys sysfs rw  0 0
 lxc.mount.entry = varfs var tmpfs defaults,size=196M 0 0
 lxc.mount.entry = devpts dev/pts devpts defaults,newinstance 0 0
 lxc.mount.entry = ${LXC_ROOT}/sd-mmcblk0  media/sd-mmcblk0/ none defaults,bind 0 0
+
 lxc.utsname = ${LXCNAME}
+lxc.rootfs = ${LXC_ROOT_FS}
+
+# autostart disable-> lxc.start.auto=0
 lxc.start.auto = 1
+
 lxc.tty = 1
 lxc.pts = 1
+
+# cgroups
 lxc.cgroup.devices.allow = a
+
 # /dev/null and zero
 lxc.cgroup.devices.allow = c 1:3 rwm
 lxc.cgroup.devices.allow = c 1:5 rwm
+
 # consoles
 lxc.cgroup.devices.allow = c 5:1 rwm
 lxc.cgroup.devices.allow = c 5:0 rwm
 lxc.cgroup.devices.allow = c 4:0 rwm
 lxc.cgroup.devices.allow = c 4:1 rwm
+
+# hm-mod-rpi
+lxc.cgroup.devices.allow = c 204:64 rwm
+
+# hmip-rf
+lxc.cgroup.devices.allow = c 244:0 rwm
+lxc.cgroup.devices.allow = c 245:0 rwm
+lxc.cgroup.devices.allow = c 246:0 rwm
+lxc.cgroup.devices.allow = c 245:1 rwm
+lxc.cgroup.devices.allow = c 245:2 rwm
+
 # /dev/{,u}random
 lxc.cgroup.devices.allow = c 1:9 rwm
 lxc.cgroup.devices.allow = c 1:8 rwm
+
 # /dev/pts/* - pts namespaces are "coming soon"
 lxc.cgroup.devices.allow = c 136:* rwm
 lxc.cgroup.devices.allow = c 5:2 rwm
 lxc.cgroup.devices.allow = c 10:200 rwm
-lxc.rootfs = ${LXC_ROOT_FS}
-#lxc.include = ${LXC_ROOT}/config.network
+
+# includes
+lxc.include = ${LXC_ROOT}/config.network
 EOF
+
+    # blank config file
+    touch ${LXC_ROOT}/config.network
 }
 
 update_lxc_container()
