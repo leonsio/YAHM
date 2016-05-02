@@ -89,6 +89,68 @@ check_interface_name()
     fi
 }
 
+attach_bridge()
+{
+    # Check if bridge exists
+    if [ `check_bridge_name $BRIDGE` = 0 ] ; then
+        die "Bridge ${BRIDGE} dont exists."
+    fi
+
+    lastoctet_macaddress=`openssl rand -hex 1 | sed 's/\(..\)/\1:/g; s/.$//'`
+
+    progress "Enable ${BRIDGE} in ${LXCNAME}"
+    cat > "${LXC_ROOT}/config.network" <<EOF
+lxc.network.type = veth
+lxc.network.flags = up
+lxc.network.link = ${BRIDGE}
+lxc.network.hwaddr = 4a:49:43:49:79:${lastoctet_macaddress}
+EOF
+    info "Done"
+    info "To apply the changes, please restart LXC container with 'lxc-stop -n ${LXCNAME} && lxc-start -n ${LXCNAME} -d'"
+}
+
+dettach_bridge()
+{
+    # Check if bridge exists
+    if [ `check_bridge_name $BRIDGE` = 0 ] ; then
+        die "Bridge ${BRIDGE} dont exists."
+    fi
+
+    progress "Removing ${BRIDGE} form  ${LXCNAME}"
+
+    echo "" > ${LXC_ROOT}/config.network
+
+    info "Done"
+    info "To apply the changes, please restart LXC container with 'lxc-stop -n ${LXCNAME} && lxc-start -n ${LXCNAME} -d'"
+}
+
+delete_bridge()
+{
+    # Check if bridge exists
+    if [ `check_bridge_name $BRIDGE` = 0 ] ; then
+        die "Bridge ${BRIDGE} dont exists."
+    else
+        progress "Bridge ${BRIDGE} will be deleted"
+    fi
+
+    info "Checking network configuration"
+    # check if interface has static ip
+    ipcheck=$(awk -f ${YAHM_TOOLS}/Network-Interfaces-Script/readInterfaces.awk /etc/network/interfaces device=${BRIDGE})
+    # get bridge interfaces
+    brif=""
+    # check physical
+
+    # warning or check? dettach from lxc
+
+    # remove bridge
+
+    # set static ip to old interface
+
+    # dry run brctl delif && brctl delbr
+
+    # write changes
+}
+
 create_bridge()
 {
 
@@ -227,14 +289,17 @@ for key in "$@"; do
             break;
         ;;
         attach_bridge)
+            attach_bridge
             shift
             break;
         ;;
-        deattach_bridge)
+        dettach_bridge)
+            dettach_bridge
             shift
             break;
         ;;  
         delete_bridge)
+            delete_bridge
             shift
             break;
         ;;
