@@ -33,22 +33,32 @@ Flags:
 -m          - Module name
 
 Commands:
-enable      -
-disable     -
-available   -
-installed   -
+enable      - Enable module
+disable     - Disable module
+available   - Show available modules
+installed   - Show installed modules
 EOF
 exit 1
 }
+
 PARAMETER="m:vfn:"
 
 # Include laden
 source /opt/YAHM/share/include.sh
 
+mkdir -p ${YAHM_DIR}/share/modules/
+
+_module_installed()
+{
+    if [ -e ${YAHM_LIB}/modules/${MODULE} ] ; then
+        echo 1    
+    else
+        echo 0 
+    fi
+}
 
 available_modules()
 {
-    local module
     local description
     progress "Available modules:"
     files=`ls ${YAHM_DIR}/share/modules/`
@@ -59,6 +69,18 @@ available_modules()
     done    
 }
 
+installed_modules()
+{
+    local description
+    progress "Installed modules:"
+    files=`ls ${YAHM_LIB}/modules/`
+    for file in $files
+    do
+        description=`cat ${YAHM_DIR}/share/modules/${file}  | grep description -m1 | cut -d'"' -f2`
+        printf "\t%-20s%s\n" "$file" "$description"
+    done
+}
+
 enable_modules()
 {
     if [ "$MODULE" = "" ]
@@ -66,9 +88,16 @@ enable_modules()
         die "Please specify module name with -m MODULE, show available modules with 'yahm-modules available'"
     fi
 
-    progress "Executing ${MODULE} module_install()"
-    _module_install
+    if [ `_module_installed` -eq 1 ] && [ $IS_FORCE -ne 1 ]
+    then
+        die "Module ${MODULE} is already installed, use -f to overwrite it"
+    fi
 
+    progress "Executing ${MODULE} module_install()"
+
+    _module_install
+    
+    touch ${YAHM_LIB}/modules/${MODULE}
 }
 
 disable_modules()
@@ -77,9 +106,17 @@ disable_modules()
     then
         die "Please specify module name with -m MODULE, show available modules with 'yahm-modules available'"
     fi
+
+    if [ `_module_installed` -eq 0 ] && [ $IS_FORCE -ne 1 ]
+    then
+        die "Module ${MODULE} is not installed, use -f force this operation"
+    fi
     
     progress "Executing ${MODULE} module_remove()"
+
     _module_remove
+
+    rm ${YAHM_LIB}/modules/${MODULE}
 }
 
 
@@ -105,6 +142,7 @@ for key in "$@"; do
             break;
         ;;  
         installed)
+            installed_modules
             shift
             break;
         ;;

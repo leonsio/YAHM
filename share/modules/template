@@ -30,6 +30,5 @@ _module_install()
 _module_remove()
 {
     echo "template remove"
-    exit
 }
 

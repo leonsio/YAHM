@@ -1,7 +1,9 @@
 #!/bin/bash
 #
+# Leonid Kogan <leon@leonsio.com>
+# Yet Another Homematic Management 
 #
-#
+# Globale Funktionen
 #
 
 if [[ $EUID -ne 0 ]]; then
