@@ -136,8 +136,23 @@ delete_bridge()
     info "Checking network configuration"
     # check if interface has static ip
     ipcheck=$(awk -f ${YAHM_TOOLS}/Network-Interfaces-Script/readInterfaces.awk /etc/network/interfaces device=${BRIDGE})
+
+    case $ipcheck in
+        manual|dhcp)
+            info "Found $ipcheck bridge configuration on ${BRIDGE}"
+            ;;
+        *)
+            IFS=', ' read -r -a array <<< $ipcheck
+            address=${array[0]}
+            netmask=${array[1]}
+            gateway=${array[2]}
+            info "ATTENTION: Found static IP ${address}, trying to create a Bridge with a static IP"
+            is_static=1
+    esac
+
+
     # get bridge interfaces
-    brif=""
+    get_bridge_members ${BRIDGE}
     # check physical
 
     # warning or check? dettach from lxc
@@ -177,7 +192,7 @@ create_bridge()
             info "Interface ${INTERFACE} is physical and valid, continue..."
             ;; 
         vlan)
-            info "You are trying to use a VLAN interface with a bridge, be careful"
+            info "You are using advanced network configuration with VLANs, be careful"
             ;;
         *)
             die "This Interface is not supported, please choose only physical interface"    

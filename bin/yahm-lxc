@@ -191,6 +191,7 @@ lxc.cgroup.devices.allow = c 4:1 rwm
 lxc.cgroup.devices.allow = c 204:64 rwm
 
 # hmip-rf
+lxc.cgroup.devices.allow = c 243:0 rwm
 lxc.cgroup.devices.allow = c 244:0 rwm
 lxc.cgroup.devices.allow = c 245:0 rwm
 lxc.cgroup.devices.allow = c 246:0 rwm
