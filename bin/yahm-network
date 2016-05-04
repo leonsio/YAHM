@@ -126,6 +126,15 @@ dettach_bridge()
 
 delete_bridge()
 {
+    info "Trying to remove bridge: ${BRIDGE}"
+
+
+    if [ $WRITE -eq 0 ] ; then
+        progress "ATTENTION: No changes will be made. Use -d to test or -w flag to write changes"
+    else
+        progress "ATTENTION: Network configuration will be changed, you may no longer login to the system!!!"
+    fi
+
     # Check if bridge exists
     if [ `check_bridge_name $BRIDGE` = 0 ] ; then
         die "Bridge ${BRIDGE} dont exists."
@@ -150,20 +159,99 @@ delete_bridge()
             is_static=1
     esac
 
-
     # get bridge interfaces
-    get_bridge_members ${BRIDGE}
+    brifs=$(brctl show ${BRIDGE} | awk 'NF>1 && NR>1 {print $4}')
     # check physical
 
+    # check if interface is physical or vlan
+    count=0
+    for brif in $brifs
+    do
+        if [ $count -eq 1 ] ; then
+            die "We do not support bridges with more than one interface, please delete the bridge manually"
+        fi
+        count=$((count+1))
+    done
+
     # warning or check? dettach from lxc
+    info "If this bridge be in use by lxc, please dettach it with 'yahm-network dettach_bridge'. You have 5 Seconds to cancel this Operation..."
+        countdown
+    info "... to late ;)"
 
-    # remove bridge
+    # create copy of interfaces file
+    rm -rf /tmp/yahm_interfaces.*
+    cp /etc/network/interfaces /tmp/yahm_interfaces
 
-    # set static ip to old interface
 
-    # dry run brctl delif && brctl delbr
+    # Neue Konfig Datei bauen
+    progress "Preparing network interfaces file"
+    info "Removing ${BRIDGE} from network configuration file"
+    awk -f ${YAHM_TOOLS}/Network-Interfaces-Script/changeInterface.awk /tmp/yahm_interfaces mode=remove dev=${BRIDGE} >> /tmp/yahm_interfaces.tmp
 
-    # write changes
+    if [ $is_static -eq 1 ]
+    then
+        info "Configure static IP to the old interface ${brifs}"
+        awk -f ${YAHM_TOOLS}/Network-Interfaces-Script/changeInterface.awk /tmp/yahm_interfaces.tmp dev=${brifs} mode=static address=${address} netmask=${netmask} gateway=${gateway}  >> /tmp/yahm_interfaces.new
+    else
+        # Setting right parameter
+        awk -f ${YAHM_TOOLS}/Network-Interfaces-Script/changeInterface.awk /tmp/yahm_interfaces.tmp dev=${brifs} mode=$ipcheck >> /tmp/yahm_interfaces.new
+    fi
+
+    mv /tmp/yahm_interfaces.new  /tmp/yahm_interfaces
+
+    progress "Please review new network configuration"
+    cat /tmp/yahm_interfaces
+
+
+    if [ $DRY_RUN -eq 1 ]
+    then
+        progress "Testing new network configuration. If your system is not responding, please restart and try again"
+
+        # Interface hinzufuegen
+        info "Moving interface ${brifs} from the new bridge ${BRIDGE}"
+        brctl delif ${BRIDGE} ${brifs}
+
+        # Bridge anlegen
+        info "Removing bridge ${BRIDGE}"
+        brctl delbr ${BRIDGE}
+
+        if [ $is_static -eq 1 ]
+        then
+#            info "Deleting ip ${address} from interface ${INTERFACE}"
+#            ip addr flush dev ${INTERFACE}
+
+            info "Setup ip ${address} on the interface ${brifs}"
+            ip addr add ${address}/${netmask} dev  ${brifs}
+        else
+#            progress "Release IP from the bridge ${BRIDGE}"
+            info "Attention: You might get different IP address from your dhcp server"
+#            ip addr flush dev ${BRIDGE}
+            progress "Search for new IP Address"
+            dhclient ${brifs}
+        fi 
+    fi
+
+    if [ $WRITE -eq 1 ]
+    then
+        progress "Writing network changes. To cancel this operation type CTRL+C you have 5 seconds..."
+        countdown
+        info "... to late ;)"
+
+        timestamp=$(date +%s)
+        progress "Backuping /etc/network/interfaces to /etc/network/interfaces.${timestamp}"
+        cp /etc/network/interfaces /etc/network/interfaces.${timestamp}
+
+        progress "Writing changes to network configuration"
+        cp /tmp/yahm_interfaces /etc/network/interfaces
+
+        info "Your system is configured now, please reboot to apply the changes"
+    else
+        info "Your system is not changed, if thesse changes appearing correctly please run this script with -w flag"
+    fi
+
+    info "Clean up"
+    rm -rf /tmp/yahm_interfaces*
+
 }
 
 create_bridge()
@@ -243,7 +331,6 @@ create_bridge()
     if [ $DRY_RUN -eq 1 ]
     then
         progress "Testing new network configuration. If your system is not responding, please restart and try again"
-        info "Attention: You might get different IP address from your dhcp server"
 
         # Bridge anlegen
         info "Creating new bridge ${BRIDGE}"
@@ -262,6 +349,7 @@ create_bridge()
             ip addr add ${address}/${netmask} dev  ${BRIDGE}
         else
             progress "Release IP from old interface ${INTERFACE}"
+            info "Attention: You might get different IP address from your dhcp server"
             ip addr flush dev ${INTERFACE}
             progress "Search for new IP Address"
             dhclient ${BRIDGE}
