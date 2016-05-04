@@ -67,6 +67,7 @@ do
             ;;
         d)
             DRY_RUN=1
+            DATA_FILE=$OPTARG
             ;;
         m)
             MODULE=$OPTARG

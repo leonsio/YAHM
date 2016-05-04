@@ -1,0 +1,140 @@
+#!/bin/bash
+#
+# Leonid Kogan <leon@leonsio.com>
+# Yet Another Homematic Management 
+#
+# Backup & Restore script, create and remove backups form CCU2 container and CCU2 data
+#
+
+
+# Stop on Errors
+set -e
+
+# Hilfe Output
+show_help ()
+{
+cat << EOF
+YAHM Backup & Restore Script
+
+Usage Example: 
+
+./yahm-backup [FLAG] COMMAND
+./yahm-backup -n mycccu backup_full
+
+Flags:
+-n          - LXC container name.
+-f          - Force operation (no halt on errors).
+-v          - Verbose output 
+-d          - Backup/Restore file
+
+Commands:
+full_backup   - Create a full backup from the LXC container
+full_restore  - Restore full backup from the LXC container
+data_backup   - Backup CCU2 data/configuration
+data_restore  - Restore CCU2 data/configuration
+EOF
+exit 1
+}
+
+PARAMETER="d:vfn:"
+
+# Include laden
+source /opt/YAHM/share/include.sh
+
+mkdir -p ${YAHM_TMP}
+
+full_backup()
+{
+    installed_version=`get_yahm_version ${LXCNAME}`
+
+    progress "Creating new backup from ${LXCNAME} version ${installed_version}"
+
+    backup_file_name="yahm_backup-${installed_version}.tgz"
+
+    cd /var/lib/lxc
+
+    tar $VERBOSE -czf ${YAHM_TMP}/${backup_file_name} ${LXCNAME}
+    
+    info "Backup is created: ${YAHM_TMP}/${backup_file_name}"
+}
+
+full_restore()
+{
+    if [ ! -f $DATA_FILE ]
+    then
+        die "Restore file can not be found, please specify it with -d flag"
+    fi
+
+    info "Clean up TMP directory"
+    rm -rf ${YAHM_TMP}/*
+
+    progress "Extracting LXC backup"
+
+    tar $VERBOSE -xzf $DATA_FILE -C ${YAHM_TMP}
+
+    content=$(ls ${YAHM_TMP}) 
+
+    count=0
+    for file in $content
+    do
+        if [ $count -eq 1 ] ; then
+            die "This does not look like a YAHM backup"
+        fi
+        count=$((count+1))
+    done
+
+    if [ ! -f ${YAHM_TMP}/${content}/config ]
+    then
+        die "Can not find lxc config file"
+    else
+        LXCNAME=$(cat ${YAHM_TMP}/${content}/config | grep lxc.utsname | cut -d " " -f 3 ) 
+        LXC_ROOT=/var/lib/lxc/$LXCNAME
+        LXC_ROOT_FS=/var/lib/lxc/$LXCNAME/root
+    fi
+    
+    if [ -d ${LXC_ROOT} ] && [ $IS_FORCE -ne 1 ]
+    then
+        die "${LXC_ROOT} is already present, use -f for overwrite"
+    else
+        rm -rf ${LXC_ROOT}
+    fi 
+
+    progress "Moving backup to ${LXC_ROOT}"
+    mv ${YAHM_TMP}/${content} ${LXC_ROOT}
+}
+
+if [[ $# != 1 ]]; then
+    show_help
+fi
+
+for key in "$@"; do
+    case $key in
+        full_backup)
+            full_backup
+            shift
+            break;
+        ;;
+        full_restore)
+            full_restore
+            shift
+            break;
+        ;;
+        data_backup)
+            die "Not implemented yet"
+            data_backup
+            shift
+            break;
+        ;;  
+        data_restore)
+            die "Not implemented yet"
+            data_restore
+            shift
+            break;
+        ;;
+        *)
+            show_help
+            exit 0
+        ;;
+    esac
+done
+
