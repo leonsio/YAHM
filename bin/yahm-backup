@@ -131,7 +131,7 @@ data_backup()
     echo "VERSION=${installed_version}" > ${YAHM_TMP}/firmware_version
 
     progress "Trying to stop ${LXCNAME} container"
-    lxc-stop -n ${LXCNAME}
+    lxc-stop -k -n ${LXCNAME}
 
     progress "Creating Backup from /usr/local folder"
     cd ${LXC_ROOT_FS}
@@ -171,7 +171,7 @@ data_restore()
     backup_version=$(cat ${YAHM_TMP}/firmware_version | cut -d'=' -f2 )
 
     progress "Backup is valid, trying to stop ${LXCNAME} container"
-    lxc-stop -n ${LXCNAME}
+    lxc-stop -k -n ${LXCNAME}
 
     info "WARNING: /usr/local folder with all settings inside ${LXCNAME} container will be removed. You have 5 seconds to cancel this operation..."
         countdown

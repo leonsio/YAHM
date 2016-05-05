@@ -96,24 +96,6 @@ diff -wrupN root/etc/init.d/S00eQ3SystemStart newroot/etc/init.d/S00eQ3SystemSta
  }
  
  restart() {
-diff -wrupN root/etc/init.d/S50eq3configd newroot/etc/init.d/S50eq3configd
---- root/etc/init.d/S50eq3configd	2016-04-27 17:50:38.556909859 +0200
-+++ newroot/etc/init.d/S50eq3configd	2016-04-27 17:24:27.766517516 +0200
-@@ -3,10 +3,10 @@
- # Starts eq3configd.
- #
- init () {
--	radio_mac=$(cat /sys/module/plat_eq3ccu2/parameters/radio_mac)
--	board_serial=$(cat /sys/module/plat_eq3ccu2/parameters/board_serial)
--	echo "BidCoS-Address=$radio_mac" > /var/ids
--	echo "SerialNumber=$board_serial" >> /var/ids
-+#	radio_mac=$(cat /sys/module/plat_eq3ccu2/parameters/radio_mac)
-+#	board_serial=$(cat /sys/module/plat_eq3ccu2/parameters/board_serial)
-+#	echo "BidCoS-Address=$radio_mac" > /var/ids
-+#	echo "SerialNumber=$board_serial" >> /var/ids
- 	if [ ! -e /etc/config/ids ] ; then
-     		cp /var/ids /etc/config
- 	fi
 diff -wrupN root/etc/init.d/S61rfd newroot/etc/init.d/S61rfd
 --- root/etc/init.d/S61rfd	2016-04-27 17:50:38.556909859 +0200
 +++ newroot/etc/init.d/S61rfd	2016-04-27 17:24:27.766517516 +0200
@@ -264,6 +246,18 @@ diff -wrupN root/www/config/cp_security.cgi newroot/www/config/cp_security.cgi
          division {class="popupTitle"} {
              puts "\${dialogSettingsSecurityMessageSysBackupRestartSystemTitle}"
          }
+diff -wrupN root/www/config/cp_maintenance.cgi newroot/www/config/cp_maintenance.cgi
+--- root/www/config/cp_maintenance.cgi  2016-05-05 23:18:52.855004947 +0200
++++ newroot/www/config/cp_maintenance.cgi  2016-05-05 23:17:08.424204027 +0200
+@@ -332,7 +332,7 @@ proc action_put_page {} {
+         #set styleMaxWidth "style=max-width:70px;"
+ 
+         table {class="popupTable CLASS20901 j_translate"} {border="1"} {
+-            table_row {class="CLASS20902"} {
++            table_row {class="CLASS20902" style="display:none"} {
+                 table_data {class="CLASS20903"} $styleMaxWidth {
+                     #puts "Zentralen-<br>"
+                     #puts "Software"
 diff -wrupN root/www/config/cp_software.cgi newroot/www/config/cp_software.cgi
 --- root/www/config/cp_software.cgi	2016-04-27 18:08:25.920367223 +0200
 +++ newroot/www/config/cp_software.cgi	2016-04-27 18:06:35.771042403 +0200

@@ -105,7 +105,7 @@ lxc.network.flags = up
 lxc.network.link = ${BRIDGE}
 lxc.network.hwaddr = 4a:49:43:49:79:${lastoctet_macaddress}
 EOF
-    info "Done"
+    info "STATUS: Bridge ${BRIDGE} was added to ${LXCNAME} container"
     info "To apply the changes, please restart LXC container with 'lxc-stop -n ${LXCNAME} && lxc-start -n ${LXCNAME} -d'"
 }
 
