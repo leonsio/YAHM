@@ -174,7 +174,7 @@ delete_bridge()
     done
 
     # warning or check? dettach from lxc
-    info "If this bridge be in use by lxc, please dettach it with 'yahm-network dettach_bridge'. You have 5 Seconds to cancel this Operation..."
+    info "WARNING: If this bridge be in use by lxc, please dettach it with 'yahm-network dettach_bridge'. You have 5 Seconds to cancel this Operation..."
         countdown
     info "... to late ;)"
 
@@ -233,7 +233,7 @@ delete_bridge()
 
     if [ $WRITE -eq 1 ]
     then
-        progress "Writing network changes. To cancel this operation type CTRL+C you have 5 seconds..."
+        progress "WARNING: Writing network changes. To cancel this operation type CTRL+C you have 5 seconds..."
         countdown
         info "... to late ;)"
 
@@ -358,7 +358,7 @@ create_bridge()
 
     if [ $WRITE -eq 1 ]
     then
-        progress "Writing network changes. To cancel this operation type CTRL+C you have 5 seconds..."
+        progress "WARNING: Writing network changes. To cancel this operation type CTRL+C you have 5 seconds..."
         countdown
         info "... to late ;)"
 

@@ -234,19 +234,24 @@ update_lxc_container()
         die "Installed version $installed_version is greater than or equal to avaible version $CCU2Version"
     fi
 
-    if [ $IS_FORCE -ne 1 ] 
-    then
-        die "We can not update existing installation, please make backup of your data inside CCU2 gui and then run this script with -f."
-    fi
+    info "Clean up TMP directory"
+    rm -rf ${YAHM_TMP}/*
 
-    info "Update skript do not make any backup, your data will be removed!!!!"
-    info "Updating to version $CCU2Version, existing installation will be overwritten. To cancel this operation type CTRL+C you have 5 seconds.... "
-    countdown
-    info "... to late ;)"
+    [ $IS_FORCE -eq 1 ] && force_switch="-f" || force_switch=""
+
+    progress "Trying to create a backup from installed version ${installed_version}, calling 'yahm-backup data_backup' script"
+    if [ $IS_VERBOSE -eq 1 ] ; then
+        info "Calling: /opt/YAHM/bin/yahm-backup ${VERBOSE} ${force_switch} -n ${LXCNAME} data_backup"
+    fi
+    /opt/YAHM/bin/yahm-backup ${VERBOSE} ${force_switch} -n ${LXCNAME} data_backup
+
+    mkdir -p ${YAHM_TMP}_update/${LXCNAME}/
+    mv ${YAHM_TMP}/*.sbk ${YAHM_TMP}_update/${LXCNAME}/
 
     progress "Backup old LXC config"
-    mkdir -p ${YAHM_TMP}_conf/${LXCNAME}/
-    cp ${LXC_ROOT}/conf* ${YAHM_TMP}_conf/${LXCNAME}/
+    cp ${LXC_ROOT}/conf* ${YAHM_TMP}_update/${LXCNAME}/
+    
+    backup_file=$(ls ${YAHM_TMP}_update/${LXCNAME}/*.sbk)
 
     progress "Delete YAHM Container version: $installed_version"
     remove_lxc_container
@@ -254,9 +259,17 @@ update_lxc_container()
     progress "Create new YAHM Container version: $CCU2Version"
     create_lxc_container
 
-    progress "Restore old LXC config"
+    progress "Restoring old LXC config"
     cp ${YAHM_TMP}_conf/${LXCNAME}/conf* ${LXC_ROOT}/
-    rm -rf ${YAHM_TMP}_conf/
+
+    progress "Trying to restore old CCU2 backup, calling 'yahm-backup data_restore'"
+    if [ $IS_VERBOSE -eq 1 ] ; then
+        info "Calling: /opt/YAHM/bin/yahm-backup ${VERBOSE} ${force_switch} -n ${LXCNAME} -f ${backup_file} data_backup" 
+    fi
+    /opt/YAHM/bin/yahm-backup ${VERBOSE} ${force_switch} -n ${LXCNAME} -d ${backup_file} data_restore
+    
+    rm -rf ${YAHM_TMP}_update/
+    info "STATUS: Update was successfully new version is: ${CCU2Version}"
 }
 
 if [[ $# != 1 ]]; then

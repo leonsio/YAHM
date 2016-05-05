@@ -100,6 +100,7 @@ shift $((OPTIND-1))
 
 LXC_ROOT=/var/lib/lxc/$LXCNAME
 LXC_ROOT_FS=/var/lib/lxc/$LXCNAME/root
+LXC_ROOT_MODULES=/var/lib/lxc/$LXCNAME/.modules
 
 get_yahm_name()
 {

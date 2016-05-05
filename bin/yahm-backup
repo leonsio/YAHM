@@ -37,6 +37,7 @@ exit 1
 }
 
 PARAMETER="d:vfn:"
+DATA_FILE=""
 
 # Include laden
 source /opt/YAHM/share/include.sh
@@ -45,6 +46,11 @@ mkdir -p ${YAHM_TMP}
 
 full_backup()
 {
+    if [ `check_yahm_installed` -eq 0 ] && [ $IS_FORCE -ne 1 ]
+    then
+        die "ERROR: No container installed"
+    fi
+
     installed_version=`get_yahm_version ${LXCNAME}`
 
     progress "Creating new backup from ${LXCNAME} version ${installed_version}"
@@ -55,14 +61,14 @@ full_backup()
 
     tar $VERBOSE -czf ${YAHM_TMP}/${backup_file_name} ${LXCNAME}
     
-    info "Backup is created: ${YAHM_TMP}/${backup_file_name}"
+    info "STATUS: Backup was successfully created: ${YAHM_TMP}/${backup_file_name}"
 }
 
 full_restore()
 {
     if [ ! -f $DATA_FILE ]
     then
-        die "Restore file can not be found, please specify it with -d flag"
+        die "ERROR: Restore file can not be found, please specify it with -d flag"
     fi
 
     info "Clean up TMP directory"
@@ -78,14 +84,14 @@ full_restore()
     for file in $content
     do
         if [ $count -eq 1 ] ; then
-            die "This does not look like a YAHM backup"
+            die "ERROR: This does not look like a YAHM backup"
         fi
         count=$((count+1))
     done
 
     if [ ! -f ${YAHM_TMP}/${content}/config ]
     then
-        die "Can not find lxc config file"
+        die "ERROR: Can not find lxc config file"
     else
         LXCNAME=$(cat ${YAHM_TMP}/${content}/config | grep lxc.utsname | cut -d " " -f 3 ) 
         LXC_ROOT=/var/lib/lxc/$LXCNAME
@@ -94,13 +100,93 @@ full_restore()
     
     if [ -d ${LXC_ROOT} ] && [ $IS_FORCE -ne 1 ]
     then
-        die "${LXC_ROOT} is already present, use -f for overwrite"
+        die "ERROR: ${LXC_ROOT} is already present, use -f for overwrite"
     else
         rm -rf ${LXC_ROOT}
     fi 
 
     progress "Moving backup to ${LXC_ROOT}"
     mv ${YAHM_TMP}/${content} ${LXC_ROOT}
+
+    installed_version=`get_yahm_version ${LXCNAME}`
+    
+    info "Clean up"
+    rm -rf ${YAHM_TMP}/*
+
+    info "STATUS: YAHM version ${installed_version} was successfully restored"
+}
+
+data_backup()
+{
+    if [ `check_yahm_installed` -eq 0 ] && [ $IS_FORCE -ne 1 ]
+    then
+        die "ERROR: No container installed"
+    fi
+
+    installed_version=`get_yahm_version ${LXCNAME}`
+
+    info "Clean up TMP directory"
+    rm -rf ${YAHM_TMP}/*
+    
+    echo "VERSION=${installed_version}" > ${YAHM_TMP}/firmware_version
+
+    progress "Trying to stop ${LXCNAME} container"
+    lxc-stop -n ${LXCNAME}
+
+    progress "Creating Backup from /usr/local folder"
+    cd ${LXC_ROOT_FS}
+    tar $VERBOSE -czf ${YAHM_TMP}/usr_local.tar.gz usr/local
+
+    progress "Creating Homematic backup file"
+    timestamp=$(date +%s)
+    cd ${YAHM_TMP}
+    tar $VERBOSE -cf ${YAHM_TMP}/homematic-ccu2-${timestamp}.sbk usr_local.tar.gz firmware_version
+
+    info "Clean up"
+    rm -rf ${YAHM_TMP}/usr_local.tar.gz ${YAHM_TMP}/firmware_version
+
+    info "STATUS: CCU2 Backup was successfully created: ${YAHM_TMP}/homematic-ccu2-${timestamp}.sbk"
+}
+
+data_restore()
+{
+    if [ ! -f $DATA_FILE ] || [ "$DATA_FILE" = "" ]
+    then
+        die "ERROR: Restore file can not be found, please specify it with -d flag"
+    fi
+    
+    info "Clean up TMP directory"
+    rm -rf ${YAHM_TMP}/*
+    
+    progress "Extracting CCU2 backup"
+    
+    tar $VERBOSE -xf $DATA_FILE -C ${YAHM_TMP}
+
+    if [ ! -f ${YAHM_TMP}/usr_local.tar.gz ] || [ ! -f ${YAHM_TMP}/firmware_version ]
+    then
+        die "ERROR: This does not look like a CCU2 backup"
+    fi
+
+    installed_version=`get_yahm_version ${LXCNAME}`
+    backup_version=$(cat ${YAHM_TMP}/firmware_version | cut -d'=' -f2 )
+
+    progress "Backup is valid, trying to stop ${LXCNAME} container"
+    lxc-stop -n ${LXCNAME}
+
+    info "WARNING: /usr/local folder with all settings inside ${LXCNAME} container will be removed. You have 5 seconds to cancel this operation..."
+        countdown
+    info "... to late ;)"
+
+    rm -rf ${LXC_ROOT_FS}/usr/local
+
+    progress "Extracting Backup Data"
+    tar $VERBOSE -xzf ${YAHM_TMP}/usr_local.tar.gz -C ${LXC_ROOT_FS}
+
+#    progress "Starting ${LXCNAME} container"
+#    lxc-start -n ${LXCNAME} -d
+
+    info "STATUS: Backup version ${backup_version} was successfully restored into ${LXCNAME} container version ${installed_version}"
+    info "Please start ${LXCNAME} container with 'lxc-start -n ${LXCNAME} -d' manually"
 }
 
 if [[ $# != 1 ]]; then
@@ -120,13 +206,11 @@ for key in "$@"; do
             break;
         ;;
         data_backup)
-            die "Not implemented yet"
             data_backup
             shift
             break;
         ;;  
         data_restore)
-            die "Not implemented yet"
             data_restore
             shift
             break;

@@ -6,10 +6,6 @@
 # Module management script, install or remove modules for CCU2 container
 #
 
-
-# todo: Logik für installierte Module und check ob ein Modul installiert wurde
-
-
 # Stop on Errors
 set -e
 
@@ -46,11 +42,11 @@ PARAMETER="m:vfn:"
 # Include laden
 source /opt/YAHM/share/include.sh
 
-mkdir -p ${YAHM_DIR}/share/modules/
+mkdir -p ${LXC_ROOT_MODULES}
 
 _module_installed()
 {
-    if [ -e ${YAHM_LIB}/modules/${MODULE} ] ; then
+    if [ -e ${LXC_ROOT_MODULES}/${MODULE} ] ; then
         echo 1    
     else
         echo 0 
@@ -73,7 +69,7 @@ installed_modules()
 {
     local description
     progress "Installed modules:"
-    files=`ls ${YAHM_LIB}/modules/`
+    files=`ls ${LXC_ROOT_MODULES}/`
     for file in $files
     do
         description=`cat ${YAHM_DIR}/share/modules/${file}  | grep description -m1 | cut -d'"' -f2`
@@ -85,38 +81,42 @@ enable_modules()
 {
     if [ "$MODULE" = "" ]
     then
-        die "Please specify module name with -m MODULE, show available modules with 'yahm-modules available'"
+        die "ERROR: Please specify module name with -m MODULE, show available modules with 'yahm-modules available'"
     fi
 
     if [ `_module_installed` -eq 1 ] && [ $IS_FORCE -ne 1 ]
     then
-        die "Module ${MODULE} is already installed, use -f to overwrite it"
+        die "ERROR: Module ${MODULE} is already installed, use -f to overwrite it"
     fi
 
     progress "Executing ${MODULE} module_install()"
 
     _module_install
+
+    info "STATUS: Module ${MODULE} was successfully installed"
     
-    touch ${YAHM_LIB}/modules/${MODULE}
+    touch ${LXC_ROOT_MODULES}/${MODULE}
 }
 
 disable_modules()
 {   
     if [ "$MODULE" = "" ]
     then
-        die "Please specify module name with -m MODULE, show available modules with 'yahm-modules available'"
+        die "ERROR: Please specify module name with -m MODULE, show available modules with 'yahm-modules available'"
     fi
 
     if [ `_module_installed` -eq 0 ] && [ $IS_FORCE -ne 1 ]
     then
-        die "Module ${MODULE} is not installed, use -f force this operation"
+        die "ERROR: Module ${MODULE} is not installed, use -f force this operation"
     fi
     
     progress "Executing ${MODULE} module_remove()"
 
     _module_remove
 
-    rm ${YAHM_LIB}/modules/${MODULE}
+    rm ${LXC_ROOT_MODULES}/${MODULE}
+
+    info "STATUS: Module ${MODULE} was successfully removed"
 }
 
 
