@@ -77,7 +77,7 @@ check_interface_name()
     local int_name=$1
 
     if  [[ ! `ip -d link show ${int_name} 2>/dev/null ` ]]; then
-        die "Interface ${int_name} does not exists"
+        die "ERROR: Interface ${int_name} does not exists"
     elif [[ `ip -d link show ${int_name} | tail -n +2 | grep loopback` ]] ; then
         echo "local"
     elif [[ `ip -d link show ${int_name} | tail -n +2 | grep vlan` ]] ; then
@@ -93,7 +93,12 @@ attach_bridge()
 {
     # Check if bridge exists
     if [ `check_bridge_name $BRIDGE` = 0 ] ; then
-        die "Bridge ${BRIDGE} dont exists."
+        die "ERROR: Bridge ${BRIDGE} dont exists."
+    fi
+
+    if [ `check_yahm_name $LXCNAME` -eq 0 ] && [ $IS_FORCE -ne 1 ]
+    then
+        die "ERROR: Can not find $LXCNAME container"
     fi
 
     lastoctet_macaddress=`openssl rand -hex 1 | sed 's/\(..\)/\1:/g; s/.$//'`
@@ -113,7 +118,7 @@ dettach_bridge()
 {
     # Check if bridge exists
     if [ `check_bridge_name $BRIDGE` = 0 ] ; then
-        die "Bridge ${BRIDGE} dont exists."
+        die "ERROR: Bridge ${BRIDGE} dont exists."
     fi
 
     progress "Removing ${BRIDGE} form  ${LXCNAME}"
@@ -137,7 +142,7 @@ delete_bridge()
 
     # Check if bridge exists
     if [ `check_bridge_name $BRIDGE` = 0 ] ; then
-        die "Bridge ${BRIDGE} dont exists."
+        die "ERROR: Bridge ${BRIDGE} dont exists."
     else
         progress "Bridge ${BRIDGE} will be deleted"
     fi
@@ -168,7 +173,7 @@ delete_bridge()
     for brif in $brifs
     do
         if [ $count -eq 1 ] ; then
-            die "We do not support bridges with more than one interface, please delete the bridge manually"
+            die "ERROR: We do not support bridges with more than one interface, please delete the bridge manually"
         fi
         count=$((count+1))
     done
@@ -268,7 +273,7 @@ create_bridge()
 
     # Check if bridge exists
     if [ `check_bridge_name $BRIDGE` = 1 ] ; then
-        die "Bridge ${BRIDGE} already exists. Use 'yahm-network -b BRIDGENAME -n CONTAINER attach' to add this bridge to LXC container"
+        die "ERROR: Bridge ${BRIDGE} already exists. Use 'yahm-network -b BRIDGENAME -n CONTAINER attach' to add this bridge to LXC container"
     else
         info "No bridge with choosen name found, continue..."
     fi
@@ -283,7 +288,7 @@ create_bridge()
             info "You are using advanced network configuration with VLANs, be careful"
             ;;
         *)
-            die "This Interface is not supported, please choose only physical interface"    
+            die "ERROR: This Interface is not supported, please choose only physical interface"    
     esac
 
     # check if interface has static ip

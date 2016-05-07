@@ -84,6 +84,11 @@ enable_modules()
         die "ERROR: Please specify module name with -m MODULE, show available modules with 'yahm-modules available'"
     fi
 
+    if [ `check_yahm_name $LXCNAME` -eq 0 ] && [ $IS_FORCE -ne 1 ]
+    then
+        die "ERROR: Can not find $LXCNAME container"
+    fi
+
     if [ `_module_installed` -eq 1 ] && [ $IS_FORCE -ne 1 ]
     then
         die "ERROR: Module ${MODULE} is already installed, use -f to overwrite it"
@@ -103,6 +108,11 @@ disable_modules()
     if [ "$MODULE" = "" ]
     then
         die "ERROR: Please specify module name with -m MODULE, show available modules with 'yahm-modules available'"
+    fi
+
+    if [ `check_yahm_name $LXCNAME` -eq 0 ] && [ $IS_FORCE -ne 1 ]
+    then
+        die "ERROR: Can not find $LXCNAME container"
     fi
 
     if [ `_module_installed` -eq 0 ] && [ $IS_FORCE -ne 1 ]

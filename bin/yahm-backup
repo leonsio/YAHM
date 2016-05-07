@@ -51,6 +51,11 @@ full_backup()
         die "ERROR: No container installed"
     fi
 
+    if [ `check_yahm_name $LXCNAME` -eq 0 ] && [ $IS_FORCE -ne 1 ]
+    then
+        die "ERROR: Can not find $LXCNAME container"
+    fi
+
     installed_version=`get_yahm_version ${LXCNAME}`
 
     progress "Creating new backup from ${LXCNAME} version ${installed_version}"
@@ -123,6 +128,11 @@ data_backup()
         die "ERROR: No container installed"
     fi
 
+    if [ `check_yahm_name $LXCNAME` -eq 0 ] && [ $IS_FORCE -ne 1 ]
+    then
+        die "ERROR: Can not find $LXCNAME container"
+    fi
+
     installed_version=`get_yahm_version ${LXCNAME}`
 
     info "Clean up TMP directory"
@@ -153,6 +163,11 @@ data_restore()
     if [ ! -f $DATA_FILE ] || [ "$DATA_FILE" = "" ]
     then
         die "ERROR: Restore file can not be found, please specify it with -d flag"
+    fi
+
+    if [ `check_yahm_name $LXCNAME` -eq 0 ] && [ $IS_FORCE -ne 1 ]
+    then
+        die "ERROR: Can not find $LXCNAME container"
     fi
     
     info "Clean up TMP directory"
