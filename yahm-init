@@ -76,7 +76,19 @@ cd /opt
 git clone --recursive https://github.com/leonsio/YAHM.git 2>/dev/null >/dev/null
 
 # create lib folder
-mkdir /var/lib/yahm
+mkdir -p /var/lib/yahm
 
-# Info
-info "Please use yahm-lxc to create new container, yahm-network for network configuration and lxc-enable for additional modules" 
+if [ "$1" = "quickinstall" ]
+then
+    info "Enter quick install mode"
+    progress "\tInstalling LXC container\n"
+    /opt/YAHM/bin/yahm-lxc install
+    progress "\tCreating Bridge for networking\n"
+    /opt/YAHM/bin/yahm-network -w create_bridge
+    progress "\tAttaching network configuration to LXC container\n"
+    /opt/YAHM/bin/yahm-network attach_bridge
+    info "YAHM was successfully installed, use 'lxc-start -n yahm' to start lxc container"
+else
+    # Info
+    info "Please use yahm-lxc to create new container, yahm-network for network configuration and lxc-enable for additional modules" 
+fi
