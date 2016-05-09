@@ -24,6 +24,7 @@ Flags:
 -n        - LXC container name.
 -f        - Force operation (no halt on errors).
 -v        - Verbose output 
+-d        - Path to custom CCU2 firmware file
 
 Commands:
 install   - Create new lxc instance with actual ccu2 image.
@@ -32,7 +33,8 @@ remove    - Removes lxc instance.
 EOF
 exit 1
 }
-PARAMETER="fvn:"
+PARAMETER="fvn:d:"
+DATA_FILE=""
 
 # Include laden
 source /opt/YAHM/share/include.sh
@@ -48,16 +50,22 @@ else
     CCU2Version=$curVersion
 fi
 
+if [ "$DATA_FILE" != "" ]
+then
+    info "Manually CCU2 image was selected, the version was set to 2.17.15"
+    CCU2Version="2.17.15"
+fi
+
 remove_lxc_container()
 {
     if [ `check_yahm_installed` -eq 0 ] && [ $IS_FORCE -ne 1 ]
     then
-        die "No container installed"
+        die "ERROR: No container installed"
     fi
 
     if [ `check_yahm_name $LXCNAME` -eq 0 ] && [ $IS_FORCE -ne 1 ]
     then
-        die "Can not find $LXCNAME container"
+        die "ERROR: Can not find $LXCNAME container"
     fi
 
     if [ $IS_FORCE -eq 1 ]
@@ -65,7 +73,9 @@ remove_lxc_container()
         info "Entering force mode"
     fi
 
-    info "Deleting installed YAHM container: $LXCNAME version: $CCU2Version To cancel this operation type CTRL+C you have 5 seconds..."
+    installed_version=`get_yahm_version ${LXCNAME}`
+
+    info "Deleting installed YAHM container: ${LXCNAME} version: ${installed_version} To cancel this operation type CTRL+C you have 5 seconds..."
     countdown
     info "... to late ;)"
 
@@ -83,7 +93,7 @@ create_lxc_container()
 {
     if [ `check_yahm_installed` -eq 1 ] && [ $IS_FORCE -ne 1 ]
     then
-        die "YAHM instance is already installed"
+        die "ERROR: YAHM instance is already installed"
     fi
 
     if [ $IS_FORCE -eq 1 ] ; then
@@ -93,7 +103,7 @@ create_lxc_container()
     # Compatibility Check
     if [ `yahm_compatibility $CCU2Version` -eq 1 ] && [ $IS_FORCE -ne 1 ]
     then
-        die "We dont have any patches for this version, please make git pull and try again"
+        die "ERROR: We dont have any patches for this version, please make git pull and try again"
     fi
 
     info "Creating new lxc container name: $LXCNAME, version $CCU2Version"
@@ -101,17 +111,27 @@ create_lxc_container()
     mkdir -p $LXC_ROOT
     mkdir -p $YAHM_TMP
 
-    progress "Downloading CCU Firmware"
-    EQ3_FW="${YAHM_TMP}/HM-CCU2-${CCU2Version}.tar.gz"
-    wget $QUIET -O "$EQ3_FW" "$curFWdl" || info "Can not download file"
-    if [ ! -f "$EQ3_FW" ] && [ $IS_FORCE -ne 1 ]
+    if [ "$DATA_FILE" = "" ]
     then
-       die "Can not download firmware. Are you connected to the internet?"
+        progress "Downloading CCU Firmware"
+        EQ3_FW="${YAHM_TMP}/HM-CCU2-${CCU2Version}.tar.gz"
+        wget $QUIET -O "$EQ3_FW" "$curFWdl" || info "Can not download file"
+        if [ ! -f "$EQ3_FW" ] && [ $IS_FORCE -ne 1 ]
+        then
+            die "ERROR: Can not download firmware. Are you connected to the internet? Try to download the file manually and use -d flag"
+        fi
+    else
+        if [ ! -f $DATA_FILE ]
+        then
+            die "ERROR: Restore file can not be found, please specify it with -d flag"
+        fi
+
+        EQ3_FW=$DATA_FILE
     fi
 
     if [ $(stat -c%s "${EQ3_FW}") -le 0 ] && [ $IS_FORCE -ne 1 ]
     then
-        die "Can not download firmware. File size is to small, please take a look on ${EQ3_FW}"  
+        die "ERROR: Can not download firmware. File size is to small, please take a look on ${EQ3_FW}"  
     fi
 
     progress "Extracting firmware"
@@ -220,18 +240,18 @@ update_lxc_container()
 
     if [ `check_yahm_installed` -eq 0 ] && [ $IS_FORCE -ne 1 ]
     then
-        die "YAHM is not installed"
+        die "ERROR: YAHM is not installed"
     fi
 
     if [ `check_yahm_name $LXCNAME` -eq 0 ] && [ $IS_FORCE -ne 1 ]
     then
-        die "Can not find $LXCNAME container"
+        die "ERROR: Can not find $LXCNAME container"
     fi
 
     installed_version=`get_yahm_version ${LXCNAME}` 
     if [ $(ver $installed_version) -ge $(ver $CCU2Version) ] && [ $IS_FORCE -ne 1 ]
     then
-        die "Installed version $installed_version is greater than or equal to avaible version $CCU2Version"
+        die "ERROR: Installed version $installed_version is greater than or equal to avaible version $CCU2Version"
     fi
 
     info "Clean up TMP directory"
