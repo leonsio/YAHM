@@ -13,15 +13,17 @@ mknod -m 666 ${DEV}/tty c 5 0
 mknod -m 600 ${DEV}/console c 5 1
 mknod -m 666 ${DEV}/tty0 c 4 0
 mknod -m 666 ${DEV}/tty1 c 4 0
-mknod -m 666 ${DEV}/ttyAMA0 c 204 64
 #mknod -m 666 ${DEV}/ttyGS0 c 4 2
 mknod -m 666 ${DEV}/ttyS0 c 4 64
 #mknod -m 666 ${DEV}/full c 1 7
 #mknod -m 600 ${DEV}/initctl p
 #mknod -m 666 ${DEV}/ptmx c 5 2
-cd ${DEV}
-ln -s ttyAMA0 mmd_bidcos
-ln -s /sys/class/gpio/gpio18/value ccu2-ic200
+
+# HM-MOD-RPI-PBC
+#cd ${DEV}
+#ln -s ttyAMA0 mmd_bidcos
+#ln -s /sys/class/gpio/gpio18/value ccu2-ic200
+#mknod -m 666 ${DEV}/ttyAMA0 c 204 64
 
 
 mkdir ${ROOT}/media/sd-mmcblk0
