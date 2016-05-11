@@ -1,0 +1,189 @@
+#!/bin/bash
+#
+# Leonid Kogan <leon@leonsio.com>
+# Yet Another Homematic Management 
+#
+# HM-MOD-RPI-PCB as HM-LAN-GW see http://homematic-forum.de/forum/viewtopic.php?f=18&t=27705
+#
+
+description="HM-MOD-RPI-PCB as HM LAN Gateway inside host"
+# Default Parameter
+file_hm_fake_lan_gw='/etc/init.d/hm-fake-lan-gw'
+file_cmdline_txt='/boot/cmdline.txt'
+reboot=0 # Neustart ausfuehren
+
+
+_module_install()
+{
+
+    if [ -e ${LXC_ROOT_MODULES}/hm-mod-rpi-pcb ] && [ $IS_FORCE -ne 1 ]
+    then
+        die "ERROR: hm-mod-rpi-pcb module is installed, please remove it first"
+    fi
+
+    # Raspberry 2 oder 3 ?
+    # Raspberry 3 wird erkannt an 1200 Mhz max. CPU Takt. Dies ist sehr unsicher ;-)   
+    if [ $(lscpu | grep 'CPU max MHz:' | tr -d " " | cut -d ":" -f 2 | cut -d "," -f 1 ) == '1200' ];then
+        info "Found Raspberry Pi 3"
+        progress "Trying to disable bluetooth to use HM-MOD-RPI-PCB"
+        if [ ! -f /boot/overlays/pi3-disable-bt-overlay.dtb ] && [ $IS_FORCE -ne 1 ]
+        then
+            progress "Downloading pi3-disable-bt-overlay.dtb."
+            wget $QUIET -O /boot/overlays/pi3-disable-bt-overlay.dtb https://raw.githubusercontent.com/raspberrypi/linux/rpi-4.4.y/arch/arm/boot/dts/overlays/pi3-disable-bt-overlay.dts
+            if [ $? -ne 0 ]
+            then
+                die 'ERROR: Problem downloading pi3-disable-bt-overlay.dtb!'
+            fi
+        fi
+
+        if [ ! -f /boot/config.txt ] && [ $IS_FORCE -ne 1 ]
+        then
+            die "ERROR: File /boot/config.txt does not exist!"
+        fi
+
+        if [ $(cat /boot/config.txt | grep pi3-disable-bt-overlay | wc -l ) -eq 0 ]
+        then
+            echo -e "\n# Allow the normal UART pins to work\ndtoverlay=pi3-disable-bt-overlay" >> /boot/config.txt
+            info "Modification /boot/config.txt done."
+            reboot=$((reboot+1))
+        fi
+    fi
+
+    # Disable serial    
+    progress "Trying to disable serial console"
+    if [ ! -f $file_cmdline_txt ] && [ $IS_FORCE -ne 1 ]
+    then
+        die "ERROR: File $file_cmdline_txt does not exist!"
+    fi
+
+    if [ $(cat /boot/cmdline.txt|grep "console=serial0,115200"|wc -l) -gt 0 ];then
+        sed -i /boot/cmdline.txt -e "s/console=ttyAMA0,[0-9]\+ //"
+        sed -i /boot/cmdline.txt -e "s/console=serial0,[0-9]\+ //"
+        reboot=$((reboot+1))
+        info "Serial disabled successfully."
+    else
+        info "Serial already disabled"
+    fi
+
+    # Create service 
+    if [ $(insserv -s|grep hm-mod-rpi|wc -l) -eq 0 ]; then 
+        progress "Create service for fake hm lan gateway"
+        cat > $file_hm_fake_lan_gw <<EOF
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:       hm-fake-lan-gw yahm
+# Required-Start: udev mountkernfs \$remote_fs
+# Required-Stop:  
+# Default-Start: S
+# Default-Stop: 0 1 6
+# Short-Description: Start Fake HM-LAN-GW Service
+# Description: http://homematic-forum.de/forum/viewtopic.php?f=18&t=27705
+### END INIT INFO
+
+. /lib/lsb/init-functions
+
+case "\$1" in
+  start)
+    log_daemon_msg "Starting HM-LAN-GW Service"
+    printf "Starting HM-LAN-GW Service"
+    cd /opt/YAHM/share/tools/hmgw
+    /opt/YAHM/share/tools/hmgw/hmlangw -n auto  > /var/log/hmlangw.log 2>&1 &
+    log_end_msg 0
+    ;;
+  stop)
+    log_daemon_msg "Stopping HM-LAN-GW Service"
+    printf "Stopping HM-LAN-GW Service"
+    killall -w hmlangw 
+    ;;
+  *)
+    echo "Usage: \$0 start|stop" >&2
+    exit 3
+    ;;
+esac
+EOF
+        chmod +x $file_hm_fake_lan_gw
+        insserv $file_hm_fake_lan_gw
+        info "Installing fake gw service is done."
+    fi 
+
+   info "\nPlease setup your System as a HM-LAN-GW inside CCU2 GUI"
+
+
+    # Reboot
+    if [ $reboot -gt 0 ]
+    then
+        info "For serial number see /opt/YAHM/share/tools/hmgw/serialnumber.txt file, after the service is started\n"
+        echo "======================================"
+        echo "Rebooting in 60 seconds to apply settings (to chancel reboot type 'shutdown -c')..."
+        echo "======================================"
+        shutdown -r +1 "Rebooting to disable serial console"
+    else
+        info "Fake HM-LAN-GW was installed successfully"
+        info "Trying to start service"
+        systemctl enable hm-fake-lan-gw
+        systemctl start hm-fake-lan-gw
+        SERIAL=$(cat /opt/YAHM/share/tools/hmgw/serialnumber.txt)
+        info "Serial number for HM-LAN-GW is: ${SERIAL}\n"
+    fi  
+
+}
+
+_module_remove()
+{
+   # Raspberry 2 oder 3 ?
+    # Raspberry 3 wird erkannt an 1200 Mhz max. CPU Takt. Dies ist sehr unsicher ;-)   
+    if [ $(lscpu | grep 'CPU max MHz:' | tr -d " " | cut -d ":" -f 2 | cut -d "," -f 1 ) == '1200' ];then
+        info 'Found Raspberry Pi 3'
+        progress "Trying to enable bluetooth"
+
+        if [ ! -f /boot/config.txt ] && [ $IS_FORCE -ne 1 ]
+        then
+            die "ERROR: File /boot/config.txt does not exist!"
+        fi
+
+        if [ $(cat /boot/config.txt | grep pi3-disable-bt-overlay | wc -l ) -gt 0 ]
+        then
+            sed  -i '/^\# Allow the normal UART pins to work/d' /boot/config.txt
+            sed  -i '/^dtoverlay=pi3-disable-bt-overlay/d' /boot/config.txt
+            progress "Modification in /boot/config.txt is done."        
+            reboot=$((reboot+1))
+        fi  
+    fi
+
+    info "Uninstall gpio reset service..."
+    if [ -e $file_hm_fake_lan_gw ];then
+        insserv -r $file_hm_fake_lan_gw
+        rm $file_hm_fake_lan_gw
+        progress "Remove $file_hm_fake_lan_gw."
+    fi
+
+    # enable serial
+    info "Enable serial..."
+    if grep -q "console=ttyAMA0" $file_cmdline_txt;then
+        if [ -e /proc/device-tree/aliases/serial0 ]; then
+            sed -i $file_cmdline_txt -e "s/console=ttyAMA0/console=serial0/"
+            reboot=$((reboot+1))
+        fi
+        progress "Enable serial is done."
+    elif ! grep -q "console=ttyAMA0" $file_cmdline_txt && ! grep -q "console=serial0" $file_cmdline_txt; then
+        if [ -e /proc/device-tree/aliases/serial0 ]; then
+            sed -i $file_cmdline_txt -e "s/root=/console=serial0,115200 root=/"
+        else
+            sed -i $file_cmdline_txt -e "s/root=/console=ttyAMA0,115200 root=/"
+        fi
+        reboot=$((reboot+1))
+        progress "Enable serial is done."
+    fi
+
+    # Reboot
+    if [ $reboot -gt 0 ]
+    then
+        echo "======================================"
+        echo "Rebooting in 60 seconds to apply settings (to chancel reboot type 'shutdown -c')..."
+        echo "======================================"
+        shutdown -r +1 "Rebooting to enable serial console"
+    else
+        info "Fake HM-LAN-GW was removed successfully"
+    fi
+}
+

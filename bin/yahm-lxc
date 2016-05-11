@@ -27,9 +27,9 @@ Flags:
 -d        - Path to custom CCU2 firmware file
 
 Commands:
-install   - Create new lxc instance with actual ccu2 image.
-update    - Updates lxc instance to the actual version.
-remove    - Removes lxc instance.
+install     - Create new lxc instance with actual ccu2 image.
+update      - Updates lxc instance to the actual version.
+remove      - Removes lxc instance.
 EOF
 exit 1
 }
