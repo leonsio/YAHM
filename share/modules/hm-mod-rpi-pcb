@@ -9,11 +9,12 @@ description="GPIO Funkmodul für Raspberry Pi2/3"
 # Default Parameter
 file_hm_mod_rpi_pcb='/etc/init.d/hm-mod-rpi-pcb'
 file_cmdline_txt='/boot/cmdline.txt'
-file_rfd_conf="${LXC_ROOT_FS}/usr/local/etc/config/rfd.conf"
 reboot=0 # Neustart ausfuehren
 
 _module_install()
 {
+    file_rfd_conf="${LXC_ROOT_FS}/usr/local/etc/config/rfd.conf"
+
     if [ -e ${LXC_ROOT_MODULES}/hm-fake-lan-gw ] && [ $IS_FORCE -ne 1 ]
     then
         die "ERROR: hm-mod-rpi-pcb module is installed, please remove it first"
@@ -125,7 +126,7 @@ EOF
         cd ${LXC_ROOT_FS}/dev/
         ln -s /sys/class/gpio/gpio18/value ccu2-ic200
     fi
-    
+
     progress "Preparing modification rfd.conf..."
     if [ $(cat $file_rfd_conf|grep "\[Interface 0\]"|wc -l) -eq 0 ];then
         info "[Interface 0] block in rfd.conf not found, insert it..."
@@ -160,7 +161,7 @@ EOF
         echo "======================================"
         shutdown -r +1 "Rebooting to disable serial console"
     else
-        info "HM-MOD-RPI-PCB was installed successfully"
+        info "HM-MOD-RPI-PCB was installed successfully, please restart YAHM to apply changes"
         progress "Trying to start service"
         systemctl enable hm-mod-rpi-pcb
         systemctl start hm-mod-rpi-pcb
@@ -169,6 +170,9 @@ EOF
 
 _module_remove()
 {
+
+    file_rfd_conf="${LXC_ROOT_FS}/usr/local/etc/config/rfd.conf"
+
     # Raspberry 2 oder 3 ?
     # Raspberry 3 wird erkannt an 1200 Mhz max. CPU Takt. Dies ist sehr unsicher ;-)   
     if [ $(lscpu | grep 'CPU max MHz:' | tr -d " " | cut -d ":" -f 2 | cut -d "," -f 1 ) == '1200' ];then

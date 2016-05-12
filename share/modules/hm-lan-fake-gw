@@ -71,7 +71,7 @@ _module_install()
         cat > $file_hm_fake_lan_gw <<EOF
 #!/bin/sh
 ### BEGIN INIT INFO
-# Provides:       hm-fake-lan-gw yahm
+# Provides:       hm-fake-lan-gw yahm-gw
 # Required-Start: udev mountkernfs \$remote_fs
 # Required-Stop:  
 # Default-Start: S
