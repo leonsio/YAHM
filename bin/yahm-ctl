@@ -31,6 +31,7 @@ start       - Starting LXC container
 stop        - Stopping LXC container
 info        - Show LXC information (IP)
 join        - Enter LXC console
+update      - Update YAHM installation
 EOF
 exit 1
 }
@@ -99,6 +100,13 @@ for key in "$@"; do
         info)
             info "LXC container information"
             lxc-info -n ${LXCNAME}
+            shift
+            break;
+        ;;
+        update)
+            info "Updating YAHM installation, for updatate CCU2 please use 'yahm-lxc update'"
+            cd /opt/YAHM
+            git pull
             shift
             break;
         ;;
