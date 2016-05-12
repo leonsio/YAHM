@@ -28,7 +28,7 @@ Weitere Informationen und Anleitungen können dem [Wiki](https://github.com/leon
 Es wird automatisch ein aktuelles CCU2 Image installiert und das Netzwerk konfiguriert. Diese Installation ist für wenig erfahrene Benutzer auf einem frischen minimalen Debian/Raspbian empfehlenswert. Nach der Installation muss nur noch das LXC Container mit **sudo yahm-ctl start** gestartet werden. Die frisch installierte CCU2 wird sich eine IP per DHCP abgerufen und kann durch **sudo yahm-ctl info** angezeigt werden.
 
 ```
-sudo wget -nv -O- https://raw.githubusercontent.com/leonsio/YAHM/master/yahm-init | bash -s quickinstall -
+wget -nv -O- https://raw.githubusercontent.com/leonsio/YAHM/master/yahm-init | sudo -E  bash -s quickinstall -
 ```
 
 ### Angepasst:
@@ -36,7 +36,7 @@ sudo wget -nv -O- https://raw.githubusercontent.com/leonsio/YAHM/master/yahm-ini
 Mit dieser Installation wird lediglich die aktuelle YAHM runtergeladen und unter /opt/YAHM/bin installiert, anschließend muss mit Hilfe von YAHM ein [LXC Container](https://github.com/leonsio/YAHM/wiki/YAHM-LXC) angelegt und as [Netzwerk](https://github.com/leonsio/YAHM/wiki/YAHM-Netzwerk) konfiguriert werden.
 
 ```
-sudo wget -nv -O- https://raw.githubusercontent.com/leonsio/YAHM/master/yahm-init | bash -
+wget -nv -O- https://raw.githubusercontent.com/leonsio/YAHM/master/yahm-init | sudo -E  bash -
 ```
 
 Anbei die notwendigen minimalen Schritte:
