@@ -13,19 +13,19 @@ use_colour=0
 # Some useful functions
 progress() {
 	[ $use_colour -eq 1 ] && echo -ne "\033[01;32m"
-	echo "$@" >&2
+	echo -e "$@" >&2
 	[ $use_colour -eq 1 ] && echo -ne "\033[00m"
 }
 
 info() {
 	[ $use_colour -eq 1 ] && echo -ne "\033[01;34m"
-	echo "$@" >&2
+	echo -e "$@" >&2
 	[ $use_colour -eq 1 ] && echo -ne "\033[00m"
 }
 
 die () {
 	[ $use_colour -eq 1 ] && echo -ne "\033[01;31m"
-	echo "$@" >&2
+	echo -e "$@" >&2
 	[ $use_colour -eq 1 ] && echo -ne "\033[00m"
 	exit 1
 }

@@ -249,7 +249,10 @@ delete_bridge()
         progress "Writing changes to network configuration"
         cp /tmp/yahm_interfaces /etc/network/interfaces
 
-        info "Your system is configured now, please reboot to apply the changes"
+        progress "WARNING: Your system is configured now, restarting network to apply the changes. To cancel this operation type CTRL+C you have 5 seconds..."
+        countdown
+        info "... to late ;)"
+        service networking restart
     else
         info "Your system is not changed, if thesse changes appearing correctly please run this script with -w flag"
     fi
@@ -374,7 +377,11 @@ create_bridge()
         progress "Writing changes to network configuration"
         cp /tmp/yahm_interfaces /etc/network/interfaces
 
-        info "Your system is configured now, please reboot to apply the changes"
+        progress "WARNING: Your system is configured now, restarting network to apply the changes. To cancel this operation type CTRL+C you have 5 seconds..."
+        countdown
+        info "... to late ;)"
+        service networking restart
+        
     else
         info "Your system is not changed, if thesse changes appearing correctly please run this script with -w flag"
     fi
