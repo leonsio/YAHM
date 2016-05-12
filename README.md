@@ -46,3 +46,6 @@ Die Aktuelle CCU2 Firmware beinhaltet die Unterstützung für Homematic-IP. Dies
 ```
 sudo yahm-module -f -m homematic-ip disable
 ```
+
+### Update:
+Mit **sudo yahm-ctl update** kann YAHM Installation (nicht CCU2 Firmware) jederzeit aktualisiert werden. Für die Aktualisierung der CCU2 Installation, siehe [LXC Container](https://github.com/leonsio/YAHM/wiki/YAHM-LXC)
