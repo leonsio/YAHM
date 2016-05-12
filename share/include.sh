@@ -13,7 +13,7 @@ fi
 
 #Default Settings
 LXCNAME=yahm
-CCU2Version="2.17.15"
+CCU2Version="2.17.16"
 YAHM_DIR=/opt/YAHM
 YAHM_TOOLS=/opt/YAHM/share/tools
 YAHM_TMP=/tmp/YAHM

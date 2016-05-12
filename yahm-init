@@ -93,6 +93,8 @@ then
     /opt/YAHM/bin/yahm-network -w create_bridge
     progress "\tAttaching network configuration to LXC container\n"
     /opt/YAHM/bin/yahm-network attach_bridge
+    progress "\tDisable Homematic-IP\n"
+    /opt/YAHM/bin/yahm-module -f -m homematic-ip disable
     info "YAHM was successfully installed, use 'lxc-start -n yahm' to start lxc container"
 else
     # Info
