@@ -180,7 +180,7 @@ create_lxc_container()
     # create lxc config file
     create_lxc_config
 
-    info "Container is created, please use 'lxc-start -n ${LXCNAME} -d' to start and 'lxc-attach -n ${LXCNAME}' for console access"
+    info "Container is created, please use 'yahm-ctl -n ${LXCNAME} start' to start and 'yahm-ctl -n ${LXCNAME} join' for console access"
     info "For network configuration see yahm-network script"
 
     echo $LXCNAME > /var/lib/yahm/container_name

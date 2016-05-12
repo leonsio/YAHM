@@ -73,6 +73,7 @@ if [ $(cat /etc/profile| grep YAHM | wc -l ) -eq 0 ]
 then
     progress "Including YAHM into PATH"
     echo "export PATH=\$PATH:/opt/YAHM/bin" >> /etc/profile 
+    export PATH=$PATH:/opt/YAHM/bin
 fi
 
 # checkout all files
@@ -95,7 +96,7 @@ then
     /opt/YAHM/bin/yahm-network attach_bridge
     progress "\tDisable Homematic-IP\n"
     /opt/YAHM/bin/yahm-module -f -m homematic-ip disable
-    info "YAHM was successfully installed, use 'lxc-start -n yahm' to start lxc container"
+    info "YAHM was successfully installed, use 'yahm-ctl start' to start lxc container"
 else
     # Info
     info "Please use yahm-lxc to create new container, yahm-network for network configuration and lxc-enable for additional modules" 

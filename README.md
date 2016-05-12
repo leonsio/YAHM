@@ -43,11 +43,23 @@ Anbei die notwendigen minimalen Schritte:
 
 ```
 sudo yahm-lxc install
-sudo yahm-network create_bridge
+sudo yahm-network -w create_bridge
 sudo yahm-network attach_bridge
 ```
 
 anschließend kann mit **sudo yahm-ctl start** das Container gestartet werden
+
+### Aktivierung Rapsberry Pi Funkmodul
+Nach der erfolgreichen Installation von YAHM kann das Funkmodul aktiviert werden, für weitere Informationen siehe [YAHM-Module](https://github.com/leonsio/YAHM/wiki/YAHM-Module)
+
+```
+yahm-module -m hm-mod-rpi-pcb enable
+```
+
+**Achtung:** Im Zuge der Installation wird ein Reboot benötigt
+
+### Migration CCU2/LXCCU zu YAHM
+Für die Migration von CCU2 bzw. LXCCU zu YAHM bitte folgenden [Wiki-Eintrag](https://github.com/leonsio/YAHM/wiki/Migration-von-CCU2-zu-YAHM) beachten. Es müssen keine Geräte neu angelernt werden. Sollten LAN-Gateways im Betrieb sein, muss einmalig unter **EINSTELLUNGEN - SYSTEMSTEUERUNG - LAN GATEWAY** die Zuordnung überprüft/angepasst werden
 
 ## Hinweise
 ### Homematic-IP
