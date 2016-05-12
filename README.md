@@ -4,6 +4,15 @@ Falls Sie dieses Projekt unterstützen möchten, würde ich mich über einen Pul
 # YAHM
 Yet Another Homematic Management - Skripte zur Einrichtung der Homematic CCU2 Oberfläche in einem LXC Container unter Debian Jessie auf ARM-Basis.
 
+Die Arbeit/Idee basiert auf der Arbeit von [bullshit](https://github.com/bullshit/lxccu) bzw. des [LXCCU](http://www.lxccu.com) Projektes.
+
+Wesentliche Unterschiede zu LXCCU:
++ Unterstützung von Debian/Raspbian Jessie
++ Unterstützung aktueller CCU2 Firmware (ältere Versionen lassen sich nicht länger von Homematic Seite runterladen, somit ist LXCCU aktuell leider unbenutzbar)
++ Die Installation kann manuell gesteuert werden und wird nicht durch DEB-Installer vorgenommen
++ Modularer Bauweise, es können beliebige Module eingebunden werden
++ Kann mit geringer Anpassung auf anderen Betriebssystemen ausgeführt werden
+
 Zur Zeit wurde dieses Skript auf folgender Hardware erfolgreich getestet:
 * Rapsberry Pi 2/3
 * Odroid XU4
@@ -16,7 +25,7 @@ Weitere Informationen und Anleitungen können dem [Wiki](https://github.com/leon
 ## Installation:
 
 ### Automatisiert: 
-Es wird automatisch ein aktuelles CCU2 Image installiert und das Netzwerk konfiguriert. Diese Installation ist für wenig erfahrene Benutzer auf einem frischen minimalen Debian/Raspbian empfehlenswert. Nach der Installation muss nur noch das LXC Container mit **sudo yahm-ctl start** start gestartet werden. Die frisch installierte CCU2 wird sich eine IP per DHCP abgerufen und kann durch **sudo yahm-ctl info** angezeigt werden.
+Es wird automatisch ein aktuelles CCU2 Image installiert und das Netzwerk konfiguriert. Diese Installation ist für wenig erfahrene Benutzer auf einem frischen minimalen Debian/Raspbian empfehlenswert. Nach der Installation muss nur noch das LXC Container mit **sudo yahm-ctl start** gestartet werden. Die frisch installierte CCU2 wird sich eine IP per DHCP abgerufen und kann durch **sudo yahm-ctl info** angezeigt werden.
 
 ```
 sudo wget -nv -O- https://raw.githubusercontent.com/leonsio/YAHM/master/yahm-init | bash -s quickinstall -
@@ -40,12 +49,22 @@ sudo yahm-network attach_bridge
 
 anschließend kann mit **sudo yahm-ctl start** das Container gestartet werden
 
-### Hinweis:
-Die Aktuelle CCU2 Firmware beinhaltet die Unterstützung für Homematic-IP. Diese wird zum aktuellen Zeitpunkt **NICHT** im vollen Umfang durch YAHM unterstützt. Damit in der CCU2 Oberfläche keine Fehlermeldungen hinsichtlich HMIP-RF auftauchen wird empfohlen die Unterstützung von Homematic-IP durch YAHM zu deaktivieren.
+## Hinweise
+### Homematic-IP
+Die aktuelle CCU2 Firmware (ab 2.15.x) beinhaltet die Unterstützung für Homematic-IP. Diese wird zum aktuellen Zeitpunkt (04/2016) **NICHT** durch YAHM unterstützt und wird durch das [Homematic-IP Modul](https://github.com/leonsio/YAHM/wiki/YAHM-Module:-Homematic-IP) nachgereicht. Damit in der CCU2 Oberfläche keine Fehlermeldungen hinsichtlich **HMIP-RF** bzw. **VirtualDevices** auftauchen wird empfohlen die Unterstützung von Homematic-IP durch YAHM zu deaktivieren.
 
 ```
 sudo yahm-module -f -m homematic-ip disable
 ```
 
-### Update:
+Im Zuge von der automatisierten Installation wird Homematic-IP deaktiviert und kann bei Bedarf bei einer angepassten Installation ebenfalls deaktiviert werden. 
+
+### Updates
 Mit **sudo yahm-ctl update** kann YAHM Installation (nicht CCU2 Firmware) jederzeit aktualisiert werden. Für die Aktualisierung der CCU2 Installation, siehe [LXC Container](https://github.com/leonsio/YAHM/wiki/YAHM-LXC)
+
+### Kostenfaktor
+Dieses Projekt wurde **nicht** dafür entworfen die Anschaffungskosten einer CCU2 zu reduzieren.
+Eine Kalkulation mit einen Raspberry Pi (45€) zuzüglich des Funkmoduls (30€), sowie Gehäuse/Netzteil (15€) übersteigt oder gleicht sich den Anschaffungskosten einer CCU2 (ca. 90€). 
+
+Für erfahrene Benutzer mit mehreren hundert Geräten/Programmen reicht die Leistung einer CCU2 nicht aus, für diese Zielgruppe wurde diese Anwendung primär entworfen. Für unerfahrene Benutzer wird weiterhin empfohlen die CCU2 zu erwerben.
+
