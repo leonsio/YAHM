@@ -69,6 +69,12 @@ do
     }
 done
 
+if [ $(cat /etc/profile| grep YAHM | wc -l ) -eq 0 ]
+then
+    progress "Including YAHM into PATH"
+    echo "export PATH=\$PATH:/opt/YAHM/bin" >> /etc/profile 
+fi
+
 # checkout all files
 progress "Downloading all files from repository"
 mkdir -p /opt

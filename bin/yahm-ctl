@@ -1,0 +1,111 @@
+#!/bin/bash
+#
+# Leonid Kogan <leon@leonsio.com>
+# Yet Another Homematic Management 
+#
+# Backup & Restore script, create and remove backups form CCU2 container and CCU2 data
+#
+
+
+# Stop on Errors
+set -e
+
+# Hilfe Output
+show_help ()
+{
+cat << EOF
+YAHM Control Script
+
+Usage Example: 
+
+./yahm-ctl [FLAG] COMMAND
+./yahm-ctl -n mycccu start
+
+Flags:
+-n          - LXC container name.
+-f          - Force operation (no halt on errors).
+-v          - Verbose output 
+
+Commands:
+start       - Starting LXC container
+stop        - Stopping LXC container
+info        - Show LXC information (IP)
+join        - Enter LXC console
+EOF
+exit 1
+}
+
+PARAMETER="vfn:"
+
+# Include laden
+source /opt/YAHM/share/include.sh
+
+if [ `check_yahm_installed` -eq 0 ] && [ $IS_FORCE -ne 1 ]
+then
+    die "ERROR: No container installed"
+fi
+
+if [ `check_yahm_name $LXCNAME` -eq 0 ] && [ $IS_FORCE -ne 1 ]
+then
+    die "ERROR: Can not find $LXCNAME container"
+fi
+
+
+if [[ $# != 1 ]]; then
+    show_help
+fi
+
+for key in "$@"; do
+    case $key in
+        start)
+            if [ $(lxc-info -n yahm|grep RUNNING |wc -l) -eq 1 ]
+            then
+                die "${LXCNAME} container is already running"
+            fi
+
+            if [ $IS_VERBOSE -eq 1 ] 
+            then
+                progress "Starting ${LXCNAME} LXC container in debug mode"
+                lxc-start -n ${LXCNAME}
+            else
+                progress "Starting ${LXCNAME} LXC container"
+                lxc-start $QUIET -n ${LXCNAME} -d
+            fi
+            shift
+            break;
+        ;;
+        stop)
+          if [ $(lxc-info -n yahm|grep STOPPED|wc -l) -eq 1 ]
+            then 
+                die "${LXCNAME} container is already stopped"
+            fi  
+
+            progress "Stopping ${LXCNAME} LXC container" 
+            lxc-stop $QUIET -k -n ${LXCNAME}
+            shift
+            break;
+        ;;
+        join)
+            if [ $(lxc-info -n yahm|grep STOPPED|wc -l) -eq 1 ]
+            then
+                die "${LXCNAME} container is stopped, please start it first"
+            fi
+            progress "Joining LXC container, you are now inside ${LXCNAME}"
+            lxc-attach -n ${LXCNAME}
+            progress "Leaving LXC container, your are now on your host system"
+            shift
+            break;
+        ;;  
+        info)
+            info "LXC container information"
+            lxc-info -n ${LXCNAME}
+            shift
+            break;
+        ;;
+        *)
+            show_help
+            exit 0
+        ;;
+    esac
+done
+

@@ -52,8 +52,8 @@ fi
 
 if [ "$DATA_FILE" != "" ]
 then
-    info "Manually CCU2 image was selected, the version was set to 2.17.15"
-    CCU2Version="2.17.15"
+    info "Manually CCU2 image was selected, the version was set temporarily to 2.17.16"
+    CCU2Version="2.17.16"
 fi
 
 remove_lxc_container()
@@ -80,7 +80,7 @@ remove_lxc_container()
     info "... to late ;)"
 
     progress "Stopping lxc container"
-    lxc-stop -k -n $LXCNAME || info "Container can not be found or is not running"
+    lxc-stop $QUIET -k -n $LXCNAME || info "Container can not be found or is not running"
 
     progress "Deleting LXC container"
     rm -rf ${LXC_ROOT}
@@ -147,6 +147,19 @@ create_lxc_container()
     cd $LXC_ROOT_FS
     find . -iname '*.ftl' | xargs dos2unix $QUIET
     find . -iname '*.cgi' | xargs dos2unix $QUIET
+
+    if [ "$DATA_FILE" != "" ]
+    then
+        info "Manually CCU2 image was selected, trying to detect installed version"
+        CCU2Version=`get_yahm_version ${LXCNAME}`
+
+        if [ ! -f ${YAHM_DIR}/share/tools/patches/${CCU2Version}.patch ] && [ $IS_FORCE -ne 1 ]
+        then
+            die "Detected Version: ${CCU2Version}, can not find patch file for this version use -f for patching with version 2.17.16"
+        else
+            CCU2Version="2.17.16"
+        fi
+    fi
 
     progress "Applying patch"
     cd $LXC_ROOT_FS
