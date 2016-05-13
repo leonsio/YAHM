@@ -108,7 +108,7 @@ fi
 progress "Downloading all files from repository"
 mkdir -p /opt
 cd /opt
-git clone --recursive https://github.com/leonsio/YAHM.git 2>/dev/null >/dev/null
+git clone --branch x86_testing --recursive https://github.com/leonsio/YAHM.git  2>/dev/null >/dev/null
 
 # create lib folder
 mkdir -p /var/lib/yahm
