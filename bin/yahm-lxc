@@ -153,7 +153,7 @@ create_lxc_container()
         info "Manually CCU2 image was selected, trying to detect installed version"
         CCU2Version=`get_yahm_version ${LXCNAME}`
 
-        if [ ! -f ${YAHM_DIR}/share/tools/patches/${CCU2Version}.patch ] && [ $IS_FORCE -ne 1 ]
+        if [ ! -f ${YAHM_DIR}/share/patches/${CCU2Version}.patch ] && [ $IS_FORCE -ne 1 ]
         then
             die "Detected Version: ${CCU2Version}, can not find patch file for this version use -f for patching with version 2.17.16"
         else
@@ -163,11 +163,11 @@ create_lxc_container()
 
     progress "Applying patch"
     cd $LXC_ROOT_FS
-    patch $QUIET --input "${YAHM_DIR}/share/tools/patches/${CCU2Version}.patch" -p1
+    patch $QUIET --input "${YAHM_DIR}/share/patches/${CCU2Version}.patch" -p1
 
     progress "Applying scripts"
     cd $LXC_ROOT_FS
-    sh "${YAHM_DIR}/share/tools/scripts/${CCU2Version}.sh"
+    sh "${YAHM_DIR}/share/scripts/${CCU2Version}.sh"
 
     progress "Creating SD card"
     mkdir -p ${LXC_ROOT}/sd-mmcblk0

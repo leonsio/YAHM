@@ -1,6 +1,9 @@
-[submodule "share/tools/rpi-headers"]
-	path = share/tools/rpi-headers
-	url = https://github.com/emmercm/rpi-headers.git
 [submodule "share/tools/Network-Interfaces-Script"]
 	path = share/tools/Network-Interfaces-Script
 	url = https://github.com/leonsio/Network-Interfaces-Script.git
+[submodule "share/tools/arm-board-detect"]
+	path = share/tools/arm-board-detect
+	url = https://github.com/leonsio/arm-board-detect.git
+[submodule "share/tools/rpi-source"]
+	path = share/tools/rpi-source
+	url = https://github.com/notro/rpi-source

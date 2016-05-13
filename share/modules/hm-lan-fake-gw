@@ -21,10 +21,17 @@ _module_install()
         die "ERROR: hm-mod-rpi-pcb module is installed, please remove it first"
     fi
 
+    if [ "$BOARD_TYPE" != "Raspberry Pi" ] && [ $IS_FORCE -ne 1 ]
+    then
+        info "See Wiki for manual installation"
+        die "ERROR: This module is for Raspberry Pi only, use -f flag to overwrite this check"
+    fi
+
+    info "Found hardware: $BOARD_TYPE $BOARD_VERSION"
+
     # Raspberry 2 oder 3 ?
-    # Raspberry 3 wird erkannt an 1200 Mhz max. CPU Takt. Dies ist sehr unsicher ;-)   
-    if [ $(lscpu | grep 'CPU max MHz:' | tr -d " " | cut -d ":" -f 2 | cut -d "," -f 1 ) == '1200' ];then
-        info "Found Raspberry Pi 3"
+    if [ "$BOARD_TYPE" = "Raspberry Pi" ] && [ "$BOARD_VERSION" = "3" ]
+    then
         progress "Trying to disable bluetooth to use HM-MOD-RPI-PCB"
         if [ ! -f /boot/overlays/pi3-disable-bt-overlay.dtb ] && [ $IS_FORCE -ne 1 ]
         then
@@ -130,10 +137,16 @@ EOF
 
 _module_remove()
 {
-   # Raspberry 2 oder 3 ?
-    # Raspberry 3 wird erkannt an 1200 Mhz max. CPU Takt. Dies ist sehr unsicher ;-)   
-    if [ $(lscpu | grep 'CPU max MHz:' | tr -d " " | cut -d ":" -f 2 | cut -d "," -f 1 ) == '1200' ];then
-        info 'Found Raspberry Pi 3'
+    if [ "$BOARD_TYPE" != "Raspberry Pi" ] && [ $IS_FORCE -ne 1 ]
+    then
+        die "ERROR: This module is for Raspberry Pi only, use -f flag to overwrite this check"
+    fi
+
+    info "Found hardware: $BOARD_TYPE $BOARD_VERSION"
+
+    # Raspberry 2 oder 3 ?
+    if [ "$BOARD_TYPE" = "Raspberry Pi" ] && [ "$BOARD_VERSION" = "3" ]
+    then
         progress "Trying to enable bluetooth"
 
         if [ ! -f /boot/config.txt ] && [ $IS_FORCE -ne 1 ]

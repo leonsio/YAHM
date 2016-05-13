@@ -20,14 +20,21 @@ _module_install()
         die "ERROR: hm-mod-rpi-pcb module is installed, please remove it first"
     fi
 
+    if [ "$BOARD_TYPE" != "Raspberry Pi" ] && [ $IS_FORCE -ne 1 ]
+    then
+        info "See Wiki for manual installation"
+        die "ERROR: This module is for Raspberry Pi only, use -f flag to overwrite this check"
+    fi
+
+    info "Found hardware: $BOARD_TYPE $BOARD_VERSION"
+
     # Raspberry 2 oder 3 ?
-    # Raspberry 3 wird erkannt an 1200 Mhz max. CPU Takt. Dies ist sehr unsicher ;-)   
-    if [ $(lscpu | grep 'CPU max MHz:' | tr -d " " | cut -d ":" -f 2 | cut -d "," -f 1 ) == '1200' ];then
-        info "Found Raspberry Pi 3"
-        progress "Trying to disable bluetooth to use HM-MOD-RPI-PCB"
+    if [ "$BOARD_TYPE" = "Raspberry Pi" ] && [ "$BOARD_VERSION" = "3" ]
+    then
+        progress "Trying to disable bluetooth on Raspberry Pi 3to use HM-MOD-RPI-PCB"
         if [ ! -f /boot/overlays/pi3-disable-bt-overlay.dtb ] && [ $IS_FORCE -ne 1 ]
         then
-            progress "Downloading pi3-disable-bt-overlay.dtb."
+            progress "Overlay file not found, trying to download pi3-disable-bt-overlay.dtb."
             wget $QUIET -O /boot/overlays/pi3-disable-bt-overlay.dtb https://raw.githubusercontent.com/raspberrypi/linux/rpi-4.4.y/arch/arm/boot/dts/overlays/pi3-disable-bt-overlay.dts
             if [ $? -ne 0 ] 
             then
@@ -47,7 +54,7 @@ _module_install()
             reboot=$((reboot+1))
         fi
     fi
-    
+
     # Disable serial    
     progress "Trying to disable serial console"
     if [ ! -f $file_cmdline_txt ] && [ $IS_FORCE -ne 1 ]
@@ -173,10 +180,16 @@ _module_remove()
 
     file_rfd_conf="${LXC_ROOT_FS}/usr/local/etc/config/rfd.conf"
 
+    if [ "$BOARD_TYPE" != "Raspberry Pi" ] && [ $IS_FORCE -ne 1 ]
+    then
+        die "ERROR: This module is for Raspberry Pi only, use -f flag to overwrite this check"
+    fi
+
+    info "Found hardware: $BOARD_TYPE $BOARD_VERSION"
+
     # Raspberry 2 oder 3 ?
-    # Raspberry 3 wird erkannt an 1200 Mhz max. CPU Takt. Dies ist sehr unsicher ;-)   
-    if [ $(lscpu | grep 'CPU max MHz:' | tr -d " " | cut -d ":" -f 2 | cut -d "," -f 1 ) == '1200' ];then
-        info 'Found Raspberry Pi 3'
+    if [ "$BOARD_TYPE" = "Raspberry Pi" ] && [ "$BOARD_VERSION" = "3" ]
+    then
         progress "Trying to enable bluetooth"
 #        if [ -f '/boot/overlays/pi3-disable-bt-overlay.dtb' ];then
 #            rm '/boot/overlays/pi3-disable-bt-overlay.dtb'

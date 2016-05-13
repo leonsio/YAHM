@@ -11,6 +11,9 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
+#echo ${0##*/}
+#exit;
+
 #Default Settings
 LXCNAME=yahm
 CCU2Version="2.17.16"
@@ -50,19 +53,30 @@ die () {
     exit 1
 }
 
-# check architecture
-case `dpkg --print-architecture` in
-    armhf|arm64)
+# Load system information
+if [ -f ${YAHM_LIB}/systeminfo ]
+then
+    source ${YAHM_LIB}/systeminfo
+else
+    source ${YAHM_TOOLS}/arm-board-detect/armhwinfo.sh
+    echo "BOARD_TYPE='$BOARD_TYPE'" >> ${YAHM_LIB}/systeminfo
+    echo "ARCH='$ARCH'" >> ${YAHM_LIB}/systeminfo
+    echo "BOARD_VERSION='$BOARD_VERSION'" >> ${YAHM_LIB}/systeminfo
+fi
+
+# check architecture 
+#case `dpkg --print-architecture` in
+case $ARCH in
+    armhf|armv7l|arm64|aarch64)
         ARCH="ARM"
         ;;
-    i386|amd64)
+    i386|amd64|x86_64)
         ARCH="X86"
         ;;
     *)
         die "Unsupported CPU architecture, we support only ARM and x86"
         ;;
 esac
-
 
 while getopts "${PARAMETER}" OPTION
 do
@@ -164,12 +178,12 @@ get_yahm_version()
 yahm_compatibility()
 {
     local ccufw_version=$1
-    if [ ! -f "${YAHM_DIR}/share/tools/patches/${ccufw_version}.patch" ] ; then
+    if [ ! -f "${YAHM_DIR}/share/patches/${ccufw_version}.patch" ] ; then
         echo 1 
         return 1 
     fi
 
-    if [ ! -f "${YAHM_DIR}/share/tools/scripts/${ccufw_version}.sh" ] ; then
+    if [ ! -f "${YAHM_DIR}/share/scripts/${ccufw_version}.sh" ] ; then
         echo 1 
         return 1
     fi 
