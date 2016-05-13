@@ -180,6 +180,13 @@ create_lxc_container()
     # create lxc config file
     create_lxc_config
 
+    if [ "$ARCH" = "X86" ]
+    then
+        info "Found x86 CPU architecture, need to install QEMU"
+        cp /usr/bin/qemu-arm-static ${LXC_ROOT_FS}/usr/bin/
+        echo "lxc.arch = armhf" >> ${LXC_ROOT}/config
+    fi
+
     info "Container is created, please use 'yahm-ctl -n ${LXCNAME} start' to start and 'yahm-ctl -n ${LXCNAME} join' for console access"
     info "For network configuration see yahm-network script"
 

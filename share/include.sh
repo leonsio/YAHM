@@ -24,6 +24,7 @@ IS_VERBOSE=0
 QUIET="--quiet"
 VERBOSE=""
 DRY_RUN=0
+ARCH=""
 
 # Check if we can use colours in our output
 use_colour=0
@@ -48,6 +49,20 @@ die () {
     [ $use_colour -eq 1 ] && echo -ne "\033[00m"
     exit 1
 }
+
+# check architecture
+case `dpkg --print-architecture` in
+    armhf|arm64)
+        ARCH="ARM"
+        ;;
+    i386|amd64)
+        ARCH="X86"
+        ;;
+    *)
+        die "Unsupported CPU architecture, we support only ARM and x86"
+        ;;
+esac
+
 
 while getopts "${PARAMETER}" OPTION
 do

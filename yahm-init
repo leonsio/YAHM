@@ -4,6 +4,8 @@
 #
 #
 
+set -e
+
 LSB_RELEASE="/usr/bin/lsb_release"
 
 # Check if we can use colours in our output
@@ -30,6 +32,29 @@ die () {
 	exit 1
 }
 
+if [ "$1" = "quickinstall" ]
+then
+    exit_error()
+    {
+        die "An error occurred while processing quickinstall mode. Pleasy try manually installation"
+    }
+    trap exit_error EXIT SIGINT SIGTERM
+fi
+
+check_install_deb()
+{
+    progress "Installing dependencies"
+    packages=$1
+    for P in $packages
+    do
+        dpkg -s "$P" >/dev/null 2>&1 && {
+        info $P is installed
+        } || {
+            install_package "$P"
+        }
+    done
+}
+
 install_package() {
 	package=$1
 	info "install ${package}"
@@ -42,7 +67,18 @@ install_package() {
 [ -x $LSB_RELEASE ] || install_package "lsb-release"
 
 # check architecture
-test "`dpkg --print-architecture`" == "armhf" || die "This Repos is only for armhf."
+case `dpkg --print-architecture` in
+    armhf|arm64)
+        info "Found ARM based distribution"
+        ;;
+    i386|amd64)
+        info "X86 CPU found, need to install QEMU"
+        check_install_deb "qemu-user-static binfmt-support"
+        ;;
+    *)
+        die "Unsupported CPU architecture, we support only ARM and x86"
+        ;;
+esac
 
 DIST_ID="$($LSB_RELEASE -is)"
 CODENAME="$($LSB_RELEASE -cs)"
@@ -56,18 +92,10 @@ Debian:jessie)	DIST="debian";;
 esac
 
 progress "Updating sources"
-apt-get -q=2 update
+#apt-get -q=2 update
 
 progress "Installing dependencies" 
-packages="wget dos2unix python git lxc liblzo2-dev bridge-utils python-lzo patch gzip openssl"
-for P in $packages
-do
-    dpkg -s "$P" >/dev/null 2>&1 && {
-	info $P is installed
-    } || {
-        install_package "$P"
-    }
-done
+check_install_deb "wget dos2unix python git lxc liblzo2-dev bridge-utils python-lzo patch gzip openssl"
 
 if [ $(cat /etc/profile| grep YAHM | wc -l ) -eq 0 ]
 then
@@ -80,26 +108,37 @@ fi
 progress "Downloading all files from repository"
 mkdir -p /opt
 cd /opt
-git clone --recursive https://github.com/leonsio/YAHM.git 2>/dev/null >/dev/null
+#git clone --recursive https://github.com/leonsio/YAHM.git 2>/dev/null >/dev/null
 
 # create lib folder
 mkdir -p /var/lib/yahm
 
 if [ "$1" = "quickinstall" ]
 then
-    info "Enter quick install mode"
-    progress "\tInstalling LXC container\n"
-    /opt/YAHM/bin/yahm-lxc install
-    progress "\tCreating Bridge for networking\n"
-    /opt/YAHM/bin/yahm-network -w create_bridge
-    progress "\tAttaching network configuration to LXC container\n"
-    /opt/YAHM/bin/yahm-network attach_bridge
-    progress "\tStarting LXC container\n"
+    info "\n\tEnter quick install mode\n"
+
+    progress "\tInstalling LXC container"
+    /opt/YAHM/bin/yahm-lxc install  2>/dev/null >/dev/null
+    info "\tYAHM LXC container was installed successfully\n"
+
+    progress "\tCreating Bridge for networking"
+    /opt/YAHM/bin/yahm-network -w create_bridge  2>/dev/null >/dev/null
+    info "\tBridge yahmbr0 with interface eth0 was created\n"
+
+    progress "\tAttaching network configuration to LXC container"
+    /opt/YAHM/bin/yahm-network attach_bridge  2>/dev/null >/dev/null
+    info "\tyahmbr0 was attached to YAHM LXC container\n"
+
+    progress "\tStarting LXC container"
     lxc-start -d yahm -d
     sleep 5
+    info "\tYAHM started\n"
+
     progress "\tDisable Homematic-IP\n"
-    /opt/YAHM/bin/yahm-module -f -m homematic-ip disable
-    info "YAHM was successfully installed, use 'yahm-ctl start' to start lxc container"
+    /opt/YAHM/bin/yahm-module -f -m homematic-ip disable 2>&1 > /dev/null
+    info "\tHomematic-IP was disabled successfully\n"
+
+    info "YAHM was successfully installed, use 'yahm-ctl join' to access YAHM console or 'yahm-ctl show' for IP information"
 else
     # Info
     info "Please use yahm-lxc to create new container, yahm-network for network configuration and lxc-enable for additional modules" 

@@ -2,7 +2,7 @@
 Falls Sie dieses Projekt unterstützen möchten, würde ich mich über einen Pull-Request oder eine Spende: <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=9WRZHSCVYL6XL"><img style="padding:0;" width=74 height=21  src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif" alt="Donate!" / border="0"></a> freuen.
 
 # YAHM
-Yet Another Homematic Management - Skripte zur Einrichtung der Homematic CCU2 Oberfläche in einem LXC Container unter Debian Jessie auf ARM-Basis.
+Yet Another Homematic Management - Skripte zur Einrichtung der Homematic CCU2 Oberfläche in einem LXC Kontainer unter Debian Jessie auf ARM-Basis.
 
 Die Arbeit/Idee basiert auf der Arbeit von [bullshit](https://github.com/bullshit/lxccu) bzw. des [LXCCU](http://www.lxccu.com) Projektes.
 
@@ -25,7 +25,7 @@ Weitere Informationen und Anleitungen können dem [Wiki](https://github.com/leon
 ## Installation:
 
 ### Automatisiert: 
-Es wird automatisch ein aktuelles CCU2 Image installiert und das Netzwerk konfiguriert. Diese Installation ist für wenig erfahrene Benutzer auf einem frischen minimalen Debian/Raspbian empfehlenswert. Nach der Installation muss nur noch das LXC Container mit **sudo yahm-ctl start** gestartet werden. Die frisch installierte CCU2 wird sich eine IP per DHCP abgerufen und kann durch **sudo yahm-ctl info** angezeigt werden.
+Es wird automatisch ein aktuelles CCU2 Image installiert und das Netzwerk konfiguriert. Diese Installation ist für wenig erfahrene Benutzer auf einem frischen minimalen Debian/Raspbian empfehlenswert. Nach der Installation muss nur noch das LXC Kontainer mit **sudo yahm-ctl start** gestartet werden. Die frisch installierte CCU2 wird eine IP per DHCP abrufen diese kann durch **sudo yahm-ctl info** nach dem Start des Kontainers angezeigt werden.
 
 ```
 wget -nv -O- https://raw.githubusercontent.com/leonsio/YAHM/master/yahm-init | sudo -E  bash -s quickinstall -
@@ -33,7 +33,7 @@ wget -nv -O- https://raw.githubusercontent.com/leonsio/YAHM/master/yahm-init | s
 
 ### Angepasst:
 
-Mit dieser Installation wird lediglich die aktuelle YAHM runtergeladen und unter /opt/YAHM/bin installiert, anschließend muss mit Hilfe von YAHM ein [LXC Container](https://github.com/leonsio/YAHM/wiki/YAHM-LXC) angelegt und as [Netzwerk](https://github.com/leonsio/YAHM/wiki/YAHM-Netzwerk) konfiguriert werden.
+Mit dieser Installation wird lediglich die aktuelle YAHM runtergeladen und unter /opt/YAHM/bin installiert, anschließend muss mit Hilfe von YAHM ein [LXC Kontainer](https://github.com/leonsio/YAHM/wiki/YAHM-LXC) angelegt und as [Netzwerk](https://github.com/leonsio/YAHM/wiki/YAHM-Netzwerk) konfiguriert werden.
 
 ```
 wget -nv -O- https://raw.githubusercontent.com/leonsio/YAHM/master/yahm-init | sudo -E  bash -
@@ -47,7 +47,7 @@ sudo yahm-network -w create_bridge
 sudo yahm-network attach_bridge
 ```
 
-anschließend kann mit **sudo yahm-ctl start** das Container gestartet werden
+anschließend kann mit **sudo yahm-ctl start** das Kontainer gestartet werden
 
 ### Aktivierung Rapsberry Pi Funkmodul
 Nach der erfolgreichen Installation von YAHM kann das Funkmodul aktiviert werden, für weitere Informationen siehe [YAHM-Module](https://github.com/leonsio/YAHM/wiki/YAHM-Module)
@@ -72,7 +72,7 @@ sudo yahm-module -f -m homematic-ip disable
 Im Zuge von der automatisierten Installation wird Homematic-IP deaktiviert und kann bei Bedarf bei einer angepassten Installation ebenfalls deaktiviert werden. 
 
 ### Updates
-Mit **sudo yahm-ctl update** kann YAHM Installation (nicht CCU2 Firmware) jederzeit aktualisiert werden. Für die Aktualisierung der CCU2 Installation, siehe [LXC Container](https://github.com/leonsio/YAHM/wiki/YAHM-LXC)
+Mit **sudo yahm-ctl update** kann YAHM Installation (nicht CCU2 Firmware) jederzeit aktualisiert werden. Für die Aktualisierung der CCU2 Installation, siehe [LXC Kontainer](https://github.com/leonsio/YAHM/wiki/YAHM-LXC)
 
 ### Kostenfaktor
 Dieses Projekt wurde **nicht** dafür entworfen die Anschaffungskosten einer CCU2 zu reduzieren.
