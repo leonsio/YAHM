@@ -66,6 +66,8 @@ install_package() {
 
 [ -x $LSB_RELEASE ] || install_package "lsb-release"
 
+mkdir -p /var/log/yahm
+
 # check architecture
 case `dpkg --print-architecture` in
     armhf|arm64)
@@ -117,7 +119,6 @@ mkdir -p /var/lib/yahm
 if [ "$1" = "quickinstall" ]
 then
     info "\n\tEnter quick install mode\n"
-    mkdir -p /var/log/yahm
 
     progress "\tInstalling LXC container"
     /opt/YAHM/bin/yahm-lxc install  2>>/var/log/yahm/lxc_err.log >>/var/log/yahm/lxc.log
