@@ -100,12 +100,13 @@ check_install_deb "wget dos2unix python git lxc liblzo2-dev bridge-utils python-
 if [ $(cat /etc/profile| grep YAHM | wc -l ) -eq 0 ]
 then
     progress "Including YAHM into PATH"
-    echo "export PATH=\$PATH:/opt/YAHM/bin" >> /etc/profile 
-    export PATH=$PATH:/opt/YAHM/bin
+    #echo "export PATH=\$PATH:/opt/YAHM/bin" >> /etc/profile 
+    #export PATH=$PATH:/opt/YAHM/bin
+    ln -sf /opt/YAHM/bin/* /usr/sbin/
 fi
 
 # checkout all files
-progress "Downloading all files from repository"
+progress "Downloading actual version from git repository"
 mkdir -p /opt
 cd /opt
 git clone --recursive https://github.com/leonsio/YAHM.git  2>/dev/null >/dev/null
@@ -130,7 +131,7 @@ then
     info "\tyahmbr0 was attached to YAHM LXC container\n"
 
     progress "\tStarting LXC container"
-    lxc-start -d yahm -d
+    lxc-start -n yahm -d
     sleep 5
     info "\tYAHM started\n"
 
@@ -138,8 +139,14 @@ then
     /opt/YAHM/bin/yahm-module -f -m homematic-ip disable 2>&1 > /dev/null
     info "\tHomematic-IP was disabled successfully\n"
 
+    progress "\tRestarting LXC container"
+    lxc-stop -k -n yahm
+    sleep 5
+    lxc-start -n yahm -d
+    info "\tYAHM successfully restarted\n"
+
     info "YAHM was successfully installed, use 'yahm-ctl join' to access YAHM console or 'yahm-ctl show' for IP information"
 else
     # Info
-    info "Please use yahm-lxc to create new container, yahm-network for network configuration and lxc-enable for additional modules" 
+    info "Please see 'yahm-lxc' for creating new container, 'yahm-network' for network configuration and 'yahm-modules' for additional modules" 
 fi
