@@ -370,6 +370,11 @@ create_bridge()
         countdown
         info "... to late ;)"
 
+        if [ $BOARD_TYPE = "Orange" ]
+        then
+            sed -i /tmp/yahm_interfaces -e "s/auto eth0/#auto eth0/"
+        fi
+
         timestamp=$(date +%s)
         progress "Backuping /etc/network/interfaces to /etc/network/interfaces.${timestamp}"
         cp /etc/network/interfaces /etc/network/interfaces.${timestamp}
