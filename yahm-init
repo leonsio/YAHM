@@ -99,52 +99,46 @@ apt-get -q=2 update
 progress "Installing dependencies" 
 check_install_deb "wget dos2unix python git lxc liblzo2-dev bridge-utils python-lzo patch gzip openssl"
 
-if [ $(cat /etc/profile| grep YAHM | wc -l ) -eq 0 ]
-then
-    progress "Including YAHM into PATH"
-    #echo "export PATH=\$PATH:/opt/YAHM/bin" >> /etc/profile 
-    #export PATH=$PATH:/opt/YAHM/bin
-    ln -sf /opt/YAHM/bin/* /usr/sbin/
-fi
-
 # checkout all files
 progress "Downloading actual version from git repository"
 mkdir -p /opt
 cd /opt
-git clone --recursive https://github.com/leonsio/YAHM.git  2>>/var/log/yahm/git_err.log >>/var/log/yahm/git.log
+git clone --recursive https://github.com/leonsio/YAHM.git  2>>/var/log/yahm/git.log >>/var/log/yahm/git.log
 
-# create lib folder
-mkdir -p /var/lib/yahm
+progress "Including YAHM into PATH"
+  #echo "export PATH=\$PATH:/opt/YAHM/bin" >> /etc/profile 
+    #export PATH=$PATH:/opt/YAHM/bin
+ln -sf /opt/YAHM/bin/* /usr/sbin/
 
 if [ "$1" = "quickinstall" ]
 then
     info "\n\tEnter quick install mode\n"
 
     progress "\tInstalling LXC container"
-    /opt/YAHM/bin/yahm-lxc install  2>>/var/log/yahm/lxc_err.log >>/var/log/yahm/lxc.log
+    /opt/YAHM/bin/yahm-lxc install  2>>/var/log/yahm/lxc.log >>/var/log/yahm/lxc.log
     info "\tYAHM LXC container was installed successfully\n"
 
     progress "\tCreating Bridge for networking"
-    /opt/YAHM/bin/yahm-network -w create_bridge  2>>/var/log/yahm/network_create_err.log >>/var/log/yahm/network_create.log
+    /opt/YAHM/bin/yahm-network -w create_bridge  2>>/var/log/yahm/network_create.log >>/var/log/yahm/network_create.log
     info "\tBridge yahmbr0 with interface eth0 was created\n"
 
     progress "\tAttaching network configuration to LXC container"
-    /opt/YAHM/bin/yahm-network attach_bridge  2>>/var/log/yahm/network_attach_err.log >>/var/log/yahm/network_attach.log
+    /opt/YAHM/bin/yahm-network attach_bridge  2>>/var/log/yahm/network_attach.log >>/var/log/yahm/network_attach.log
     info "\tyahmbr0 was attached to YAHM LXC container\n"
 
     progress "\tStarting LXC container"
-    lxc-start -n yahm -d 2>>/var/log/yahm/start_err.log >>/var/log/yahm/start.log
+    lxc-start -n yahm -d 2>>/var/log/yahm/start.log >>/var/log/yahm/start.log
     sleep 5
     info "\tYAHM started\n"
 
     progress "\tDisable Homematic-IP\n"
-    /opt/YAHM/bin/yahm-module -f -m homematic-ip disable 2>>/var/log/yahm/module_err.log >>/var/log/yahm/module.log
+    /opt/YAHM/bin/yahm-module -f -m homematic-ip disable 2>>/var/log/yahm/module.log >>/var/log/yahm/module.log
     info "\tHomematic-IP was disabled successfully\n"
 
     progress "\tRestarting LXC container"
-    lxc-stop -k -n yahm 2>>/var/log/yahm/stop_err.log >>/var/log/yahm/stop.log
+    lxc-stop -k -n yahm 2>>/var/log/yahm/stop.log >>/var/log/yahm/stop.log
     sleep 5
-    lxc-start -n yahm -d 2>>/var/log/yahmi/start_err.log >>/var/log/yahm/start.log
+    lxc-start -n yahm -d 2>>/var/log/yahm/start.log >>/var/log/yahm/start.log
     info "\tYAHM successfully restarted\n"
 
     info "YAHM was successfully installed, use 'yahm-ctl join' to access YAHM console or 'yahm-ctl show' for IP information"
