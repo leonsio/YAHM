@@ -7,6 +7,7 @@
 set -e
 
 LSB_RELEASE="/usr/bin/lsb_release"
+ERROR=1
 
 # Check if we can use colours in our output
 use_colour=0
@@ -36,7 +37,10 @@ if [ "$1" = "quickinstall" ]
 then
     exit_error()
     {
-        die "An error occurred while processing quickinstall mode. Pleasy try manually installation"
+        if [ $ERROR -eq 1 ]
+        then
+            die "An error occurred while processing quickinstall mode. Pleasy try manually installation"
+        fi
     }
     trap exit_error EXIT SIGINT SIGTERM
 fi
@@ -144,6 +148,8 @@ then
     info "\tYAHM successfully restarted\n"
 
     info "YAHM was successfully installed, use 'yahm-ctl join' to access YAHM console or 'yahm-ctl show' for IP information"
+    # Disable Error handling
+    ERROR=0
 else
     # Info
     info "Please see 'yahm-lxc' for creating new container, 'yahm-network' for network configuration and 'yahm-modules' for additional modules" 
