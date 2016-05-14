@@ -56,6 +56,9 @@ full_backup()
         die "ERROR: Can not find $LXCNAME container"
     fi
 
+    progress "Trying to stop ${LXCNAME} container"
+    lxc-stop $QUIET -k -n ${LXCNAME}
+
     installed_version=`get_yahm_version ${LXCNAME}`
 
     progress "Creating new backup from ${LXCNAME} version ${installed_version}"
@@ -67,6 +70,7 @@ full_backup()
     tar $VERBOSE -czf ${YAHM_TMP}/${backup_file_name} ${LXCNAME}
     
     info "STATUS: Backup was successfully created: ${YAHM_TMP}/${backup_file_name}"
+    info "Please start ${LXCNAME} container with 'sudo yahm-ctl -n ${LXCNAME} start' manually"
 }
 
 full_restore()
@@ -107,6 +111,7 @@ full_restore()
     then
         die "ERROR: ${LXC_ROOT} is already present, use -f for overwrite"
     else
+        lxc-stop -k -n ${LXCNAME} || info "No running lxc instance found, continue"
         rm -rf ${LXC_ROOT}
     fi 
 
@@ -119,6 +124,7 @@ full_restore()
     rm -rf ${YAHM_TMP}/*
 
     info "STATUS: YAHM version ${installed_version} was successfully restored"
+    info "Please start ${LXCNAME} container with 'sudo yahm-ctl -n ${LXCNAME} start' manually"
 }
 
 data_backup()
@@ -140,8 +146,8 @@ data_backup()
     
     echo "VERSION=${installed_version}" > ${YAHM_TMP}/firmware_version
 
-    progress "Trying to stop ${LXCNAME} container"
-    lxc-stop -k -n ${LXCNAME}
+#    progress "Trying to stop ${LXCNAME} container"
+#    lxc-stop $QUIET -k -n ${LXCNAME}
 
     progress "Creating Backup from /usr/local folder"
     cd ${LXC_ROOT_FS}
@@ -186,7 +192,7 @@ data_restore()
     backup_version=$(cat ${YAHM_TMP}/firmware_version | cut -d'=' -f2 )
 
     progress "Backup is valid, trying to stop ${LXCNAME} container"
-    lxc-stop -k -n ${LXCNAME}
+    lxc-stop $QUIET -k -n ${LXCNAME}
 
     info "WARNING: /usr/local folder with all settings inside ${LXCNAME} container will be removed. You have 5 seconds to cancel this operation..."
         countdown
@@ -201,7 +207,7 @@ data_restore()
 #    lxc-start -n ${LXCNAME} -d
 
     info "STATUS: Backup version ${backup_version} was successfully restored into ${LXCNAME} container version ${installed_version}"
-    info "Please start ${LXCNAME} container with 'lxc-start -n ${LXCNAME} -d' manually"
+    info "Please start ${LXCNAME} container with 'sudo yahm-ctl -n ${LXCNAME} start' manually"
 }
 
 if [[ $# != 1 ]]; then
