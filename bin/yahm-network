@@ -45,6 +45,7 @@ exit 1
 }
 
 PARAMETER="db:i:wfvn:"
+is_static=0
 
 # Include laden
 source /opt/YAHM/share/include.sh
@@ -141,7 +142,8 @@ delete_bridge()
     fi
 
     # Check if bridge exists
-    if [ `check_bridge_name $BRIDGE` = 0 ] ; then
+    if [ `check_bridge_name $BRIDGE` = 0 ] && [ $IS_FORCE -ne 1 ]
+    then
         die "ERROR: Bridge ${BRIDGE} dont exists."
     else
         progress "Bridge ${BRIDGE} will be deleted"
@@ -154,13 +156,14 @@ delete_bridge()
     case $ipcheck in
         manual|dhcp)
             info "Found $ipcheck bridge configuration on ${BRIDGE}"
+            info "ATTENTION: You may get new IP after network is restarted"
             ;;
         *)
             IFS=', ' read -r -a array <<< $ipcheck
             address=${array[0]}
             netmask=${array[1]}
             gateway=${array[2]}
-            info "ATTENTION: Found static IP ${address}, trying to create a Bridge with a static IP"
+            info "ATTENTION: Found static IP ${address}, trying to delete a bridge with a static IP"
             is_static=1
     esac
 
@@ -179,30 +182,28 @@ delete_bridge()
     done
 
     # warning or check? dettach from lxc
-    info "WARNING: If this bridge be in use by lxc, please dettach it with 'yahm-network dettach_bridge'. You have 5 Seconds to cancel this Operation..."
+    info "WARNING: If this bridge be in use by lxc, please dettach it with 'yahm-network dettach_bridge' first. You have 5 Seconds to cancel this Operation..."
         countdown
     info "... to late ;)"
 
     # create copy of interfaces file
-    rm -rf /tmp/yahm_interfaces.*
+    rm -rf /tmp/yahm_interfaces
     cp /etc/network/interfaces /tmp/yahm_interfaces
 
 
     # Neue Konfig Datei bauen
     progress "Preparing network interfaces file"
     info "Removing ${BRIDGE} from network configuration file"
-    awk -f ${YAHM_TOOLS}/Network-Interfaces-Script/changeInterface.awk /tmp/yahm_interfaces mode=remove dev=${BRIDGE} >> /tmp/yahm_interfaces.tmp
+    echo "$(awk -f ${YAHM_TOOLS}/Network-Interfaces-Script/changeInterface.awk /tmp/yahm_interfaces mode=remove dev=${BRIDGE})" > /tmp/yahm_interfaces
 
     if [ $is_static -eq 1 ]
     then
         info "Configure static IP to the old interface ${brifs}"
-        awk -f ${YAHM_TOOLS}/Network-Interfaces-Script/changeInterface.awk /tmp/yahm_interfaces.tmp dev=${brifs} mode=static address=${address} netmask=${netmask} gateway=${gateway}  >> /tmp/yahm_interfaces.new
+        echo "$(awk -f ${YAHM_TOOLS}/Network-Interfaces-Script/changeInterface.awk /tmp/yahm_interfaces dev=${brifs} mode=static address=${address} netmask=${netmask} gateway=${gateway})"  > /tmp/yahm_interfaces
     else
         # Setting right parameter
-        awk -f ${YAHM_TOOLS}/Network-Interfaces-Script/changeInterface.awk /tmp/yahm_interfaces.tmp dev=${brifs} mode=$ipcheck >> /tmp/yahm_interfaces.new
+        echo "$(awk -f ${YAHM_TOOLS}/Network-Interfaces-Script/changeInterface.awk /tmp/yahm_interfaces dev=${brifs} mode=$ipcheck)" > /tmp/yahm_interfaces
     fi
-
-    mv /tmp/yahm_interfaces.new  /tmp/yahm_interfaces
 
     progress "Please review new network configuration"
     cat /tmp/yahm_interfaces
@@ -242,6 +243,11 @@ delete_bridge()
         countdown
         info "... to late ;)"
 
+        if [ "$BOARD_TYPE" = "Orange" ]
+        then
+            sed -i /tmp/yahm_interfaces -e "s/#auto ${INTERFACE}/auto ${INTERFACE}/"
+        fi
+
         timestamp=$(date +%s)
         progress "Backuping /etc/network/interfaces to /etc/network/interfaces.${timestamp}"
         cp /etc/network/interfaces /etc/network/interfaces.${timestamp}
@@ -258,14 +264,12 @@ delete_bridge()
     fi
 
     info "Clean up"
-    rm -rf /tmp/yahm_interfaces*
+    rm -rf /tmp/yahm_interfaces
 
 }
 
 create_bridge()
 {
-
-    local is_static=0
 
     info "Trying to create new bridge ${BRIDGE} with physical interface ${INTERFACE}"
     if [ $WRITE -eq 0 ] ; then
@@ -275,7 +279,8 @@ create_bridge()
     fi
 
     # Check if bridge exists
-    if [ `check_bridge_name $BRIDGE` = 1 ] ; then
+    if [ `check_bridge_name $BRIDGE` -eq 1 ] && [ $IS_FORCE -ne 1 ]
+    then
         die "ERROR: Bridge ${BRIDGE} already exists. Use 'yahm-network -b BRIDGENAME -n CONTAINER attach' to add this bridge to LXC container"
     else
         info "No bridge with choosen name found, continue..."
@@ -291,7 +296,10 @@ create_bridge()
             info "You are using advanced network configuration with VLANs, be careful"
             ;;
         *)
-            die "ERROR: This Interface is not supported, please choose only physical interface"    
+            if [ $IS_FORCE -ne 1 ]
+            then
+                die "ERROR: This Interface is not supported, please choose only physical interface"    
+            fi
     esac
 
     # check if interface has static ip
@@ -306,31 +314,30 @@ create_bridge()
             address=${array[0]}
             netmask=${array[1]}
             gateway=${array[2]}
-            info "ATTENTION: Found static IP ${address}, trying to create a Bridge with a static IP"
+            info "ATTENTION: Found static IP ${address}, trying to create a bridge with a static IP"
             is_static=1
     esac
 
     # create copy of interfaces file
-    rm -rf /tmp/yahm_interfaces.*
+    rm -rf /tmp/yahm_interfaces
     cp /etc/network/interfaces /tmp/yahm_interfaces
 
     # Neue Konfig Datei bauen
     progress "Preparing network interfaces file"
     info "Creating new interface ${BRIDGE}"
-    awk -f ${YAHM_TOOLS}/Network-Interfaces-Script/changeInterface.awk /tmp/yahm_interfaces mode=add dev=${BRIDGE} >> /tmp/yahm_interfaces.tmp
+    echo "$(awk -f ${YAHM_TOOLS}/Network-Interfaces-Script/changeInterface.awk /tmp/yahm_interfaces mode=add dev=${BRIDGE})" > /tmp/yahm_interfaces
 
     if [ $is_static -eq 1 ]
     then
         info "Removing IP from static interface ${INTERFACE}"
-        awk -f ${YAHM_TOOLS}/Network-Interfaces-Script/changeInterface.awk /tmp/yahm_interfaces.tmp dev=${INTERFACE} mode=manual >> /tmp/yahm_interfaces.tmp.old_remove
+        echo "$(awk -f ${YAHM_TOOLS}/Network-Interfaces-Script/changeInterface.awk /tmp/yahm_interfaces dev=${INTERFACE} mode=manual)" > /tmp/yahm_interfaces
         info "Configure static IP to the new bridge ${BRIDGE}"
-        awk -f ${YAHM_TOOLS}/Network-Interfaces-Script/changeInterface.awk /tmp/yahm_interfaces.tmp.old_remove dev=${BRIDGE} mode=static address=${address} netmask=${netmask} gateway=${gateway}  >> /tmp/yahm_interfaces.new
+        echo "$(awk -f ${YAHM_TOOLS}/Network-Interfaces-Script/changeInterface.awk /tmp/yahm_interfaces dev=${BRIDGE} mode=static address=${address} netmask=${netmask} gateway=${gateway})"  > /tmp/yahm_interfaces
     else
         # Setting right parameter
-        awk -f ${YAHM_TOOLS}/Network-Interfaces-Script/changeInterface.awk /tmp/yahm_interfaces.tmp dev=${BRIDGE} mode=$ipcheck >> /tmp/yahm_interfaces.new
+        echo "$(awk -f ${YAHM_TOOLS}/Network-Interfaces-Script/changeInterface.awk /tmp/yahm_interfaces dev=${BRIDGE} mode=$ipcheck)" > /tmp/yahm_interfaces
     fi
 
-    mv /tmp/yahm_interfaces.new  /tmp/yahm_interfaces
     echo "    bridge_ports ${INTERFACE}" >> /tmp/yahm_interfaces
     
     progress "Please review new network configuration"
@@ -370,9 +377,9 @@ create_bridge()
         countdown
         info "... to late ;)"
 
-        if [ $BOARD_TYPE = "Orange" ]
+        if [ "$BOARD_TYPE" = "Orange" ]
         then
-            sed -i /tmp/yahm_interfaces -e "s/auto eth0/#auto eth0/"
+            sed -i /tmp/yahm_interfaces -e "s/auto ${INTERFACE}/#auto ${INTERFACE}/"
         fi
 
         timestamp=$(date +%s)
@@ -386,13 +393,18 @@ create_bridge()
         countdown
         info "... to late ;)"
         service networking restart
+
+    if [ $is_static -eq 1 ]
+    then
+        ip addr flush dev ${INTERFACE}
+    fi
         
     else
         info "Your system is not changed, if thesse changes appearing correctly please run this script with -w flag"
     fi
 
     info "Clean up"
-    rm -rf /tmp/yahm_interfaces*
+    rm -rf /tmp/yahm_interfaces
     
 }
 
