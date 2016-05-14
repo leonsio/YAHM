@@ -66,7 +66,9 @@ install_package() {
 
 [ -x $LSB_RELEASE ] || install_package "lsb-release"
 
+# Creating needed folders
 mkdir -p /var/log/yahm
+mkdir -p /var/lib/yahm
 
 # check architecture
 case `dpkg --print-architecture` in

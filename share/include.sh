@@ -58,6 +58,7 @@ if [ -f ${YAHM_LIB}/systeminfo ]
 then
     source ${YAHM_LIB}/systeminfo
 else
+    mkdir -p ${YAHM_LIB}
     source ${YAHM_TOOLS}/arm-board-detect/armhwinfo.sh
     echo "BOARD_TYPE='$BOARD_TYPE'" >> ${YAHM_LIB}/systeminfo
     echo "ARCH='$ARCH'" >> ${YAHM_LIB}/systeminfo
