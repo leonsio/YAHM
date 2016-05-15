@@ -103,7 +103,7 @@ progress "Updating sources"
 apt-get -q=2 update
 
 progress "Installing dependencies" 
-check_install_deb "wget dos2unix python git lxc liblzo2-dev bridge-utils python-lzo patch gzip openssl"
+check_install_deb "sendmail wget dos2unix python git lxc liblzo2-dev bridge-utils python-lzo patch gzip openssl"
 
 # checkout all files
 progress "Downloading actual version from git repository"

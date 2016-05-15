@@ -11,6 +11,14 @@ file_hm_mod_rpi_pcb='/etc/init.d/hm-mod-rpi-pcb'
 file_cmdline_txt='/boot/cmdline.txt'
 reboot=0 # Neustart ausfuehren
 
+kernel_version=$(uname -r | sed -e 's/-.*//i')
+if [ $(ver ${kernel_version}) -ge $(ver 4.4.9) ]
+then
+    overlay_file="pi3-miniuart-bt"     
+else
+    overlay_file="pi3-miniuart-bt-overlay"
+fi 
+
 _module_install()
 {
     file_rfd_conf="${LXC_ROOT_FS}/usr/local/etc/config/rfd.conf"
@@ -32,24 +40,15 @@ _module_install()
     if [ "$BOARD_TYPE" = "Raspberry Pi" ] && [ "$BOARD_VERSION" = "3" ]
     then
         progress "Trying to disable bluetooth on Raspberry Pi 3to use HM-MOD-RPI-PCB"
-        if [ ! -f /boot/overlays/pi3-disable-bt-overlay.dtb ] && [ $IS_FORCE -ne 1 ]
-        then
-            progress "Overlay file not found, trying to download pi3-disable-bt-overlay.dtb."
-            wget $QUIET -O /boot/overlays/pi3-disable-bt-overlay.dtb https://raw.githubusercontent.com/raspberrypi/linux/rpi-4.4.y/arch/arm/boot/dts/overlays/pi3-disable-bt-overlay.dts
-            if [ $? -ne 0 ] 
-            then
-                die 'ERROR: Problem downloading pi3-disable-bt-overlay.dtb!'
-            fi
-        fi
     
         if [ ! -f /boot/config.txt ] && [ $IS_FORCE -ne 1 ]
         then
             die "ERROR: File /boot/config.txt does not exist!"
         fi
 
-        if [ $(cat /boot/config.txt | grep pi3-disable-bt-overlay | wc -l ) -eq 0 ]
+        if [ $(cat /boot/config.txt | grep ${overlay_file} | wc -l ) -eq 0 ]
         then
-            echo -e "\n# Allow the normal UART pins to work\ndtoverlay=pi3-disable-bt-overlay" >> /boot/config.txt
+            echo -e "\n# Allow the normal UART pins to work\ndtoverlay=${overlay_file}\nenable_uart=1\nforce_turbo=1" >> /boot/config.txt
             info "Modification /boot/config.txt done."      
             reboot=$((reboot+1))
         fi
@@ -191,20 +190,18 @@ _module_remove()
     if [ "$BOARD_TYPE" = "Raspberry Pi" ] && [ "$BOARD_VERSION" = "3" ]
     then
         progress "Trying to enable bluetooth"
-#        if [ -f '/boot/overlays/pi3-disable-bt-overlay.dtb' ];then
-#            rm '/boot/overlays/pi3-disable-bt-overlay.dtb'
-#            progress "Removing pi3-disable-bt-overlay.dtb"
-#        fi
 
         if [ ! -f /boot/config.txt ] && [ $IS_FORCE -ne 1 ]
         then
             die "ERROR: File /boot/config.txt does not exist!"
         fi
 
-        if [ $(cat /boot/config.txt | grep pi3-disable-bt-overlay | wc -l ) -gt 0 ]
+        if [ $(cat /boot/config.txt | grep ${overlay_file} | wc -l ) -gt 0 ]
         then
             sed  -i '/^\# Allow the normal UART pins to work/d' /boot/config.txt
-            sed  -i '/^dtoverlay=pi3-disable-bt-overlay/d' /boot/config.txt
+            sed  -i "/^dtoverlay=${overlay_file}/d" /boot/config.txt
+            sed  -i "/^enable_uart=1/d" /boot/config.txt
+            sed  -i "/^force_turbo=1/d" /boot/config.txt
             progress "Modification in /boot/config.txt is done."        
             reboot=$((reboot+1))
         fi  
