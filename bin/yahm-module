@@ -95,6 +95,7 @@ enable_modules()
     fi
 
     progress "Executing ${MODULE} module_install()"
+    source ${YAHM_DIR}/share/modules/${MODULE}
 
     _module_install
 
@@ -121,6 +122,7 @@ disable_modules()
     fi
     
     progress "Executing ${MODULE} module_remove()"
+    source ${YAHM_DIR}/share/modules/${MODULE}
 
     _module_remove
 

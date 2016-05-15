@@ -9,6 +9,7 @@ description="GPIO Funkmodul für Raspberry Pi2/3"
 # Default Parameter
 file_hm_mod_rpi_pcb='/etc/init.d/hm-mod-rpi-pcb'
 file_cmdline_txt='/boot/cmdline.txt'
+file_rfd_conf="${LXC_ROOT_FS}/usr/local/etc/config/rfd.conf"
 reboot=0 # Neustart ausfuehren
 
 kernel_version=$(uname -r | sed -e 's/-.*//i')
@@ -21,7 +22,6 @@ fi
 
 _module_install()
 {
-    file_rfd_conf="${LXC_ROOT_FS}/usr/local/etc/config/rfd.conf"
 
     if [ -e ${LXC_ROOT_MODULES}/hm-fake-lan-gw ] && [ $IS_FORCE -ne 1 ]
     then
@@ -176,9 +176,6 @@ EOF
 
 _module_remove()
 {
-
-    file_rfd_conf="${LXC_ROOT_FS}/usr/local/etc/config/rfd.conf"
-
     if [ "$BOARD_TYPE" != "Raspberry Pi" ] && [ $IS_FORCE -ne 1 ]
     then
         die "ERROR: This module is for Raspberry Pi only, use -f flag to overwrite this check"

@@ -106,9 +106,6 @@ do
             then
                 die "Specified module can not be found"
             fi
-
-            # Modul laden
-            source ${YAHM_DIR}/share/modules/${MODULE}
             ;;
         v)
             IS_VERBOSE=1
