@@ -96,6 +96,7 @@ DIST=""
 case "$DIST_ID:$CODENAME" in
 Raspbian:jessie) DIST="debian";;
 Debian:jessie)	DIST="debian";;
+Ubuntu:xenial)  DIST="ubuntu";; 
 *)		die "Sorry, this script does not support your distribution/release ($DIST_ID $CODENAME)." ;;
 esac
 
@@ -112,11 +113,9 @@ cd /opt
 git clone --recursive https://github.com/leonsio/YAHM.git  2>>/var/log/yahm/git.log >>/var/log/yahm/git.log
 
 progress "Including YAHM into PATH"
-  #echo "export PATH=\$PATH:/opt/YAHM/bin" >> /etc/profile 
-    #export PATH=$PATH:/opt/YAHM/bin
 ln -sf /opt/YAHM/bin/* /usr/sbin/
 
-if [ "$1" = "quickinstall" ]
+if [ "$1" = "quickinstall" ] && [ "$DIST" != "ubuntu" ] 
 then
     info "\n\tEnter quick install mode\n"
 
@@ -153,4 +152,5 @@ then
 else
     # Info
     info "Please see 'yahm-lxc' for creating new container, 'yahm-network' for network configuration and 'yahm-modules' for additional modules" 
+    ERROR=0
 fi

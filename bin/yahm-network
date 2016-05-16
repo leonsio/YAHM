@@ -389,10 +389,18 @@ create_bridge()
         progress "Writing changes to network configuration"
         cp /tmp/yahm_interfaces /etc/network/interfaces
 
-        progress "WARNING: Your system is configured now, restarting network to apply the changes. To cancel this operation type CTRL+C you have 5 seconds..."
+        progress "WARNING: Your system is configured now, restarting network to apply the changes. You may get new IP address from DHCP\n. To cancel this operation type CTRL+C you have 5 seconds..."
         countdown
         info "... to late ;)"
+
         service networking restart
+
+	if [ is_static -eq 0 ]
+	then
+		sleep 5
+		my_bridge_ip=$(ip -4 addr show ${BRIDGE} | grep -oP "(?<=inet).*(?=/)")
+		info "IP address bridge: ${BRIDGE} : ${my_bridge_ip}"
+	fi
 
     if [ $is_static -eq 1 ]
     then

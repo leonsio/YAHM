@@ -39,7 +39,7 @@ _module_install()
     # Raspberry 2 oder 3 ?
     if [ "$BOARD_TYPE" = "Raspberry Pi" ] && [ "$BOARD_VERSION" = "3" ]
     then
-        progress "Trying to disable bluetooth on Raspberry Pi 3to use HM-MOD-RPI-PCB"
+        progress "Trying to disable bluetooth on Raspberry Pi 3 to use HM-MOD-RPI-PCB"
     
         if [ ! -f /boot/config.txt ] && [ $IS_FORCE -ne 1 ]
         then
@@ -134,6 +134,10 @@ EOF
     fi
 
     progress "Preparing modification rfd.conf..."
+    if [ ! -f $file_rfd_conf ]
+    then
+	die "RDF.conf not found, maybe your YAHM instance is not running, please start it first"
+    fi
     if [ $(cat $file_rfd_conf|grep "\[Interface 0\]"|wc -l) -eq 0 ];then
         info "[Interface 0] block in rfd.conf not found, insert it..."
         echo -e "\n[Interface 0]\nType = CCU2\nComPortFile = /dev/mmd_bidcos\nAccessFile = /dev/null\nResetFile = /dev/ccu2-ic200" >> $file_rfd_conf
