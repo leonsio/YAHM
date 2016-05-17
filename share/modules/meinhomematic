@@ -1,0 +1,47 @@
+#!/bin/bash
+#
+# Mein Homematic
+# 
+
+description="Unterstützung für Mein Homematic"
+
+_module_install()
+{
+	progress "Installing tun kernel module inside host"
+	if grep "tun" /etc/modules > /dev/null
+	then
+   		info "tun kernel module found nothing to do - OK!"
+	else
+   		echo "tun" > /etc/modules
+   		modprobe tun
+		info "tun kernel module was installed"
+	fi
+
+	progress "Installing tun module inside CCU"
+	if [ ! -d "${LXC_ROOT_FS}/dev/net" ]; then
+		info "creating dev/net directory - fertig!"
+		mkdir ${LXC_ROOT_FS}/dev/net
+	fi
+
+	if [ ! -c "${LXC_ROOT_FS}/dev/net/tun" ]; then
+		info "create tun device for lxccu - fertig!"
+		mknod -m 666 ${LXC_ROOT_FS}/dev/net/tun c 10 200 2> /dev/null
+	fi
+}
+
+_module_remove()
+{
+	
+	progress "Cleanup host"
+        if grep "tun" /etc/modules > /dev/null
+        then    
+                info "tun kernel module found, removing!"
+		sed -i /etc/modules -e "s/^tun//"
+        else    
+                info "tun kernel module not found - OK"
+        fi
+
+	progress "Cleanup CCU2 guest"
+	rm -rf ${LXC_ROOT_FS}/dev/net
+
+}
