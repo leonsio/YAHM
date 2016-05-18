@@ -27,10 +27,11 @@ Folgende Betrebssysteme werden aktuel unterstützt:
 * Debian Jessie (ARM/x86)
 * Raspbian Jessie
 * Experimentell: Armbian
+* Experimentell: Ubuntu 16.04
 
 _(Die Einrichtung des HM-MOD-RPI-PCB erfolgt automatisiert ausschließlich auf Rapsberry Pi)_
 
-**Weitere Informationen und Anleitungen können dem [Wiki](https://github.com/leonsio/YAHM/wiki) bzw. dem Homematic-Forum entnommen werden.**
+**Weitere Informationen und Anleitungen können dem [Wiki](https://github.com/leonsio/YAHM/wiki) bzw. dem [Homematic-Forum](http://homematic-forum.de/forum/viewtopic.php?f=18&t=31033) entnommen werden.**
 
 ## Installation:
 
