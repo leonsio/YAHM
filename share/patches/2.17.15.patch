@@ -56,6 +56,24 @@ diff -wrupN root/etc/fstab newroot/etc/fstab
 -varfs           /var           tmpfs    defaults,size=196M 0      0
 -debugfs 	/sys/kernel/debug debugfs 		  0 	0
 -ubi1:user	/usr/local	ubifs	defaults,noatime,rw,sync	0 0
+diff -wrupN root/etc/init.d/S50eq3configd newroot/etc/init.d/S50eq3configd 
+--- root/etc/init.d/S50eq3configd	2016-05-15 12:25:15.000000000 +0000
++++ newroot/etc/init.d/S50eq3configd	2016-05-18 18:37:41.355647945 +0000
+@@ -3,10 +3,10 @@
+ # Starts eq3configd.
+ #
+ init () {
+-	radio_mac=$(cat /sys/module/plat_eq3ccu2/parameters/radio_mac)
+-	board_serial=$(cat /sys/module/plat_eq3ccu2/parameters/board_serial)
+-	echo "BidCoS-Address=$radio_mac" > /var/ids
+-	echo "SerialNumber=$board_serial" >> /var/ids
++	#radio_mac=$(cat /sys/module/plat_eq3ccu2/parameters/radio_mac)
++	#board_serial=$(cat /sys/module/plat_eq3ccu2/parameters/board_serial)
++	#echo "BidCoS-Address=$radio_mac" > /var/ids
++	#echo "SerialNumber=$board_serial" >> /var/ids
+ 	if [ ! -e /etc/config/ids ] ; then
+     		cp /var/ids /etc/config
+ 	fi
 diff -wrupN root/etc/init.d/S00eQ3SystemStart newroot/etc/init.d/S00eQ3SystemStart
 --- root/etc/init.d/S00eQ3SystemStart	2016-04-27 17:50:38.556909859 +0200
 +++ newroot/etc/init.d/S00eQ3SystemStart	2016-04-27 17:24:27.906516663 +0200

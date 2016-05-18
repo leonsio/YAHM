@@ -59,7 +59,7 @@ fi
 for key in "$@"; do
     case $key in
         start)
-            if [ $(lxc-info -n yahm|grep RUNNING |wc -l) -eq 1 ]
+            if [ $(lxc-info -n ${LXCNAME}|grep RUNNING |wc -l) -eq 1 ]
             then
                 die "${LXCNAME} container is already running"
             fi
@@ -76,7 +76,7 @@ for key in "$@"; do
             break;
         ;;
         stop)
-          if [ $(lxc-info -n yahm|grep STOPPED|wc -l) -eq 1 ]
+          if [ $(lxc-info -n ${LXCNAME}|grep STOPPED|wc -l) -eq 1 ]
             then 
                 die "${LXCNAME} container is already stopped"
             fi  
@@ -87,7 +87,7 @@ for key in "$@"; do
             break;
         ;;
         join)
-            if [ $(lxc-info -n yahm|grep STOPPED|wc -l) -eq 1 ]
+            if [ $(lxc-info -n ${LXCNAME}|grep STOPPED|wc -l) -eq 1 ]
             then
                 die "${LXCNAME} container is stopped, please start it first"
             fi
