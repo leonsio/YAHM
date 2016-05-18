@@ -69,8 +69,9 @@ for key in "$@"; do
                 progress "Starting ${LXCNAME} LXC container in debug mode"
                 lxc-start -n ${LXCNAME}
             else
+		mkdir -p /var/log/yahm
                 progress "Starting ${LXCNAME} LXC container"
-                lxc-start $QUIET -n ${LXCNAME} -d
+                lxc-start $QUIET -n ${LXCNAME} -d -L /var/log/yahm/${LXCNAME}_console.log
             fi
             shift
             break;
