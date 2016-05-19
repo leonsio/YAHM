@@ -79,12 +79,16 @@ _module_remove()
     mv InterfacesList.xml InterfacesList.xml.bak
     mv InterfacesList.xml.new InterfacesList.xml
 
-    progress "Restoring old HMServer.jar file"
-    wget $QUIET -O ${LXC_ROOT_FS}/opt/HMServer/HMServer.jar https://raw.githubusercontent.com/eq-3/occu/master/HMserver/opt/HMServer/HMServer.jar
-    #Backup old startup file
-    mv ${LXC_ROOT_FS}/etc/init.d/S62HMServer ${LXC_ROOT_FS}/etc/init.d/_S62HMServer
-    #Create new startup file
-    cat > "${LXC_ROOT_FS}/etc/init.d/S61HMServer" <<EOF
+    installed_version=`get_yahm_version ${LXCNAME}`
+
+    if [ $(ver ${installed_version}) -ge $(ver 2.15.6) ] && [ $(ver ${installed_version}) -le $(ver 2.17.16) ]
+    then
+    	progress "Restoring old HMServer.jar file"
+    	wget $QUIET -O ${LXC_ROOT_FS}/opt/HMServer/HMServer.jar https://raw.githubusercontent.com/eq-3/occu/master/HMserver/opt/HMServer/HMServer.jar
+    	#Backup old startup file
+    	mv ${LXC_ROOT_FS}/etc/init.d/S62HMServer ${LXC_ROOT_FS}/etc/init.d/_S62HMServer
+    	#Create new startup file
+    	cat > "${LXC_ROOT_FS}/etc/init.d/S61HMServer" <<EOF
 #!/bin/sh
 #
 # Starts HMServer.
@@ -136,7 +140,8 @@ esac
 
 exit \$?
 EOF
-    chmod +x ${LXC_ROOT_FS}/etc/init.d/S61HMServer
+    	chmod +x ${LXC_ROOT_FS}/etc/init.d/S61HMServer
+    fi
     
     
     info "Homematic-IP interface was removed, please restart CCU-LXC Container"
