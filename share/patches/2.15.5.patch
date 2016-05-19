@@ -1,0 +1,1178 @@
+diff -rupN fsoriginal/bin/mountSD fs/bin/mountSD
+--- fsoriginal/bin/mountSD	2015-05-16 13:48:44.615375102 +0200
++++ fs/bin/mountSD	2015-05-16 15:57:01.450244228 +0200
+@@ -1,10 +1,11 @@
+ #!/bin/sh
+ echo "Starte mountSD: $@" > /tmp/dudu
+-mount $@
+-if [ $? == 0 ] ; then
++# mount $@
++# if [ $? == 0 ] ; then
+ 	touch /var/status/SDmounted
++	touch /var/status/hasSD
+ 	if [ -f /media/sd-mmcblk0/.initialised ] ; then
+ 		touch /var/status/SDinitialised
+ 	fi
+-fi
++# fi
+ 
+diff -rupN fsoriginal/bin/update_firmware_pre fs/bin/update_firmware_pre
+--- fsoriginal/bin/update_firmware_pre	2015-05-16 13:48:44.655377377 +0200
++++ fs/bin/update_firmware_pre	2015-05-16 13:52:03.965326754 +0200
+@@ -1,5 +1,5 @@
+ #!/bin/sh
+-
++##### TODO LXCCU: include rcu installer here or something like that
+ log() {
+   logger -t homematic -p user.notice $1
+ }
+@@ -16,47 +16,47 @@ if [ ! -f /var/new_firmware.tar.gz ]; th
+ 	exit
+ fi
+ 
+-echo Extract firmware update file ...
+-
+-# Info LED
+-echo timer > /sys/class/leds/info/trigger
+-echo 255 > /sys/class/leds/info/brightness
+-echo 100 > /sys/class/leds/info/delay_off
+-echo 100 > /sys/class/leds/info/delay_on
+-
+-# Power LED
+-echo timer > /sys/class/leds/power/trigger
+-echo 255 > /sys/class/leds/power/brightness
+-echo 100 > /sys/class/leds/power/delay_off
+-echo 100 > /sys/class/leds/power/delay_on
+-
+-cd /var
+-
+-cat new_firmware.tar.gz | gunzip | tar x
+-
+-if [ ! -x /var/update_script ]; then
+-        log "Error unzipping firmware image archive. Rebooting"
+-        echo "Error unzipping firmware image archive. Rebooting"
+-        # echo x > /dev/watchdog
+-        #/sbin/reboot
+-        #while true ; do true ;  done
+-        exit
+-fi
+-
+-rm new_firmware.tar.gz
+-
+-echo Copy files...
++# echo Extract firmware update file ...
+ 
+-cp -a /bin /var
+-cp -a /lib /var
+-cp -a /sbin /var
+-cp -a /etc /var
+-cp -a /usr /var
+-cp -a /dev /var
+-mkdir /var/proc
+-mkdir /var/sys
++# # Info LED
++# echo timer > /sys/class/leds/info/trigger
++# echo 255 > /sys/class/leds/info/brightness
++# echo 100 > /sys/class/leds/info/delay_off
++# echo 100 > /sys/class/leds/info/delay_on
++
++# # Power LED
++# echo timer > /sys/class/leds/power/trigger
++# echo 255 > /sys/class/leds/power/brightness
++# echo 100 > /sys/class/leds/power/delay_off
++# echo 100 > /sys/class/leds/power/delay_on
++
++# cd /var
++
++# cat new_firmware.tar.gz | gunzip | tar x
++
++# if [ ! -x /var/update_script ]; then
++#         log "Error unzipping firmware image archive. Rebooting"
++#         echo "Error unzipping firmware image archive. Rebooting"
++#         # echo x > /dev/watchdog
++#         #/sbin/reboot
++#         #while true ; do true ;  done
++#         exit
++# fi
++
++# rm new_firmware.tar.gz
++
++# echo Copy files...
++
++# cp -a /bin /var
++# cp -a /lib /var
++# cp -a /sbin /var
++# cp -a /etc /var
++# cp -a /usr /var
++# cp -a /dev /var
++# mkdir /var/proc
++# mkdir /var/sys
+ 
+-mkdir oldroot
++# mkdir oldroot
+ 
+-pivot_root . oldroot
++# pivot_root . oldroot
+ 
+diff -rupN fsoriginal/bin/update_firmware_run fs/bin/update_firmware_run
+--- fsoriginal/bin/update_firmware_run	2015-05-16 13:48:44.665377946 +0200
++++ fs/bin/update_firmware_run	2015-05-16 13:52:03.965326754 +0200
+@@ -1,36 +1,70 @@
+ #!/bin/sh
+ 
+-mount /proc
+-mount /sys
++# mount /proc
++# mount /sys
+ 
+-if [ ! -f /update_script ]; then
+-  echo "check Factory reset"
+-  if [ -f /var/doFactoryReset ]; then
+-	/etc/init.d/S15watchdog start
+-	echo "do Factory reset"
+-	umount /usr/local
+-        /usr/sbin/ubidetach -p /dev/mtd6
+-        /usr/sbin/ubiformat /dev/mtd6 -y
+-        /usr/sbin/ubiattach -p /dev/mtd6
+-        /usr/sbin/ubimkvol /dev/ubi1 -N user -m
+-	sleep 5
+-  fi
+-  echo 1 > /proc/sys/kernel/sysrq
+-  echo b > /proc/sysrq-trigger
++# if [ ! -f /update_script ]; then
++#   echo "check Factory reset"
++#   if [ -f /var/doFactoryReset ]; then
++#   /etc/init.d/S15watchdog start
++#   echo "do Factory reset"
++#   umount /usr/local
++#         /usr/sbin/ubidetach -p /dev/mtd6
++#         /usr/sbin/ubiformat /dev/mtd6 -y
++#         /usr/sbin/ubiattach -p /dev/mtd6
++#         /usr/sbin/ubimkvol /dev/ubi1 -N user -m
++#   sleep 5
++#   fi
++#   echo 1 > /proc/sys/kernel/sysrq
++#   echo b > /proc/sysrq-trigger
++# fi
++
++# umount /oldroot/dev/pts
++# umount /oldroot/dev/shm
++# umount /oldroot/dev
++# umount /oldroot/tmp/
++# umount /oldroot/sys/kernel/debug
++# umount /oldroot/sys
++# umount /oldroot/proc
++# umount /oldroot/usr/local
++# umount /oldroot/media/sd-mmcblk0
++# umount /oldroot/media
++# umount /oldroot
++# /etc/init.d/S15watchdog start
++# /update_script CCU2
++# echo 1 > /proc/sys/kernel/sysrq 
++# echo b > /proc/sysrq-trigger
++
++log() {
++  logger -t homematic -p user.notice $1
++}
++
++echo "LXCCU: Entering addon install mode"
++log "LXCCU: Entering addon install mode"
++if [ ! -f /var/new_firmware.tar.gz ]; then
++  log "LXCCU: addon image archive does not exist. Nothing to do"
++  echo "LXCCU: addon image archive does not exist. Nothing to do"
++  exit
+ fi
+ 
+-umount /oldroot/dev/pts
+-umount /oldroot/dev/shm
+-umount /oldroot/dev
+-umount /oldroot/tmp/
+-umount /oldroot/sys/kernel/debug
+-umount /oldroot/sys
+-umount /oldroot/proc
+-umount /oldroot/usr/local
+-umount /oldroot/media/sd-mmcblk0
+-umount /oldroot/media
+-umount /oldroot
+-/etc/init.d/S15watchdog start
+-/update_script CCU2
+-echo 1 > /proc/sys/kernel/sysrq 
+-echo b > /proc/sysrq-trigger
++echo "LXCCU: extract addon archive"
++log "LXCCU: extract addon archive"
++cd /var
++cat new_firmware.tar.gz | gunzip | tar x
++rm new_firmware.tar.gz
++if [ ! -x /var/update_script ]; then
++  log "LXCCU: Error unzipping addon image archive. Nothing to do"
++  echo "LXCCU: Error unzipping addon image archive. Nothing to do"
++  exit
++fi
++
++log "LXCCU: prepare mount points to simulate ccu"
++echo "LXCCU: prepare mount points to simulate ccu"
++cat /var/update_script | sed -r 's/mount -t ubifs ubi0:root ([\/\w\-]*)/mount -o bind \/ \1/' > /var/update_script_prepare
++cat /var/update_script_prepare | sed -r 's/mount -t ubifs ubi1:user ([\/\w\-]*)/mount -o bind \/usr\/local \1/' > /var/update_script
++
++log "LXCCU: start update_script as LXCCU"
++echo "LXCCU: start update_script as LXCCU"
++chmod +x /var/update_script
++cd /var/
++/var/update_script CCU2
+diff -rupN fsoriginal/etc/config_templates/ntpclient fs/etc/config_templates/ntpclient
+--- fsoriginal/etc/config_templates/ntpclient	2015-05-16 13:48:45.095402394 +0200
++++ fs/etc/config_templates/ntpclient	2015-05-16 13:52:03.975327199 +0200
+@@ -1 +1 @@
+-NTPSERVERS='ntp.homematic.com'
++NTPSERVERS='0.de.pool.ntp.org'
+diff -rupN fsoriginal/etc/fstab fs/etc/fstab
+--- fsoriginal/etc/fstab	2015-05-16 13:48:45.105402962 +0200
++++ fs/etc/fstab	2015-05-16 13:52:03.975327199 +0200
+@@ -1,13 +1,3 @@
+ # /etc/fstab: static file system information.
+ #
+ # <file system> <mount pt>     <type>   <options>         <dump> <pass>
+-/dev/root       /              ext2     rw,noauto         0      1
+-proc            /proc          proc     defaults          0      0
+-devpts          /dev/pts       devpts   defaults,gid=5,mode=620   0      0
+-tmpfs           /dev/shm       tmpfs    mode=0777         0      0
+-tmpfs           /tmp           tmpfs    defaults          0      0
+-mediafs         /media         tmpfs    defaults          0      0
+-sysfs           /sys           sysfs    defaults          0      0
+-varfs           /var           tmpfs    defaults,size=196M 0      0
+-debugfs 	/sys/kernel/debug debugfs 		  0 	0
+-ubi1:user	/usr/local	ubifs	defaults,noatime,rw,sync	0 0
+diff -rupN fsoriginal/etc/init.d/_40UsbNetwork fs/etc/init.d/_40UsbNetwork
+--- fsoriginal/etc/init.d/_40UsbNetwork	1970-01-01 01:00:00.000000000 +0100
++++ fs/etc/init.d/_40UsbNetwork	2015-05-16 13:52:03.975327199 +0200
+@@ -0,0 +1,52 @@
++#!/bin/sh
++#
++# Starts Ethernet over USB
++#
++
++
++start() {
++	export TZ=`cat /etc/config/TZ`
++
++	echo -n "Starting network over usb: "
++		
++	if [ ! -f /etc/udhcpd.usb0.conf ]; then
++		echo "ERROR (file /etc/udhcp.usb0.conf not found)"
++	elif [ ! -f /etc/dnsd.conf ]; then
++		echo "ERROR (file /etc/dnsd.conf not found)"
++	else
++		ifconfig usb0 10.101.82.51 netmask 255.255.255.0
++		udhcpd -S /etc/udhcpd.usb0.conf
++		# disable DNS Server; CCU can only be access by ip address
++		#dnsd -d -c /etc/dnsd.conf -i 10.101.82.51
++		echo "OK"	
++	fi		
++}
++
++stop() {
++	echo -n "Stopping network over usb: "
++	killall udhcpd
++	killall dnsd	
++	echo "OK"
++}
++restart() {
++	stop
++	start
++}
++
++case "$1" in
++  start)
++	start
++	;;
++  stop)
++	stop
++	;;
++  restart|reload)
++	restart
++	;;
++  *)
++	echo "Usage: $0 {start|stop|restart}"
++	exit 1
++esac
++
++exit $?
++
+diff -rupN fsoriginal/etc/init.d/rcS fs/etc/init.d/rcS
+--- fsoriginal/etc/init.d/rcS	2015-05-16 13:48:45.075401258 +0200
++++ fs/etc/init.d/rcS	2015-05-16 13:52:03.975327199 +0200
+@@ -25,3 +25,4 @@ for i in /etc/init.d/S??* ;do
+     esac
+ done
+ 
++/bin/mountSD
+\ Kein Zeilenumbruch am Dateiende.
+diff -rupN fsoriginal/etc/init.d/S00eQ3SystemStart fs/etc/init.d/S00eQ3SystemStart
+--- fsoriginal/etc/init.d/S00eQ3SystemStart	2015-05-16 13:48:45.085401826 +0200
++++ fs/etc/init.d/S00eQ3SystemStart	2015-05-16 13:52:03.975327199 +0200
+@@ -4,104 +4,104 @@
+ #
+ 
+ CFG_TEMPLATE_DIR=/etc/config_templates
+-SERIAL=$(cat /sys/module/plat_eq3ccu2/parameters/board_serial)
++#SERIAL=$(cat /sys/module/plat_eq3ccu2/parameters/board_serial)
+ 
+ init() {
+ 	# power led on
+-	echo 255 > /sys/class/leds/power/brightness
+-	echo default-on > /sys/class/leds/power/trigger
++#	echo 255 > /sys/class/leds/power/brightness
++#	echo default-on > /sys/class/leds/power/trigger
+ 	# internet led off
+-	echo none > /sys/class/leds/internet/trigger
++#	echo none > /sys/class/leds/internet/trigger
+ 	# info led fast
+-	echo timer > /sys/class/leds/info/trigger
+-	echo 255 > /sys/class/leds/info/brightness
+-	echo 100 > /sys/class/leds/info/delay_off
+-	echo 100 > /sys/class/leds/info/delay_on
+-
+-        chmod 775 /var
+-        mkdir /var/log
+-        chmod 775 /var/log
+-        mkdir /var/tmp
+-        chmod 775 /var/tmp
+-        mkdir /var/rega
+-        chmod 775 /var/rega
+-        mkdir /var/run
+-        chmod 775 /var/run
+-        mkdir /var/spool
+-        chmod 775 /var/spool
+-        mkdir /var/lock
+-        chmod 775 /var/lock
+-        mkdir /var/cache
+-        chmod 775 /var/cache
+-        mkdir /var/lib
+-        chmod 775 /var/lib
+-        mkdir /var/lib/misc
+-        chmod 775 /var/lib/misc
+-        mkdir /var/empty
+-        chmod 600 /var/empty
+-        mkdir /var/etc
+-        chmod 775 /var/etc
++#	echo timer > /sys/class/leds/info/trigger
++#	echo 255 > /sys/class/leds/info/brightness
++#	echo 100 > /sys/class/leds/info/delay_off
++#	echo 100 > /sys/class/leds/info/delay_on
++
++	       chmod 775 /var
++	       mkdir /var/log
++	       chmod 775 /var/log
++	       mkdir /var/tmp
++	       chmod 775 /var/tmp
++	       mkdir /var/rega
++	       chmod 775 /var/rega
++	       mkdir /var/run
++	       chmod 775 /var/run
++	       mkdir /var/spool
++	       chmod 775 /var/spool
++	       mkdir /var/lock
++	       chmod 775 /var/lock
++	       mkdir /var/cache
++	       chmod 775 /var/cache
++	       mkdir /var/lib
++	       chmod 775 /var/lib
++	       mkdir /var/lib/misc
++	       chmod 775 /var/lib/misc
++	       mkdir /var/empty
++	       chmod 600 /var/empty
++	       mkdir /var/etc
++	       chmod 775 /var/etc
+ 	#
+ 	# crontab dirs
+-        mkdir -p /var/spool/cron
+-        chmod 775 /var/spool
+-        chmod 775 /var/spool/cron
+-        if [ ! -d /usr/local/crontabs ] ; then
+-        	mkdir -p /usr/local/crontabs
+-        	chmod 775 /usr/local/crontabs
+-        fi
++	       mkdir -p /var/spool/cron
++	       chmod 775 /var/spool
++	       chmod 775 /var/spool/cron
++	       if [ ! -d /usr/local/crontabs ] ; then
++	       	mkdir -p /usr/local/crontabs
++	       	chmod 775 /usr/local/crontabs
++	       fi
+ 	ln -s /usr/local/crontabs /var/spool/cron/crontabs 
+-        if [ ! -e /usr/local/crontabs/root ] ; then
+-                cp $CFG_TEMPLATE_DIR/crontab.root /usr/local/crontabs/root
+-        fi
+-        # Bug fix
+-        grep "setInterfaceClock" /usr/local/crontabs/root
+-        if [ $? == 0 ] ; then
+-                echo "update crontab file"
+-                sed 's/setInterfaceClock/SetInterfaceClock/g' /usr/local/crontabs/root > /usr/local/crontabs/root.tmp
+-                mv /usr/local/crontabs/root.tmp /usr/local/crontabs/root
+-        fi
++	       if [ ! -e /usr/local/crontabs/root ] ; then
++	               cp $CFG_TEMPLATE_DIR/crontab.root /usr/local/crontabs/root
++	       fi
++	       # Bug fix
++	       grep "setInterfaceClock" /usr/local/crontabs/root
++	       if [ $? == 0 ] ; then
++	               echo "update crontab file"
++	               sed 's/setInterfaceClock/SetInterfaceClock/g' /usr/local/crontabs/root > /usr/local/crontabs/root.tmp
++	               mv /usr/local/crontabs/root.tmp /usr/local/crontabs/root
++	       fi
+ 
+-        
++	       
+ 	if [ ! -e /usr/local/etc/config/shadow ] ; then
+ 		cp $CFG_TEMPLATE_DIR/shadow /usr/local/etc/config/shadow
+ 	fi
+ 
+-	modprobe spidev
+-        modprobe ic200_spi
+-        modprobe spi_eq3_gpio
+-        modprobe spi_bitbang
+-        mknod spidev0.0 c 153 0
+-        modprobe gpio-keys
+-        modprobe fsl_usb2_udc.ko
+-	if grep -q "eQ3Mode=production" /proc/cmdline ; then
+-          modprobe g_multi luns=1 cdrom=1 ro=1 removable=0,0 file=/usr/share/eq3/install.iso host_addr=00:1a:22:00:05:86 dev_addr=00:1a:22:00:05:87 iManufacturer="eQ-3" iProduct="CCU2" idVendor="0x1b1f" idProduct="0xc016" iSerialNumber="$SERIAL"
+-	fi
++#	modprobe spidev
++#	       modprobe ic200_spi
++#	       modprobe spi_eq3_gpio
++#	       modprobe spi_bitbang
++#	       mknod spidev0.0 c 153 0
++#	       modprobe gpio-keys
++#	       modprobe fsl_usb2_udc.ko
++#	if grep -q "eQ3Mode=production" /proc/cmdline ; then
++#	         modprobe g_multi luns=1 cdrom=1 ro=1 removable=0,0 file=/usr/share/eq3/install.iso host_addr=00:1a:22:00:05:86 dev_addr=00:1a:22:00:05:87 iManufacturer="eQ-3" iProduct="CCU2" idVendor="0x1b1f" idProduct="0xc016" iSerialNumber="$SERIAL"
++#	fi
+ 	
+ 	# Tunneling
+-        modprobe tun
+-       
++#	       modprobe tun
++	      
+ 	# USB
+-        modprobe ehci-hcd
++#	       modprobe ehci-hcd
+ 	 
+ 	if [ ! -d /usr/local/etc/config ] ; then
+-                mkdir -p /usr/local/etc/config
+-        	chmod 775 /usr/local/etc/config
+-        fi
++	               mkdir -p /usr/local/etc/config
++	       	chmod 775 /usr/local/etc/config
++	       fi
+ 
+ 
+-        if [ ! -e /etc/config/TZ ] ; then
+-                cp $CFG_TEMPLATE_DIR/TZ /etc/config
+-        fi
+-        if [ ! -e /etc/config/netconfig ] ; then
+-                cp $CFG_TEMPLATE_DIR/netconfig /etc/config
+-        fi
+-        if [ ! -e /etc/config/shadow ] ; then
+-                cp $CFG_TEMPLATE_DIR/shadow /etc/config
+-        fi
++	       if [ ! -e /etc/config/TZ ] ; then
++	               cp $CFG_TEMPLATE_DIR/TZ /etc/config
++	       fi
++	       if [ ! -e /etc/config/netconfig ] ; then
++	               cp $CFG_TEMPLATE_DIR/netconfig /etc/config
++	       fi
++	       if [ ! -e /etc/config/shadow ] ; then
++	               cp $CFG_TEMPLATE_DIR/shadow /etc/config
++	       fi
+ 
+ 	export TZ=`cat /etc/config/TZ`
+- 
++
+ }
+ 
+ start() {
+@@ -116,6 +116,7 @@ start() {
+ stop () {
+ 	start-stop-daemon -K -q -p /var/run/crond.pid
+ 	/bin/update_firmware_pre
++	/bin/update_firmware_run
+ }
+ 
+ restart() {
+@@ -123,16 +124,16 @@ restart() {
+ }
+ 
+ case "$1" in
+-  start)
++	 start)
+ 	start
+ 	;;
+-  stop)
++	 stop)
+ 	stop
+ 	;;
+-  restart|reload)
++	 restart|reload)
+ 	restart
+ 	;;
+-  *)
++	 *)
+ 	echo "Usage: $0 {start|stop|restart}"
+ 	exit 1
+ esac
+diff -rupN fsoriginal/etc/init.d/S40UsbNetwork fs/etc/init.d/S40UsbNetwork
+--- fsoriginal/etc/init.d/S40UsbNetwork	2015-05-16 13:48:45.085401826 +0200
++++ fs/etc/init.d/S40UsbNetwork	1970-01-01 01:00:00.000000000 +0100
+@@ -1,52 +0,0 @@
+-#!/bin/sh
+-#
+-# Starts Ethernet over USB
+-#
+-
+-
+-start() {
+-	export TZ=`cat /etc/config/TZ`
+-
+-	echo -n "Starting network over usb: "
+-		
+-	if [ ! -f /etc/udhcpd.usb0.conf ]; then
+-		echo "ERROR (file /etc/udhcp.usb0.conf not found)"
+-	elif [ ! -f /etc/dnsd.conf ]; then
+-		echo "ERROR (file /etc/dnsd.conf not found)"
+-	else
+-		ifconfig usb0 10.101.82.51 netmask 255.255.255.0
+-		udhcpd -S /etc/udhcpd.usb0.conf
+-		# disable DNS Server; CCU can only be access by ip address
+-		#dnsd -d -c /etc/dnsd.conf -i 10.101.82.51
+-		echo "OK"	
+-	fi		
+-}
+-
+-stop() {
+-	echo -n "Stopping network over usb: "
+-	killall udhcpd
+-	killall dnsd	
+-	echo "OK"
+-}
+-restart() {
+-	stop
+-	start
+-}
+-
+-case "$1" in
+-  start)
+-	start
+-	;;
+-  stop)
+-	stop
+-	;;
+-  restart|reload)
+-	restart
+-	;;
+-  *)
+-	echo "Usage: $0 {start|stop|restart}"
+-	exit 1
+-esac
+-
+-exit $?
+-
+diff -rupN fsoriginal/etc/init.d/S50eq3configd fs/etc/init.d/S50eq3configd
+--- fsoriginal/etc/init.d/S50eq3configd	2015-05-16 13:48:45.075401258 +0200
++++ fs/etc/init.d/S50eq3configd	2015-05-16 13:52:03.985327645 +0200
+@@ -1,52 +1,52 @@
+ #!/bin/sh
+ #
+-# Starts eq3configd.
++#	Starts	eq3configd.
+ #
+-init () {
+-	radio_mac=$(cat /sys/module/plat_eq3ccu2/parameters/radio_mac)
+-	board_serial=$(cat /sys/module/plat_eq3ccu2/parameters/board_serial)
+-	echo "BidCoS-Address=$radio_mac" > /var/ids
+-	echo "SerialNumber=$board_serial" >> /var/ids
+-	if [ ! -e /etc/config/ids ] ; then
+-    		cp /var/ids /etc/config
++init	()	{
++#	radio_mac=$(cat	/sys/module/plat_eq3ccu2/parameters/radio_mac)
++#	board_serial=$(cat	/sys/module/plat_eq3ccu2/parameters/board_serial)
++	echo	"BidCoS-Address=$radio_mac"	>	/var/ids
++	echo	"SerialNumber=$board_serial"	>>	/var/ids
++	if	[	!	-e	/etc/config/ids	]	;	then
++						cp	/var/ids	/etc/config
+ 	fi
+ 	
+-	if [ ! -e /etc/config/crypttool.cfg ] ; then
+-			touch /etc/config/crypttool.cfg
++	if	[	!	-e	/etc/config/crypttool.cfg	]	;	then
++			touch	/etc/config/crypttool.cfg
+ 	fi
+ }
+ 
+-start() {
+-	echo -n "Starting eq3configd: "
++start()	{
++	echo	-n	"Starting	eq3configd:	"
+ 	init
+-	start-stop-daemon -S -q -p /var/run/eq3configd.pid --exec /bin/eq3configd &
+-	start-stop-daemon -S -q -p /var/run/ssdpd.pid --exec /bin/ssdpd &
+-	echo "OK"
++	start-stop-daemon	-S	-q	-p	/var/run/eq3configd.pid	--exec	/bin/eq3configd	&
++	start-stop-daemon	-S	-q	-p	/var/run/ssdpd.pid	--exec	/bin/ssdpd	&
++	echo	"OK"
+ }
+-stop() {
+-	echo -n "Stopping eq3configd: "
+-	start-stop-daemon -K -q -p /var/run/eq3configd.pid
+-	echo "OK"
++stop()	{
++	echo	-n	"Stopping	eq3configd:	"
++	start-stop-daemon	-K	-q	-p	/var/run/eq3configd.pid
++	echo	"OK"
+ }
+-restart() {
++restart()	{
+ 	stop
+ 	start
+ }
+ 
+-case "$1" in
+-  start)
++case	"$1"	in
++		start)
+ 	start
+ 	;;
+-  stop)
++		stop)
+ 	stop
+ 	;;
+-  restart|reload)
++		restart|reload)
+ 	restart
+ 	;;
+-  *)
+-	echo "Usage: $0 {start|stop|restart}"
+-	exit 1
++		*)
++	echo	"Usage:	$0	{start|stop|restart}"
++	exit	1
+ esac
+ 
+-exit $?
++exit	$?
+ 
+diff -rupN fsoriginal/etc/init.d/S60rfd fs/etc/init.d/S60rfd
+--- fsoriginal/etc/init.d/S60rfd	2015-05-16 13:48:45.085401826 +0200
++++ fs/etc/init.d/S60rfd	2015-05-16 13:52:03.985327645 +0200
+@@ -57,8 +57,8 @@ init() {
+ start() {
+ 	echo -n "Starting rfd: "
+ 	init
+-	check_bo
+-	update
++#	check_bo
++#	update
+ 	start-stop-daemon -S -q -p /var/run/rfd.pid --exec /bin/rfd -- -d -f /etc/config/rfd.conf -l $LOGLEVEL_RFD
+ 	echo "OK"
+ }
+@@ -73,16 +73,16 @@ restart() {
+ }
+ 
+ case "$1" in
+-  start)
++	 start)
+ 	start
+ 	;;
+-  stop)
++	 stop)
+ 	stop
+ 	;;
+-  restart|reload)
++	 restart|reload)
+ 	restart
+ 	;;
+-  *)
++	 *)
+ 	echo "Usage: $0 {start|stop|restart}"
+ 	exit 1
+ esac
+diff -rupN fsoriginal/etc/init.d/S99eQ3SystemStarted fs/etc/init.d/S99eQ3SystemStarted
+--- fsoriginal/etc/init.d/S99eQ3SystemStarted	2015-05-16 13:48:45.085401826 +0200
++++ fs/etc/init.d/S99eQ3SystemStarted	2015-05-16 13:52:03.985327645 +0200
+@@ -4,32 +4,32 @@
+ #
+ 
+ CFG_TEMPLATE_DIR=/etc/config_templates
+-SERIAL=$(cat /sys/module/plat_eq3ccu2/parameters/board_serial)
++#SERIAL=$(cat /sys/module/plat_eq3ccu2/parameters/board_serial)
+ 
+ init() {
+ 	export TZ=`cat /etc/config/TZ`
+ 
+ 	# power led on
+-	echo 255 > /sys/class/leds/power/brightness
+-	echo default-on > /sys/class/leds/power/trigger
++#	echo 255 > /sys/class/leds/power/brightness
++#	echo default-on > /sys/class/leds/power/trigger
+ 	# internet led off
+-	echo none > /sys/class/leds/internet/trigger
++#	echo none > /sys/class/leds/internet/trigger
+ 	# info led off
+-	echo none > /sys/class/leds/info/trigger
+-	/bin/hss_led 2>&1 > /dev/null  &
++#	echo none > /sys/class/leds/info/trigger
++#	/bin/hss_led 2>&1 > /dev/null  &
+ }
+ 
+ start() {
+ 	echo -n "System started"
+ 	init
+ 	if [ ! -e /etc/config/safemode ] ; then
+-        	# meine-homematic.de starten
+-        	/opt/mh/startup.sh
++	       	# meine-homematic.de starten
++	       	/opt/mh/startup.sh
+ 
+-        	# Zusatzsoftware starten
+-        	run-parts /etc/config/rc.d
++	       	# Zusatzsoftware starten
++	       	run-parts /etc/config/rc.d
+ 	else
+-        	rm -f /etc/config/safemode
++	       	rm -f /etc/config/safemode
+ 	fi
+ 	echo "OK"
+ }
+@@ -43,16 +43,16 @@ stop() {
+ }
+ 
+ case "$1" in
+-  start)
++	 start)
+ 	start
+ 	;;
+-  stop)
++	 stop)
+ 	stop
+ 	;;
+-  restart|reload)
++	 restart|reload)
+ 	restart
+ 	;;
+-  *)
++	 *)
+ 	echo "Usage: $0 {start|stop|restart}"
+ 	exit 1
+ esac
+diff -rupN fsoriginal/etc/inittab fs/etc/inittab
+--- fsoriginal/etc/inittab	2015-05-16 13:48:45.105402962 +0200
++++ fs/etc/inittab	2015-05-16 13:52:03.985327645 +0200
+@@ -14,27 +14,31 @@
+ # process   == program to run
+ 
+ # Startup the system
+-null::sysinit:/bin/mount -t proc proc /proc
++#null::sysinit:/bin/mount -t proc proc /proc
+ #null::sysinit:/bin/mount -o remount,rw / # REMOUNT_ROOTFS_RW
+ null::sysinit:/bin/mkdir -p /dev/pts
+ null::sysinit:/bin/mkdir -p /dev/shm
+ null::sysinit:/bin/mount -a
+ null::sysinit:/bin/hostname -F /etc/hostname
++
++
+ # now run any rc scripts
+ ::sysinit:/etc/init.d/rcS
+ 
+ # Put a getty on the serial port
+-ttyAMA0::respawn:/sbin/getty -L ttyAMA0 115200 vt100 # GENERIC_SERIAL
+-ttyGS0::respawn:/sbin/getty -L ttyGS0 115200 vt100 # USB SERIAL
++#ttyAMA0::respawn:/sbin/getty -L ttyAMA0 115200 vt100 # GENERIC_SERIAL
++#ttyGS0::respawn:/sbin/getty -L ttyGS0 115200 vt100 # USB SERIAL
+ 
+ # Stuff to do for the 3-finger salute
+ ::ctrlaltdel:/sbin/reboot
+ 
+ # Stuff to do for SIGQUIT 
+-::restart:/bin/update_firmware_run
++#::restart:/bin/update_firmware_run
+ 
+ # Stuff to do before rebooting
+ ::shutdown:/etc/init.d/rcK
+-null::shutdown:/bin/umount -a -r
+-null::shutdown:/sbin/swapoff -a
++#null::shutdown:/bin/umount -a -r
++#null::shutdown:/sbin/swapoff -a
+ 
++# create a console for lxc
++tty1::respawn:/sbin/getty -L tty1 115200 linux
+diff -rupN fsoriginal/opt/HMServer/pages/StorageSettingsDialog.ftl fs/opt/HMServer/pages/StorageSettingsDialog.ftl
+--- fsoriginal/opt/HMServer/pages/StorageSettingsDialog.ftl	2015-05-16 13:48:46.465480149 +0200
++++ fs/opt/HMServer/pages/StorageSettingsDialog.ftl	2015-05-16 15:41:54.705428122 +0200
+@@ -147,7 +147,7 @@
+ <div class="popupTitle">${"$"}{dialogSettingsGeneralSettingsTitle}</div>
+ <div class="CLASS21114 j_translate">
+ 	<table class="popupTable" border=1 width="100%">
+-		<tr class="CLASS21115">
++		<tr class="CLASS21115" style="">
+ 			<td class="CLASS21116">${"$"}{dialogSettingsSDCardSettings}</td>
+ 			<td  align="center"  width="35%">
+ 				<table>
+@@ -161,7 +161,7 @@
+ 								<table>
+ 								<tr>
+ 									<td align="right">
+-										<div id="initaliseSDCardButton" class="StdButton CLASS04907" onClick="OnInitaliseSDCard()">${"$"}{dialogSettingsStorageSettingsBtnInitaliseSDCard}</div>
++										<!-- <div id="initaliseSDCardButton" class="StdButton CLASS04907" onClick="OnInitaliseSDCard()">${"$"}{dialogSettingsStorageSettingsBtnInitaliseSDCard}</div>-->
+ 									</td>
+ 									<td align="right">
+ 										<div id="backupSDCardButton" class="StdButton CLASS04907" onClick="OnBackupSDCard()">${"$"}{dialogSettingsStorageSettingsBtnBackup}</div>
+diff -rupN fsoriginal/opt/mh/startup.sh fs/opt/mh/startup.sh
+--- fsoriginal/opt/mh/startup.sh	2015-05-16 13:48:46.125460872 +0200
++++ fs/opt/mh/startup.sh	2015-05-16 13:52:03.995328091 +0200
+@@ -19,9 +19,9 @@ if [ ! -e $USER_DIR ] ; then
+ 
+ fi
+ 
+-mkdir -p /dev/net
+-mknod /dev/net/tun c 10 200
+-insmod $BASE_DIR/tun.ko
++#mkdir -p /dev/net
++#mknod /dev/net/tun c 10 200
++#insmod $BASE_DIR/tun.ko
+ 
+ 
+ l1=`ifconfig | grep 'eth0' | tr -s ' ' | cut -d ' ' -f5 | tr ':' '-'`
+diff -rupN fsoriginal/www/api/methods/bidcosrf/setconfiguration-rf.tcl fs/www/api/methods/bidcosrf/setconfiguration-rf.tcl
+--- fsoriginal/www/api/methods/bidcosrf/setconfiguration-rf.tcl	2015-05-16 13:48:50.095685402 +0200
++++ fs/www/api/methods/bidcosrf/setconfiguration-rf.tcl	2015-05-16 13:52:03.995328091 +0200
+@@ -39,13 +39,13 @@ puts $fd ""
+ puts $fd ""	
+ 
+ #CCU2 Koprozessor
+-puts $fd "\[Interface 0\]"
+-puts $fd "Type = CCU2"
+-puts $fd "Description = CCU2-Coprocessor"
+-puts $fd "ComPortFile = /dev/ttyAPP0"
+-puts $fd "AccessFile = /dev/null"
+-puts $fd "ResetFile = /dev/ccu2-ic200"
+-puts $fd ""
++#puts $fd "\[Interface 0\]"
++#puts $fd "Type = CCU2"
++#puts $fd "Description = CCU2-Coprocessor"
++#puts $fd "ComPortFile = /dev/ttyAPP0"
++#puts $fd "AccessFile = /dev/null"
++#puts $fd "ResetFile = /dev/ccu2-ic200"
++#puts $fd ""
+ 
+ #Lan Interfaces (RF)
+ set i 1
+diff -rupN fsoriginal/www/config/control_panel.cgi fs/www/config/control_panel.cgi
+--- fsoriginal/www/config/control_panel.cgi	2015-05-16 13:48:51.175746242 +0200
++++ fs/www/config/control_panel.cgi	2015-05-16 13:52:30.686503466 +0200
+@@ -159,10 +159,12 @@ puts {
+ 
+     <!-- Storage Settings -->
+     <td>
++
+       <div class="cpButton">
+         <div class="StdTableBtn CLASS21701" onclick="showGeneralSettingsCP();">${btnSysConfGeneralSettings}</div>
+         <div class="StdTableBtnHelp"><img id="showGeneralSettingsCPHelp" src="/ise/img/help.png"></div>
+       </div>
++
+     </td>
+ 
+ 	  </tr>
+diff -rupN fsoriginal/www/config/cp_maintenance.cgi fs/www/config/cp_maintenance.cgi
+--- fsoriginal/www/config/cp_maintenance.cgi	2015-05-16 13:48:51.155745116 +0200
++++ fs/www/config/cp_maintenance.cgi	2015-05-16 13:52:04.005328537 +0200
+@@ -341,92 +341,93 @@ proc action_put_page {} {
+                 table_data {class="CLASS20904"} {width="400"} {
+                     table {class="CLASS20909"} {
+                         set cur_version [get_version]
++                        set lxccu_version [read_var "/boot/LXCCUVERSION" VERSION]
+                         set serial [get_serial]
+                         table_row {
+                             table_data {align="left"} {colspan="2" id="actualSWVersion"} {
+                                 puts "\${dialogSettingsCMLblActualSoftwareVersion}"
+                             }
+                             table_data {
+-                                puts "$cur_version"
+-                            }
+-                        }
+-                        table_row {
+-                            table_data {align="left"} {colspan="2"} {
+-                                puts "\${dialogSettingsCMLblAvailableSoftwareVersion}"
+-                            }
+-                            table_data {id="availableSWVersion"} {
+-                                # This doesn´t work properly
+-                                # puts [iframe "$REMOTE_FIRMWARE_SCRIPT?cmd=check_version&version=$cur_version&serial=$serial&lang=de&product=HM-CCU2" marginheight=0 marginwidth=0 frameborder=0 width=100 height=20 {scrolling="no"} ]
+-                                # The available version will be set further down with "jQuery('#availableSWVersion').html(homematic.com.getLatestVersion());"
+-                            }
+-                        }
+-                        table_row {
+-                            table_data {align="left"} {colspan="3"} {
+-                                #puts "[bold "Software-Update durchführen"]"
+-                                puts "<b>\${dialogSettingsCMLblPerformSoftwareUpdate}</b>"
+-                            }
+-                        }
+-                        table_row {
+-                            td {width="20"} {}
+-                            table_data {align="left"} {
+-                                puts "\${dialogSettingsCMLblPerformSoftwareUpdateStep1}"
+-                            }
+-                            table_data {
+-                                division {class="popupControls CLASS20905"} {
+-                                    table {
+-                                        table_row {
+-                                            table_data {
+-                                                division {class="CLASS20908"} "onClick=\"window.location.href='$REMOTE_FIRMWARE_SCRIPT?cmd=download&version=$cur_version&serial=$serial&lang=de&product=HM-CCU2';\"" {
+-                                                    puts "\${dialogSettingsCMBtnPerformSoftwareUpdateDownload}"
+-                                                }
+-                                            }
+-                                        }
+-                                    }
+-                                }
+-                            }
+-                        }
+-                        table_row {
+-                            td {width="20"} {}
+-                            table_data {align="left"} {colspan="2"} {
+-                                puts "\${dialogSettingsCMLblPerformSoftwareUpdateStep2}"
+-                            }
+-                        }
+-                        table_row {
+-                            td {width="20"} {}
+-                            table_data {colspan="2"} {
+-                                form "$env(SCRIPT_NAME)?sid=$sid" name=firmware_form {target=firmware_upload_iframe} enctype=multipart/form-data method=post {
+-                                    export action=firmware_upload
+-                                    export downloadOnly=$downloadOnly
+-                                    file_button firmware_file size=30 maxlength=1000000
+-                                }
+-                                puts {<iframe name="firmware_upload_iframe" style="display: none;"></iframe>}
+-                            }
+-                        }
+-                        table_row {
+-                            td {width="20"} {}
+-                            table_data {align="left"} {
+-                                puts "\${dialogSettingsCMLblPerformSoftwareUpdateStep3}"
+-                            }
+-                            table_data {
+-                                division {class="popupControls CLASS20905"} {
+-                                    table {
+-                                        table_row {
+-                                            table_data {
+-                                                division {class="CLASS20919"} {onClick="document.firmware_form.submit();showUserHint();"} {
+-                                                  puts "\${dialogSettingsCMBtnPerformSoftwareUpdateUpload}"
+-                                                }
+-                                            }
+-                                        }
+-                                    }
+-                                }
+-                            }
+-                        }
+-                        table_row {
+-                            td {width="20"} {}
+-                            table_data {align="left"} {colspan="2"} {class="CLASS20920"} {
+-                                puts "\${dialogSettingsCMLblPerformSoftwareUpdateStep4}"
++                                puts "$cur_version - LXCCU: $lxccu_version"
+                             }
+                         }
++                        # table_row {
++                        #     table_data {align="left"} {colspan="2"} {
++                        #         puts "\${dialogSettingsCMLblAvailableSoftwareVersion}"
++                        #     }
++                        #     table_data {id="availableSWVersion"} {
++                        #         # This doesn´t work properly
++                        #         # puts [iframe "$REMOTE_FIRMWARE_SCRIPT?cmd=check_version&version=$cur_version&serial=$serial&lang=de&product=HM-CCU2" marginheight=0 marginwidth=0 frameborder=0 width=100 height=20 {scrolling="no"} ]
++                        #         # The available version will be set further down with "jQuery('#availableSWVersion').html(homematic.com.getLatestVersion());"
++                        #     }
++                        # }
++                        # table_row {
++                        #     table_data {align="left"} {colspan="3"} {
++                        #         #puts "[bold "Software-Update durchführen"]"
++                        #         puts "<b>\${dialogSettingsCMLblPerformSoftwareUpdate}</b>"
++                        #     }
++                        # }
++                        # table_row {
++                        #     td {width="20"} {}
++                        #     table_data {align="left"} {
++                        #         puts "\${dialogSettingsCMLblPerformSoftwareUpdateStep1}"
++                        #     }
++                        #     table_data {
++                        #         division {class="popupControls CLASS20905"} {
++                        #             table {
++                        #                 table_row {
++                        #                     table_data {
++                        #                         division {class="CLASS20908"} "onClick=\"window.location.href='$REMOTE_FIRMWARE_SCRIPT?cmd=download&version=$cur_version&serial=$serial&lang=de&product=HM-CCU2';\"" {
++                        #                             puts "\${dialogSettingsCMBtnPerformSoftwareUpdateDownload}"
++                        #                         }
++                        #                     }
++                        #                 }
++                        #             }
++                        #         }
++                        #     }
++                        # }
++                        # table_row {
++                        #     td {width="20"} {}
++                        #     table_data {align="left"} {colspan="2"} {
++                        #         puts "\${dialogSettingsCMLblPerformSoftwareUpdateStep2}"
++                        #     }
++                        # }
++                        # table_row {
++                        #     td {width="20"} {}
++                        #     table_data {colspan="2"} {
++                        #         form "$env(SCRIPT_NAME)?sid=$sid" name=firmware_form {target=firmware_upload_iframe} enctype=multipart/form-data method=post {
++                        #             export action=firmware_upload
++                        #             export downloadOnly=$downloadOnly
++                        #             file_button firmware_file size=30 maxlength=1000000
++                        #         }
++                        #         puts {<iframe name="firmware_upload_iframe" style="display: none;"></iframe>}
++                        #     }
++                        # }
++                        # table_row {
++                        #     td {width="20"} {}
++                        #     table_data {align="left"} {
++                        #         puts "\${dialogSettingsCMLblPerformSoftwareUpdateStep3}"
++                        #     }
++                        #     table_data {
++                        #         division {class="popupControls CLASS20905"} {
++                        #             table {
++                        #                 table_row {
++                        #                     table_data {
++                        #                         division {class="CLASS20919"} {onClick="document.firmware_form.submit();showUserHint();"} {
++                        #                           puts "\${dialogSettingsCMBtnPerformSoftwareUpdateUpload}"
++                        #                         }
++                        #                     }
++                        #                 }
++                        #             }
++                        #         }
++                        #     }
++                        # }
++                        # table_row {
++                        #     td {width="20"} {}
++                        #     table_data {align="left"} {colspan="2"} {class="CLASS20920"} {
++                        #         puts "\${dialogSettingsCMLblPerformSoftwareUpdateStep4}"
++                        #     }
++                        # }
+                     }
+                 }
+                 table_data {align="left"} {class="CLASS20921"} {
+diff -rupN fsoriginal/www/config/cp_security.cgi fs/www/config/cp_security.cgi
+--- fsoriginal/www/config/cp_security.cgi	2015-05-16 13:48:51.175746242 +0200
++++ fs/www/config/cp_security.cgi	2015-05-16 13:52:04.005328537 +0200
+@@ -474,12 +474,12 @@ proc action_backup_restore_go {} {
+     }
+ 		
+ 	if { "false" == $ccu1_backup } {	# backup for version >= 2
+-		exec umount /usr/local
+-        	exec /usr/sbin/ubidetach -p /dev/mtd6
+-        	exec /usr/sbin/ubiformat /dev/mtd6 -y
+-        	exec /usr/sbin/ubiattach -p /dev/mtd6
+-        	exec /usr/sbin/ubimkvol /dev/ubi1 -N user -m
+-        	exec mount /usr/local
++		# exec umount /usr/local
++        	# exec /usr/sbin/ubidetach -p /dev/mtd6
++        	# exec /usr/sbin/ubiformat /dev/mtd6 -y
++        	# exec /usr/sbin/ubiattach -p /dev/mtd6
++        	# exec /usr/sbin/ubimkvol /dev/ubi1 -N user -m
++        	# exec mount /usr/local
+ 
+ 		if { [catch {exec tar xzf /tmp/usr_local.tar.gz} errorMessage] } {
+ 			# set msg "Beim Einspielen des Systembackups ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut. "
+@@ -566,8 +566,8 @@ proc action_backup_restore_go {} {
+ 	}
+ 	
+ 	if { "false" == $backuperror } {
+-        exec mount -o remount,ro /usr/local
+-        exec mount -o remount,rw /usr/local
++        # exec mount -o remount,ro /usr/local
++        # exec mount -o remount,rw /usr/local
+         division {class="popupTitle"} {
+             puts "\${dialogSettingsSecurityMessageSysBackupRestartSystemTitle}"
+         }
+@@ -808,38 +808,40 @@ proc action_put_page {} {
+                     }
+                 }
+             }
+-            table_row {class="CLASS20806"} {
+-                table_data {class="CLASS20807"} {
+-                    puts "\${dialogSettingsSecurityTDSysReset}"
+-                }
+-                table_data {class="CLASS20808"} {
+-                    table {class="CLASS20810"} {width="100%"} {
+-                        table_row {
+-                            table_data {align="left"} {colspan="2"} {
+-                                puts "\${dialogSettingsSecurityLblSysResetPerform}"
+-                            }
+-                            table_data {align="right"} {
+-                                division {class="popupControls CLASS20811"} {
+-                                    division {class="CLASS20818 colorGradient50px"} {onClick="OnFactoryReset()"} {
+-                                        puts "\${dialogSettingsSecurityBtnSysReset}"
+-                                    }
+-                                }
+-                            }
+-                        }
+-                    }
+-                }
+-                table_data {align="left"} {class="CLASS20816"} {
+-                    puts "\${dialogSettingsSecurityHintSysReset1}"
+-                    br
+-                    #puts "Die Zentrale wird in den Werkszustand zur&uuml;ckgesetzt. Alle angelernten Ger&auml;te und"
+-                    #puts "alle erstellten Programme werden gel&ouml;scht"
+-                    puts "\${dialogSettingsSecurityHintSysReset2}"
+-                    br
+-                    #puts "Alle Ger&auml;tekonfigurationen und alle mit &quot;Direkte Verkn&uuml;pfungen&quot; angelegten"
+-                    #puts "Ger&auml;teverkn&uuml;pfungen bleiben bestehen und sind funktionsf&auml;hig."
+-                    puts "\${dialogSettingsSecurityHintSysReset3}"
+-                }
+-            }
++            # begin: don't need because know you use dpkg-reconfigure lxccu
++            # table_row {class="CLASS20806"} {
++            #     table_data {class="CLASS20807"} {
++            #         puts "\${dialogSettingsSecurityTDSysReset}"
++            #     }
++            #     table_data {class="CLASS20808"} {
++            #         table {class="CLASS20810"} {width="100%"} {
++            #             table_row {
++            #                 table_data {align="left"} {colspan="2"} {
++            #                     puts "\${dialogSettingsSecurityLblSysResetPerform}"
++            #                 }
++            #                 table_data {align="right"} {
++            #                     division {class="popupControls CLASS20811"} {
++            #                         division {class="CLASS20818 colorGradient50px"} {onClick="OnFactoryReset()"} {
++            #                             puts "\${dialogSettingsSecurityBtnSysReset}"
++            #                         }
++            #                     }
++            #                 }
++            #             }
++            #         }
++            #     }
++            #     table_data {align="left"} {class="CLASS20816"} {
++            #         puts "\${dialogSettingsSecurityHintSysReset1}"
++            #         br
++            #         #puts "Die Zentrale wird in den Werkszustand zur&uuml;ckgesetzt. Alle angelernten Ger&auml;te und"
++            #         #puts "alle erstellten Programme werden gel&ouml;scht"
++            #         puts "\${dialogSettingsSecurityHintSysReset2}"
++            #         br
++            #         #puts "Alle Ger&auml;tekonfigurationen und alle mit &quot;Direkte Verkn&uuml;pfungen&quot; angelegten"
++            #         #puts "Ger&auml;teverkn&uuml;pfungen bleiben bestehen und sind funktionsf&auml;hig."
++            #         puts "\${dialogSettingsSecurityHintSysReset3}"
++            #     }
++            # }
++            # end
+           table_row {class="CLASS20806"} {
+             table_data {class="CLASS20807"} {
+               puts "\${dialogSettingsSecurityTDSessionTimeout}"
+diff -rupN fsoriginal/www/config/cp_software.cgi fs/www/config/cp_software.cgi
+--- fsoriginal/www/config/cp_software.cgi	2015-05-16 13:48:51.135743991 +0200
++++ fs/www/config/cp_software.cgi	2015-05-16 13:52:04.015328982 +0200
+@@ -507,7 +507,9 @@ proc action_install_start {} {
+     if {[isOldCCU]} {
+         exec /sbin/init -q
+     } else {
+-        exec /bin/kill -SIGQUIT 1
++        #exec /bin/kill -SIGQUIT 1
++        # needed for lxccu restart
++        exec /sbin/reboot
+     }
+ }
+ 
