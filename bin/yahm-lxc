@@ -25,6 +25,7 @@ Flags:
 -f        - Force operation (no halt on errors).
 -v        - Verbose output 
 -d        - Path to custom CCU2 firmware file
+-b	  - Build number (=version) of the CCU2-FW
 
 Commands:
 install     - Create new lxc instance with actual ccu2 image.
@@ -33,27 +34,17 @@ remove      - Removes lxc instance.
 EOF
 exit 1
 }
-PARAMETER="fvn:d:"
+
+PARAMETER="fvn:d:b:"
 DATA_FILE=""
+BUILD=""
 
 # Include laden
 source /opt/YAHM/share/include.sh
 
-# Homematic URLs and fallback download links
-curFWdl="http://update.homematic.com/firmware/download?cmd=download&product=HM-CCU2&serial=0"
-checkVersion="http://update.homematic.com/firmware/download?cmd=js_check_version&serial=0&product=HM-CCU2"
-curVersion=$(wget -qO- -T 3 -t 1  "$checkVersion" | cut -d"'" -f2)
-if [ "$curVersion" = "" ] || [ "$curVersion" = "n/a" ] 
+if [ "$DATA_FILE" != "" ] && [ "$BUILD" == "" ]
 then
-    curFWdl="http://www.eq-3.de/Downloads/Software/HM-CCU2-Firmware_Updates/HM-CCU2-${CCU2Version}/HM-CCU2-${CCU2Version}.tgz"
-else
-    CCU2Version=$curVersion
-fi
-
-if [ "$DATA_FILE" != "" ]
-then
-    info "Manually CCU2 image was selected, the version was set temporarily to 2.17.16"
-    CCU2Version="2.17.16"
+    die "Please specify firmware file version number with -b flag (e.g. -b 2.17.16)"
 fi
 
 remove_lxc_container()
@@ -100,10 +91,27 @@ create_lxc_container()
         progress "ATTENTION: FORCE-Switch is used, actual instance will be overwritten"
     fi
 
+    if [ "${BUILD}" == "" ] 
+    then
+        # last version
+        curFWdl="http://update.homematic.com/firmware/download?cmd=download&product=HM-CCU2&serial=0"
+
+        # Check Version
+        checkVersion="http://update.homematic.com/firmware/download?cmd=js_check_version&serial=0&product=HM-CCU2"
+        curVersion=$(wget -qO- -T 3 -t 1  "$checkVersion" | cut -d"'" -f2)
+        if [ "$curVersion" = "" ] || [ "$curVersion" = "n/a" ]
+        then
+            die "ERROR: Something wrong with download server or version check, please specify version number with -b flag"
+        fi
+        CCU2Version=$curVersion
+    else
+        CCU2Version=$BUILD
+    fi
+
     # Compatibility Check
     if [ `yahm_compatibility $CCU2Version` -eq 1 ] && [ $IS_FORCE -ne 1 ]
     then
-        die "ERROR: We dont have any patches for this version, please make git pull and try again"
+        die "ERROR: We dont have any patches for this version, please call 'yahm-ctl update' and try again"
     fi
 
     info "Creating new lxc container name: $LXCNAME, version $CCU2Version"
@@ -115,6 +123,17 @@ create_lxc_container()
     then
         progress "Downloading CCU Firmware"
         EQ3_FW="${YAHM_TMP}/HM-CCU2-${CCU2Version}.tar.gz"
+        # Version from 2.17.16
+        if [ "${BUILD}" != "" ] && [ $(ver ${BUILD}) -ge $(ver "2.17.16") ]
+        then
+            curFWdl="http://www.eq-3.de/Downloads/Software/HM-CCU2-Firmware_Updates/HM-CCU2-${BUILD}/HM-CCU2-${BUILD}.tgz"
+        fi
+
+        if [ "${BUILD}" != "" ] && [ $(ver ${BUILD}) -le $(ver "2.17.15") ]
+        then
+            curFWdl="https://github.com/leonsio/CCU2-FW/raw/master/HM-CCU2-${BUILD}.tgz"
+        fi
+
         wget $QUIET -O "$EQ3_FW" "$curFWdl" || info "Can not download file"
         if [ ! -f "$EQ3_FW" ] && [ $IS_FORCE -ne 1 ]
         then
@@ -143,22 +162,25 @@ create_lxc_container()
     # most lxc commands use rootfs folder and not the config option
     ln -s $LXC_ROOT_FS $LXC_ROOT/rootfs
 
-    progress "Cleanup CCU2 source"
-    cd $LXC_ROOT_FS
-    find . -iname '*.ftl' | xargs dos2unix $QUIET
-    find . -iname '*.cgi' | xargs dos2unix $QUIET
-
     if [ "$DATA_FILE" != "" ]
     then
         info "Manually CCU2 image was selected, trying to detect installed version"
         CCU2Version=`get_yahm_version ${LXCNAME}`
-
+        
         if [ ! -f ${YAHM_DIR}/share/patches/${CCU2Version}.patch ] && [ $IS_FORCE -ne 1 ]
         then
-            die "Detected Version: ${CCU2Version}, can not find patch file for this version use -f for patching with version 2.17.16"
+            die "ERROR: Detected Version: ${CCU2Version}, can not find patch file for this version use -f for patching with version 2.17.16"
         else
             CCU2Version="2.17.16"
         fi
+    fi
+
+    if [ $(ver ${CCU2Version}) -ge $(ver "2.17.15") ]
+    then
+        progress "Cleanup CCU2 source"
+        cd $LXC_ROOT_FS
+        find . -iname '*.ftl' | xargs dos2unix $QUIET
+        find . -iname '*.cgi' | xargs dos2unix $QUIET
     fi
 
     progress "Applying patch"
@@ -266,6 +288,20 @@ update_lxc_container()
     if [ `check_yahm_name $LXCNAME` -eq 0 ] && [ $IS_FORCE -ne 1 ]
     then
         die "ERROR: Can not find $LXCNAME container"
+    fi
+
+    if [ "${BUILD}" == "" ]
+    then
+        # Check Version
+        checkVersion="http://update.homematic.com/firmware/download?cmd=js_check_version&serial=0&product=HM-CCU2"
+        curVersion=$(wget -qO- -T 3 -t 1  "$checkVersion" | cut -d"'" -f2)
+        if [ "$curVersion" = "" ] || [ "$curVersion" = "n/a" ]
+        then
+            die "ERROR: Something wrong with download server or version check, please specify version number with -b flag"
+        fi
+        CCU2Version=$curVersion
+    else
+        CCU2Version=$BUILD
     fi
 
     installed_version=`get_yahm_version ${LXCNAME}` 

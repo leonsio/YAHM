@@ -16,7 +16,7 @@ fi
 
 #Default Settings
 LXCNAME=yahm
-CCU2Version="2.17.16"
+CCU2Version="2.19.9"
 YAHM_DIR=/opt/YAHM
 YAHM_TOOLS=/opt/YAHM/share/tools
 YAHM_TMP=/tmp/YAHM
@@ -87,6 +87,7 @@ do
             set +e
             ;;
         b)
+	    BUILD=$OPTARG
             BRIDGE=$OPTARG
             ;;
         i)
