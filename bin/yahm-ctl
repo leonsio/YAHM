@@ -41,17 +41,6 @@ PARAMETER="vfn:"
 # Include laden
 source /opt/YAHM/share/include.sh
 
-if [ `check_yahm_installed` -eq 0 ] && [ $IS_FORCE -ne 1 ]
-then
-    die "ERROR: No container installed"
-fi
-
-if [ `check_yahm_name $LXCNAME` -eq 0 ] && [ $IS_FORCE -ne 1 ]
-then
-    die "ERROR: Can not find $LXCNAME container"
-fi
-
-
 if [[ $# != 1 ]]; then
     show_help
 fi
