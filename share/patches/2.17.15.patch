@@ -69,8 +69,8 @@ diff -wrupN root/etc/init.d/S50eq3configd newroot/etc/init.d/S50eq3configd
 -	echo "SerialNumber=$board_serial" >> /var/ids
 +	#radio_mac=$(cat /sys/module/plat_eq3ccu2/parameters/radio_mac)
 +	#board_serial=$(cat /sys/module/plat_eq3ccu2/parameters/board_serial)
-+	#echo "BidCoS-Address=$radio_mac" > /var/ids
-+	#echo "SerialNumber=$board_serial" >> /var/ids
++	echo "BidCoS-Address=$radio_mac" > /var/ids
++	echo "SerialNumber=$board_serial" >> /var/ids
  	if [ ! -e /etc/config/ids ] ; then
      		cp /var/ids /etc/config
  	fi
