@@ -243,7 +243,8 @@ delete_bridge()
         countdown
         info "... to late ;)"
 
-        if [ "$BOARD_TYPE" = "Orange" ]
+        # fix for Armbian
+        if [ -f /etc/armbian.txt ]
         then
             sed -i /tmp/yahm_interfaces -e "s/#auto ${INTERFACE}/auto ${INTERFACE}/"
         fi
