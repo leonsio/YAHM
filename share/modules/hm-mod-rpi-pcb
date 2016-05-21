@@ -52,6 +52,21 @@ _module_install()
             info "Modification /boot/config.txt done."      
             reboot=$((reboot+1))
         fi
+    elif [ "$BOARD_TYPE" = "Raspberry Pi" ] && [ "$BOARD_VERSION" = "2" ]
+    then 
+        if [ $(ver ${kernel_version}) -ge $(ver 4.4.9) ]
+        then
+            if [ $(cat /boot/config.txt | grep "^enable_uart=0" | wc -l) -eq 1 ]
+            then
+                sed -i /boot/config.txt -e "s/enable_uart=0/enable_uart=1/"
+                info "Modification /boot/config.txt done."
+                reboot=$((reboot+1))
+            else
+                echo -e "\n# Allow the normal UART pins to work\nenable_uart=1" >> /boot/config.txt
+                info "Modification /boot/config.txt done."
+                reboot=$((reboot+1))
+            fi
+        fi
     fi
 
     # Disable serial    
@@ -69,6 +84,8 @@ _module_install()
     else
         info "Serial already disabled"
     fi
+
+    
 
     # Create service for enabling gpio pin for reset
     if [ $(insserv -s|grep hm-mod-rpi|wc -l) -eq 0 ]; then 
