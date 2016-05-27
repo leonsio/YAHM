@@ -166,7 +166,22 @@ data_backup()
 
     rm -rf ${YAHM_TMP}/usr_local.tar.gz ${YAHM_TMP}/firmware_version ${YAHM_TMP}/key_index ${YAHM_TMP}/signature 
 
-    info "STATUS: CCU2 Backup was successfully created: ${YAHM_TMP}/homematic-ccu2-${timestamp}.sbk"
+#if there is a -d file move the backup to this file
+    if [ $DATA_FILE = "" ]
+    then
+     info "STATUS: CCU2 Backup was successfully created: ${YAHM_TMP}/homematic-ccu2-${timestamp}.sbk"
+    else
+    
+    if [[ -d $DATA_FILE ]]; then
+#if -d is path create my own name with day in it
+    FILENAME="$DATA_FILE/homematic-ccu2_$(date +%d).sbk"
+    else
+#else set FILENAME to -d Arg
+    FILENAME=$DATA_FILE
+    fi
+     mv ${YAHM_TMP}/homematic-ccu2-${timestamp}.sbk $FILENAME
+     info "STATUS: CCU2 Backup was successfully created: $FILENAME"
+    fi
 }
 
 data_restore()
