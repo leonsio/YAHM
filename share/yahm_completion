@@ -1,0 +1,42 @@
+_backup()
+{
+  COMPREPLY=()
+  local word="${COMP_WORDS[COMP_CWORD]}"
+  COMPREPLY=( $(compgen -W "data_backup data_restore full_backup full_restore" -- "$word") )
+}
+
+_ctl()
+{
+  COMPREPLY=()
+  local word="${COMP_WORDS[COMP_CWORD]}"
+  COMPREPLY=( $(compgen -W "start stop info join update" -- "$word") )
+}
+
+_lxc()
+{
+  COMPREPLY=()
+  local word="${COMP_WORDS[COMP_CWORD]}"
+  COMPREPLY=( $(compgen -W "install update remove" -- "$word") )
+}
+
+_module()
+{
+  COMPREPLY=()
+  local word="${COMP_WORDS[COMP_CWORD]}"
+  COMPREPLY=( $(compgen -W "enable dissable available installed" -- "$word") )
+}
+
+_network()
+{
+  COMPREPLY=()
+  local word="${COMP_WORDS[COMP_CWORD]}"
+  COMPREPLY=( $(compgen -W "create_bridge delete_bridge attach_bridge dettach_bridge show_bridge" -- "$word") )
+}
+
+
+complete -F _backup yahm-backup
+complete -F _ctl yahm-ctl
+complete -F _lxc yahm-lxc
+complete -F _network yahm-network
+complete -F _module yahm-moduleroot
+
