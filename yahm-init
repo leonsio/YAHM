@@ -146,6 +146,11 @@ then
     lxc-start -n yahm -d 2>>/var/log/yahm/start.log >>/var/log/yahm/start.log
     info "\tYAHM successfully restarted\n"
 
+    progress "\tInstalling bash command completion"
+    ln /opt/YAHM/share/yahm_completion /etc/bash_completion.d/yahm_completion -s
+    sh /etc/bash_completion
+    info "\tDone"
+    
     info "YAHM was successfully installed, use 'yahm-ctl join' to access YAHM console or 'yahm-ctl info' for IP information"
     # Disable Error handling
     ERROR=0
