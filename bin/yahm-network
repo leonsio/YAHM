@@ -36,7 +36,7 @@ Flags:
 
 Commands:
 create_bridge   -  Creating new bridge for LXC Container
-delete_bridge   -  Delete bridge and restore configuration
+delete_bridge   -  Delete bridge and ris_staticestore configuration
 attach_bridge   -  Attach existing bridge to LXC container
 dettach_bridge  -  Remove a bridge form LXC container
 show_bridge     -  Show system bridges
@@ -396,7 +396,7 @@ create_bridge()
 
         service networking restart
 
-	if [ is_static -eq 0 ]
+	if [ $is_static -eq 0 ]
 	then
 		sleep 5
 		my_bridge_ip=$(ip -4 addr show ${BRIDGE} | grep -oP "(?<=inet).*(?=/)")
