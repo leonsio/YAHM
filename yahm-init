@@ -116,8 +116,7 @@ progress "Including YAHM into PATH"
 ln -sf /opt/YAHM/bin/* /usr/sbin/
 
 progress "\tInstalling bash command completion"
-ln /opt/YAHM/share/yahm_completion /etc/bash_completion.d/yahm_completion -s
-#sh /etc/bash_completion
+ln -sf /opt/YAHM/share/yahm_completion /etc/bash_completion.d/yahm_completion 
 info "\tDone"
 
 if [ "$1" = "quickinstall" ] && [ "$DIST" != "ubuntu" ] 
