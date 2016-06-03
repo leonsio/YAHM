@@ -103,8 +103,7 @@ esac
 progress "Updating sources"
 apt-get -q=2 update
 
-progress "Installing dependencies" 
-check_install_deb "sendmail wget dos2unix python git lxc liblzo2-dev bridge-utils python-lzo patch gzip openssl"
+check_install_deb "sendmail bash-completion wget dos2unix python git lxc liblzo2-dev bridge-utils python-lzo patch gzip openssl"
 
 # checkout all files
 progress "Downloading actual version from git repository"
@@ -115,9 +114,9 @@ git clone --recursive https://github.com/leonsio/YAHM.git  2>>/var/log/yahm/git.
 progress "Including YAHM into PATH"
 ln -sf /opt/YAHM/bin/* /usr/sbin/
 
-progress "\tInstalling bash command completion"
+progress "Installing bash command completion"
 ln -sf /opt/YAHM/share/yahm_completion /etc/bash_completion.d/yahm_completion 
-info "\tDone"
+info "Done"
 
 if [ "$1" = "quickinstall" ] && [ "$DIST" != "ubuntu" ] 
 then

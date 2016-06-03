@@ -161,18 +161,12 @@ EOF
         info "Insert in rfd.conf done."
     else
         info "[Interface 0] block found in rfd.conf checking it..."
-        # einfuegen
-        sed  -i '/#\[Interface 0\]/i \[Interface 0\]' $file_rfd_conf
-        sed  -i '/#Type = CCU2/i Type = CCU2' $file_rfd_conf
-        sed  -i '/#ComPortFile = \/dev\/mmd_bidcos/i ComPortFile = \/dev\/mmd_bidcos' $file_rfd_conf
-        sed  -i '/#AccessFile = \/dev\/null/i AccessFile = \/dev\/null' $file_rfd_conf
-        sed  -i '/#ResetFile = \/dev\/ccu2-ic200/i ResetFile = \/dev\/ccu2-ic200' $file_rfd_conf
-        # loeschen
-        sed  -i '/^#\[Interface 0\]/d' $file_rfd_conf
-        sed  -i '/^#Type = CCU2/d' $file_rfd_conf
-        sed  -i '/^#ComPortFile = \/dev\/mmd_bidcos/d' $file_rfd_conf
-        sed  -i '/^#AccessFile = \/dev\/null/d' $file_rfd_conf
-        sed  -i '/^#ResetFile = \/dev\/ccu2-ic200/d' $file_rfd_conf
+        # aendern
+        sed  -e 's/#\[Interface 0\]/\[Interface 0\]/' -i $file_rfd_conf
+        sed  -e 's/#Type = CCU2/Type = CCU2/' -i $file_rfd_conf
+        sed  -e 's/#ComPortFile = \/dev\/mmd_bidcos/ComPortFile = \/dev\/mmd_bidcos/' -i $file_rfd_conf
+        sed  -e 's/#AccessFile = \/dev\/null/AccessFile = \/dev\/null/' -i $file_rfd_conf
+        sed  -e 's/#ResetFile = \/dev\/ccu2-ic200/ResetFile = \/dev\/ccu2-ic200/' -i $file_rfd_conf
         info "Modification rfd.conf done."
     fi
 
@@ -228,18 +222,13 @@ _module_remove()
     info "Uninstall modification in rfd.conf..."
     if [ $(cat $file_rfd_conf|grep "\[Interface 0\]"|wc -l) -gt 0 ];then
         info "[Interface 0] block found in rfd.conf checking it..."
-        # einfuegen
-        sed  -i '/\[Interface 0\]/i #\[Interface 0\]' $file_rfd_conf
-        sed  -i '/Type = CCU2/i #Type = CCU2' $file_rfd_conf
-        sed  -i '/ComPortFile = \/dev\/mmd_bidcos/i #ComPortFile = \/dev\/mmd_bidcos' $file_rfd_conf
-        sed  -i '/AccessFile = \/dev\/null/i #AccessFile = \/dev\/null' $file_rfd_conf
-        sed  -i '/ResetFile = \/dev\/ccu2-ic200/i #ResetFile = \/dev\/ccu2-ic200' $file_rfd_conf
-        # loeschen
-        sed  -i '/^\[Interface 0\]/d' $file_rfd_conf
-        sed  -i '/^Type = CCU2/d' $file_rfd_conf
-        sed  -i '/^ComPortFile = \/dev\/mmd_bidcos/d' $file_rfd_conf
-        sed  -i '/^AccessFile = \/dev\/null/d' $file_rfd_conf
-        sed  -i '/^ResetFile = \/dev\/ccu2-ic200/d' $file_rfd_conf
+        # aendern
+        sed  -e 's/\[Interface 0\]/#\[Interface 0\]/' -i $file_rfd_conf
+        sed  -e 's/Type = CCU2/#Type = CCU2/' -i $file_rfd_conf
+        sed  -e 's/Description = CCU2-Coprocessor/#Description = CCU2-Coprocessor/' -i $file_rfd_conf
+        sed  -e 's/ComPortFile = \/dev\/mmd_bidcos/#ComPortFile = \/dev\/mmd_bidcos/' -i $file_rfd_conf
+        sed  -e 's/AccessFile = \/dev\/null/#AccessFile = \/dev\/null/' -i $file_rfd_conf
+        sed  -e 's/ResetFile = \/dev\/ccu2-ic200/#ResetFile = \/dev\/ccu2-ic200/' -i $file_rfd_conf
         progress "Uninstall modification in rfd.conf is done."
     fi
 
