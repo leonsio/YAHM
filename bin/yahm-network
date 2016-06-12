@@ -203,6 +203,7 @@ delete_bridge()
     else
         # Setting right parameter
         echo "$(awk -f ${YAHM_TOOLS}/Network-Interfaces-Script/changeInterface.awk /tmp/yahm_interfaces dev=${brifs} mode=$ipcheck)" > /tmp/yahm_interfaces
+	sed -i /tmp/yahm_interfaces -e "s/iface eth0 inet dhcp/auto eth0\niface eth0 inet dhcp/"
     fi
 
     progress "Please review new network configuration"
@@ -244,10 +245,10 @@ delete_bridge()
         info "... to late ;)"
 
         # fix for Armbian
-        if [ -f /etc/armbian.txt ]
-        then
-            sed -i /tmp/yahm_interfaces -e "s/#auto ${INTERFACE}/auto ${INTERFACE}/"
-        fi
+#        if [ -f /etc/armbian.txt ]
+#        then
+#            sed -i /tmp/yahm_interfaces -e "s/#auto ${INTERFACE}/auto ${INTERFACE}/"
+#        fi
 
         timestamp=$(date +%s)
         progress "Backuping /etc/network/interfaces to /etc/network/interfaces.${timestamp}"
@@ -381,10 +382,10 @@ create_bridge()
         countdown
         info "... to late ;)"
 
-        if [ -f /etc/armbian.txt ]
-        then
-            sed -i /tmp/yahm_interfaces -e "s/auto ${INTERFACE}/#auto ${INTERFACE}/"
-        fi
+#        if [ -f /etc/armbian.txt ]
+#        then
+#            sed -i /tmp/yahm_interfaces -e "s/auto ${INTERFACE}/#auto ${INTERFACE}/"
+#        fi
 
         timestamp=$(date +%s)
         progress "Backuping /etc/network/interfaces to /etc/network/interfaces.${timestamp}"
@@ -398,6 +399,7 @@ create_bridge()
         info "... to late ;)"
 
         service networking restart
+	ip addr flush dev ${INTERFACE}
 
 	if [ $is_static -eq 0 ]
 	then
