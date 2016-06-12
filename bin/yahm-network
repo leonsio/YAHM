@@ -336,7 +336,10 @@ create_bridge()
         echo "$(awk -f ${YAHM_TOOLS}/Network-Interfaces-Script/changeInterface.awk /tmp/yahm_interfaces dev=${BRIDGE} mode=static address=${address} netmask=${netmask} gateway=${gateway})"  > /tmp/yahm_interfaces
     else
         # Setting right parameter
-        echo "$(awk -f ${YAHM_TOOLS}/Network-Interfaces-Script/changeInterface.awk /tmp/yahm_interfaces dev=${BRIDGE} mode=$ipcheck)" > /tmp/yahm_interfaces
+        info "Changing ${INTERFACE} interface mode to manual"
+        echo "$(awk -f ${YAHM_TOOLS}/Network-Interfaces-Script/changeInterface.awk /tmp/yahm_interfaces dev=${INTERFACE} mode=manual)" > /tmp/yahm_interfaces
+	info "Changing ${BRIDGE} bridge to dhcp"
+        echo "$(awk -f ${YAHM_TOOLS}/Network-Interfaces-Script/changeInterface.awk /tmp/yahm_interfaces dev=${BRIDGE} mode=dhcp)" > /tmp/yahm_interfaces
     fi
 
     echo "    bridge_ports ${INTERFACE}" >> /tmp/yahm_interfaces

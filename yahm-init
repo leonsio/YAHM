@@ -100,6 +100,14 @@ Ubuntu:xenial)  DIST="ubuntu";;
 *)		die "Sorry, this script does not support your distribution/release ($DIST_ID $CODENAME)." ;;
 esac
 
+if [ "$DIST_ID" = "Raspbian" ] ;
+then
+  info "Disable new dhcpcd on Raspbian Jessie"
+  systemctl disable dhcpcd.service 
+  systemctl stop dhcpcd.service
+  sed -i /etc/network/interfaces -e "s/iface eth0 inet manual/auto eth0\niface eth0 inet dhcp/"
+fi
+
 progress "Updating sources"
 apt-get -q=2 update
 
