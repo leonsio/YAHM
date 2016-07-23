@@ -310,6 +310,13 @@ update_lxc_container()
         die "ERROR: Installed version $installed_version is greater than or equal to avaible version $CCU2Version"
     fi
 
+
+    # Compatibility Check
+    if [ `yahm_compatibility $CCU2Version` -eq 1 ] && [ $IS_FORCE -ne 1 ]
+    then
+        die "ERROR: We dont have any patches for this version, please call 'yahm-ctl update' and try again"
+    fi
+
     info "Clean up TMP directory"
     rm -rf ${YAHM_TMP}/*
 
