@@ -25,7 +25,8 @@ Flags:
 -f        - Force operation (no halt on errors).
 -v        - Verbose output 
 -d        - Path to custom CCU2 firmware file
--b	  - Build number (=version) of the CCU2-FW
+-b        - Build number (=version) of the CCU2-FW
+-p        - Path to custom patch file
 
 Commands:
 install     - Create new lxc instance with actual ccu2 image.
@@ -35,9 +36,10 @@ EOF
 exit 1
 }
 
-PARAMETER="fvn:d:b:"
 DATA_FILE=""
 BUILD=""
+PATCH_FILE=""
+PARAMETER="fvn:d:b:p:"
 
 # Include laden
 source /opt/YAHM/share/include.sh
@@ -305,11 +307,13 @@ update_lxc_container()
     fi
 
     installed_version=`get_yahm_version ${LXCNAME}` 
+    info "\nInstalled version: $installed_version"
+    info "Available version: $CCU2Version\n"
+
     if [ $(ver $installed_version) -ge $(ver $CCU2Version) ] && [ $IS_FORCE -ne 1 ]
     then
-        die "ERROR: Installed version $installed_version is greater than or equal to avaible version $CCU2Version"
+        die "ERROR: Installed version $installed_version is greater than or equal to available version $CCU2Version"
     fi
-
 
     # Compatibility Check
     if [ `yahm_compatibility $CCU2Version` -eq 1 ] && [ $IS_FORCE -ne 1 ]
@@ -317,12 +321,9 @@ update_lxc_container()
         die "ERROR: We dont have any patches for this version, please call 'yahm-ctl update' and try again"
     fi
 
-    info "Clean up TMP directory"
-    rm -rf ${YAHM_TMP}/*
-
     [ $IS_FORCE -eq 1 ] && force_switch="-f" || force_switch=""
 
-    progress "Trying to create a backup from installed version ${installed_version}, calling 'yahm-backup data_backup' script"
+    progress "Trying to create a backup from installed version ${installed_version}, calling: 'yahm-backup data_backup' script"
     if [ $IS_VERBOSE -eq 1 ] ; then
         info "Calling: /opt/YAHM/bin/yahm-backup ${VERBOSE} ${force_switch} -n ${LXCNAME} data_backup"
     fi
@@ -343,11 +344,11 @@ update_lxc_container()
     create_lxc_container
 
     progress "Restoring old LXC config"
-    cp ${YAHM_TMP}_conf/${LXCNAME}/conf* ${LXC_ROOT}/
+    cp ${YAHM_TMP}_update/${LXCNAME}/conf* ${LXC_ROOT}/
 
     progress "Trying to restore old CCU2 backup, calling 'yahm-backup data_restore'"
     if [ $IS_VERBOSE -eq 1 ] ; then
-        info "Calling: /opt/YAHM/bin/yahm-backup ${VERBOSE} ${force_switch} -n ${LXCNAME} -f ${backup_file} data_backup" 
+        info "Calling: yahm-backup ${VERBOSE} ${force_switch} -n ${LXCNAME} -f ${backup_file} data_backup" 
     fi
     /opt/YAHM/bin/yahm-backup ${VERBOSE} ${force_switch} -n ${LXCNAME} -d ${backup_file} data_restore
     

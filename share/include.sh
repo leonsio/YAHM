@@ -16,7 +16,7 @@ fi
 
 #Default Settings
 LXCNAME=yahm
-CCU2Version="2.19.9"
+CCU2Version="2.21.10"
 YAHM_DIR=/opt/YAHM
 YAHM_TOOLS=/opt/YAHM/share/tools
 YAHM_TMP=/tmp/YAHM
@@ -99,6 +99,13 @@ do
         d)
             DRY_RUN=1
             DATA_FILE=$OPTARG
+            ;;
+        p)
+            if [ ! -f "${PATCH_FILE}" ]
+            then
+                die "Specified patch file can not be found"
+            fi
+            PATCH_FILE=$OPTARG
             ;;
         m)
             MODULE=$OPTARG

@@ -146,31 +146,31 @@ data_backup()
     
     echo "VERSION=${installed_version}" > ${YAHM_TMP}/firmware_version
 
-#    progress "Trying to stop ${LXCNAME} container"
-#    lxc-stop $QUIET -k -n ${LXCNAME}
+    if [ $(lxc-info -n ${LXCNAME}|grep RUNNING |wc -l) -eq 0 ]
+    then
+        die "${LXCNAME} container is not running."
+    fi
 
     progress "Creating Backup from /usr/local folder"
     cd ${LXC_ROOT_FS}
     tar $VERBOSE -czf ${YAHM_TMP}/usr_local.tar.gz usr/local
-#sign the stuff so ccu will also accept the backup file
+    #sign the stuff so ccu will also accept the backup file
     lxc-attach -n ${LXCNAME} -- crypttool -s -t 1 <${YAHM_TMP}/usr_local.tar.gz >${YAHM_TMP}/signature
     lxc-attach -n ${LXCNAME} -- crypttool -g -t 1 >${YAHM_TMP}/key_index
 
     progress "Creating Homematic backup file"
     timestamp=$(date +%s)
     cd ${YAHM_TMP}
-#add signature and key_index
+    #add data, signature and key_index
     tar $VERBOSE -cf ${YAHM_TMP}/homematic-ccu2-${timestamp}.sbk usr_local.tar.gz firmware_version key_index signature
 
     info "Clean up"
-
     rm -rf ${YAHM_TMP}/usr_local.tar.gz ${YAHM_TMP}/firmware_version ${YAHM_TMP}/key_index ${YAHM_TMP}/signature 
 
-#if there is a -d file move the backup to this file
+    #if there is a -d file move the backup to this file
     if [ ! $DATA_FILE ] || [ "$DATA_FILE" = "" ]
     then
-     info "STATUS: CCU2 Backup was successfully created: ${YAHM_TMP}/homematic-ccu2-${timestamp}.sbk"
-    
+        info "STATUS: CCU2 Backup was successfully created: ${YAHM_TMP}/homematic-ccu2-${timestamp}.sbk"
     else
 
     if [[ -d $DATA_FILE ]]; then
@@ -180,11 +180,8 @@ data_backup()
     #else set FILENAME to -d Arg
 	FILENAME=$DATA_FILE
     fi
-    
-      mv ${YAHM_TMP}/homematic-ccu2-${timestamp}.sbk $FILENAME
-     info "STATUS: CCU2 Backup was successfully created: $FILENAME"
-
-
+        mv ${YAHM_TMP}/homematic-ccu2-${timestamp}.sbk $FILENAME
+        info "STATUS: CCU2 Backup was successfully created: $FILENAME"
     fi
 }
 
