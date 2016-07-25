@@ -68,7 +68,7 @@ remove_lxc_container()
 
     info "Deleting installed YAHM container: ${LXCNAME} version: ${installed_version} To cancel this operation type CTRL+C you have 5 seconds..."
     countdown
-    info "... to late ;)"
+    info "... too late ;)"
 
     progress "Stopping lxc container"
     lxc-stop $QUIET -k -n $LXCNAME || info "Container can not be found or is not running"
