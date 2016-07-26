@@ -212,8 +212,11 @@ data_restore()
     installed_version=`get_yahm_version ${LXCNAME}`
     backup_version=$(cat ${YAHM_TMP}/firmware_version | cut -d'=' -f2 )
 
-    progress "Backup is valid, trying to stop ${LXCNAME} container"
-    lxc-stop $QUIET -k -n ${LXCNAME}
+    if [ $(lxc-info -n ${LXCNAME}|grep RUNNING |wc -l) -eq 1 ]
+    then
+        progress "Backup is valid, trying to stop ${LXCNAME} container"
+        lxc-stop $QUIET -k -n ${LXCNAME}
+    fi
 
     info "WARNING: /usr/local folder with all settings inside ${LXCNAME} container will be removed. You have 5 seconds to cancel this operation..."
         countdown

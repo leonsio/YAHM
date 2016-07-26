@@ -34,14 +34,23 @@ use_colour=0
 [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null && use_colour=1
 
 # Some useful functions
-progress() {
+progress() 
+{
     [ $use_colour -eq 1 ] && echo -ne "\033[01;32m"
     echo -e "$@" >&2
     [ $use_colour -eq 1 ] && echo -ne "\033[00m"
 }
 
-info() {
+info() 
+{
     [ $use_colour -eq 1 ] && echo -ne "\033[01;34m"
+    echo -e "$@" >&2
+    [ $use_colour -eq 1 ] && echo -ne "\033[00m"
+}
+
+error() 
+{
+    [ $use_colour -eq 1 ] && echo -ne "\033[01;31m"
     echo -e "$@" >&2
     [ $use_colour -eq 1 ] && echo -ne "\033[00m"
 }
@@ -137,41 +146,121 @@ LXC_ROOT=/var/lib/lxc/$LXCNAME
 LXC_ROOT_FS=/var/lib/lxc/$LXCNAME/root
 LXC_ROOT_MODULES=/var/lib/lxc/$LXCNAME/.modules
 
+get_ccu2_actual_version()
+{
+    # aktuelle Version bestimmen
+    checkVersion="http://update.homematic.com/firmware/download?cmd=js_check_version&serial=0&product=HM-CCU2"
+    curVersion=$(wget $QUIET -qO-  -T 3 -t 1  "$checkVersion" | cut -d"'" -f2)
+    # Bei misserfolg letze bekannte Version ausgeben
+    if [ "$curVersion" = "" ] || [ "$curVersion" = "n/a" ]
+    then
+        curVersion=$CCU2Version
+    fi
+    # Ausgabe
+    echo $curVersion
+}
+
+download_ccu2_fw()
+{
+    BUILD=$1
+    aBUILD=`get_ccu2_actual_version`
+
+    if [ "${BUILD}" == "" ]
+    then
+        BUILD=$aBUILD
+    fi
+
+    progress "Downloading CCU Firmware"
+    # Falls wir aktuelle FW runterladen
+    if [ $(ver ${BUILD}) -eq $(ver ${aBUILD}) ]
+    then
+        curFWdl="http://update.homematic.com/firmware/download?cmd=download&product=HM-CCU2&serial=0"
+        # Falls Download nicht funktioniert aus dem GIT runterladen (archiv)
+        wget $QUIET -T 3 -t 1 --spider "$curFWdl" || {
+            if [ `check_ccu2_archive $BUILD` -eq 0 ] && [ $IS_FORCE -ne 1 ]
+            then
+                die "ERROR: Can not find specified file in repository"
+            fi
+            error "EQ3 site, seems to be down. Trying to download from GIT"
+            curFWdl="https://github.com/leonsio/CCU2-FW/raw/master/HM-CCU2-${BUILD}.tgz"
+        }
+    fi
+    # Falls die FW unter aktuellen liegt, aus dem GIT runterladen (archiv)
+    if [ $(ver ${BUILD}) -lt $(ver ${aBUILD}) ]
+    then
+        if [ `check_ccu2_archive $BUILD` -eq 0 ] && [ $IS_FORCE -ne 1 ]
+        then
+            die "ERROR: Can not find specified version in repository"
+        fi
+        curFWdl="https://github.com/leonsio/CCU2-FW/raw/master/HM-CCU2-${BUILD}.tgz"
+    fi
+    # Sollte nicht vorkommen
+    if [ $(ver ${BUILD}) -gt $(ver ${aBUILD}) ]
+    then
+        die "ERROR: Specified version is greater than actual version"
+    fi
+
+    EQ3_FW="${YAHM_TMP}/HM-CCU2-${BUILD}.tar.gz"
+
+    wget $QUIET --tries=3 --retry-connrefused  -O "$EQ3_FW" "$curFWdl" || info "Can not download file"
+    if [ ! -f "$EQ3_FW" ] && [ $IS_FORCE -ne 1 ]
+    then
+        die "ERROR: Can not download firmware. Are you connected to the internet? Try to download the file manually and use -d flag"
+    fi
+}
+
+check_ccu2_archive()
+{
+    CCU2_VERSION=$1
+    if [ ! -f ${YAHM_LIB}/fw.list ]
+    then
+        wget $QUIET -O ${YAHM_LIB}/fw.list -N https://raw.githubusercontent.com/leonsio/CCU2-FW/master/fw.list
+    fi
+    ALL_FW=$(cat ${YAHM_LIB}/fw.list | grep -Po '(?<=CCU2-)\d.\d\d?.\d\d?')
+    [[ $ALL_FW =~ $CCU2_VERSION ]] && echo 1 || echo 0
+}
+
+
+get_ccu2_patch()
+{
+  echo "not ready"
+}
+
 get_yahm_name()
 {
-        if [ `check_yahm_installed` -eq 1 ] 
-        then
-                local installed_name=`cat ${YAHM_LIB}/container_name`
-        else
-                echo 0
-        fi
+    if [ `check_yahm_installed` -eq 1 ] 
+    then
+            local installed_name=`cat ${YAHM_LIB}/container_name`
+    else
+            echo 0
+    fi
 
 }
 
 check_yahm_name()
 {
-	if [ `check_yahm_installed` -eq 1 ] ; then
-		local container_name=$1
-		local installed_name=`cat ${YAHM_LIB}/container_name`
+    if [ `check_yahm_installed` -eq 1 ] ; then
+        local container_name=$1
+        local installed_name=`cat ${YAHM_LIB}/container_name`
 
-		if [ "$container_name" = "$installed_name" ] ; then
-			echo 1
-			return 1
-		fi
-	fi
-	echo 0
-	return 1 
+        if [ "$container_name" = "$installed_name" ] ; then
+                echo 1
+                return 1
+        fi
+    fi
+    echo 0
+    return 1 
 }
 
 check_yahm_installed()
 {
-	file="${YAHM_LIB}/is_installed"
-	if [ -f "$file" ]
-	then
-		echo 1 
-	else
-		echo 0
-	fi
+    file="${YAHM_LIB}/is_installed"
+    if [ -f "$file" ]
+    then
+        echo 1 
+    else
+        echo 0
+    fi
 }
 
 get_yahm_version()
@@ -232,4 +321,3 @@ install_package() {
     apt-get -qq -y install $package 2>&1 > /dev/null
     return $?
 }
-

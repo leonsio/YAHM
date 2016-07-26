@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Leon265130 http://homematic-forum.de
+# Leon265130/leonsio http://homematic-forum.de
 #
 # HM-MOD-RPI-PBC Modul for Raspberry Pi2 / Raspberry Pi3
 #
@@ -36,15 +36,18 @@ _module_install()
 
     info "Found hardware: $BOARD_TYPE $BOARD_VERSION"
 
-    # Raspberry 2 oder 3 ?
-    if [ "$BOARD_TYPE" = "Raspberry Pi" ] && [ "$BOARD_VERSION" = "3" ]
+    if [ "$BOARD_TYPE" = "Raspberry Pi" ] 
     then
-        progress "Trying to disable bluetooth on Raspberry Pi 3 to use HM-MOD-RPI-PCB"
-    
         if [ ! -f /boot/config.txt ] && [ $IS_FORCE -ne 1 ]
         then
             die "ERROR: File /boot/config.txt does not exist!"
         fi
+    fi
+
+    # Raspberry 2 oder 3 ?
+    if [ "$BOARD_TYPE" = "Raspberry Pi" ] && [ "$BOARD_VERSION" = "3" ]
+    then
+        progress "Trying to disable bluetooth on Raspberry Pi 3 to use HM-MOD-RPI-PCB"
 
         if [ $(cat /boot/config.txt | grep ${overlay_file} | wc -l ) -eq 0 ]
         then
@@ -56,13 +59,17 @@ _module_install()
     then 
         if [ $(ver ${kernel_version}) -ge $(ver 4.4.9) ]
         then
+            # enable_uart ist nicht vorhanden
+            if [ $(cat /boot/config.txt | grep "^enable_uart" | wc -l) -eq 0 ]
+            then
+                echo -e "\n# Allow the normal UART pins to work\nenable_uart=1" >> /boot/config.txt
+                info "Modification /boot/config.txt done."
+                reboot=$((reboot+1))
+            fi
+
             if [ $(cat /boot/config.txt | grep "^enable_uart=0" | wc -l) -eq 1 ]
             then
                 sed -i /boot/config.txt -e "s/enable_uart=0/enable_uart=1/"
-                info "Modification /boot/config.txt done."
-                reboot=$((reboot+1))
-            else
-                echo -e "\n# Allow the normal UART pins to work\nenable_uart=1" >> /boot/config.txt
                 info "Modification /boot/config.txt done."
                 reboot=$((reboot+1))
             fi
@@ -186,6 +193,8 @@ EOF
         progress "Trying to start service"
         systemctl enable hm-mod-rpi-pcb
         systemctl start hm-mod-rpi-pcb
+#        progress "Rebooting CCU2"
+#        lxc-attach -n ${LXCNAME} "reboot" 
     fi  
 }
 

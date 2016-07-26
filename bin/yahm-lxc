@@ -26,7 +26,7 @@ Flags:
 -v        - Verbose output 
 -d        - Path to custom CCU2 firmware file
 -b        - Build number (=version) of the CCU2-FW
--p        - Path to custom patch file
+-p        - Path to custom patch file or patch vesion number if already exists
 
 Commands:
 install     - Create new lxc instance with actual ccu2 image.
@@ -72,7 +72,7 @@ remove_lxc_container()
     countdown
     info "... too late ;)"
 
-    progress "Stopping lxc container"
+    progress "Stopping LXC container"
     lxc-stop $QUIET -k -n $LXCNAME || info "Container can not be found or is not running"
 
     progress "Deleting LXC container"
@@ -95,17 +95,7 @@ create_lxc_container()
 
     if [ "${BUILD}" == "" ] 
     then
-        # last version
-        curFWdl="http://update.homematic.com/firmware/download?cmd=download&product=HM-CCU2&serial=0"
-
-        # Check Version
-        checkVersion="http://update.homematic.com/firmware/download?cmd=js_check_version&serial=0&product=HM-CCU2"
-        curVersion=$(wget -qO- -T 3 -t 1  "$checkVersion" | cut -d"'" -f2)
-        if [ "$curVersion" = "" ] || [ "$curVersion" = "n/a" ]
-        then
-            die "ERROR: Something wrong with download server or version check, please specify version number with -b flag"
-        fi
-        CCU2Version=$curVersion
+        CCU2Version=`get_ccu2_actual_version`
     else
         CCU2Version=$BUILD
     fi
@@ -123,24 +113,7 @@ create_lxc_container()
 
     if [ "$DATA_FILE" = "" ]
     then
-        progress "Downloading CCU Firmware"
-        EQ3_FW="${YAHM_TMP}/HM-CCU2-${CCU2Version}.tar.gz"
-        # Version from 2.17.16
-        if [ "${BUILD}" != "" ] && [ $(ver ${BUILD}) -ge $(ver "2.17.16") ]
-        then
-            curFWdl="http://www.eq-3.de/Downloads/Software/HM-CCU2-Firmware_Updates/HM-CCU2-${BUILD}/HM-CCU2-${BUILD}.tgz"
-        fi
-
-        if [ "${BUILD}" != "" ] && [ $(ver ${BUILD}) -le $(ver "2.17.15") ]
-        then
-            curFWdl="https://github.com/leonsio/CCU2-FW/raw/master/HM-CCU2-${BUILD}.tgz"
-        fi
-
-        wget $QUIET -O "$EQ3_FW" "$curFWdl" || info "Can not download file"
-        if [ ! -f "$EQ3_FW" ] && [ $IS_FORCE -ne 1 ]
-        then
-            die "ERROR: Can not download firmware. Are you connected to the internet? Try to download the file manually and use -d flag"
-        fi
+        download_ccu2_fw $CCU2Version
     else
         if [ ! -f $DATA_FILE ]
         then
@@ -149,10 +122,11 @@ create_lxc_container()
 
         EQ3_FW=$DATA_FILE
     fi
-
-    if [ $(stat -c%s "${EQ3_FW}") -le 0 ] && [ $IS_FORCE -ne 1 ]
+    
+    # 100kb sind mehr als jede HTML5 Fehlerseite, aber kleiner als CCU2 FW
+    if [ $(stat -c%s "${EQ3_FW}") -le 100000 ] && [ $IS_FORCE -ne 1 ]
     then
-        die "ERROR: Can not download firmware. File size is to small, please take a look on ${EQ3_FW}"  
+        die "ERROR: Firmware file size is to small, please take a look on ${EQ3_FW} file"  
     fi
 
     progress "Extracting firmware"
@@ -214,8 +188,8 @@ create_lxc_container()
     info "Container is created, please use 'yahm-ctl -n ${LXCNAME} start' to start and 'yahm-ctl -n ${LXCNAME} join' for console access"
     info "For network configuration see yahm-network script"
 
-    echo $LXCNAME > /var/lib/yahm/container_name
-    touch /var/lib/yahm/is_installed
+    echo $LXCNAME > ${YAHM_LIB}/container_name
+    touch ${YAHM_LIB}/is_installed
 }
 
 create_lxc_config()
@@ -294,14 +268,7 @@ update_lxc_container()
 
     if [ "${BUILD}" == "" ]
     then
-        # Check Version
-        checkVersion="http://update.homematic.com/firmware/download?cmd=js_check_version&serial=0&product=HM-CCU2"
-        curVersion=$(wget -qO- -T 3 -t 1  "$checkVersion" | cut -d"'" -f2)
-        if [ "$curVersion" = "" ] || [ "$curVersion" = "n/a" ]
-        then
-            die "ERROR: Something wrong with download server or version check, please specify version number with -b flag"
-        fi
-        CCU2Version=$curVersion
+        CCU2Version=`get_ccu2_actual_version`
     else
         CCU2Version=$BUILD
     fi
@@ -334,6 +301,8 @@ update_lxc_container()
 
     progress "Backup old LXC config"
     cp ${LXC_ROOT}/conf* ${YAHM_TMP}_update/${LXCNAME}/
+    progress "Backup installed modules"
+    cp -rf ${LXC_ROOT}/.modules  ${YAHM_TMP}_update/${LXCNAME}/
     
     backup_file=$(ls ${YAHM_TMP}_update/${LXCNAME}/*.sbk)
 
@@ -348,9 +317,18 @@ update_lxc_container()
 
     progress "Trying to restore old CCU2 backup, calling 'yahm-backup data_restore'"
     if [ $IS_VERBOSE -eq 1 ] ; then
-        info "Calling: yahm-backup ${VERBOSE} ${force_switch} -n ${LXCNAME} -f ${backup_file} data_backup" 
+        info "Calling: yahm-backup ${VERBOSE} ${force_switch} -n ${LXCNAME} -d ${backup_file} data_restore" 
     fi
     /opt/YAHM/bin/yahm-backup ${VERBOSE} ${force_switch} -n ${LXCNAME} -d ${backup_file} data_restore
+
+    progress "Restoring old installed modules" 
+    files=`ls ${YAHM_TMP}_update/${LXCNAME}/.modules`
+    for file in $files
+    do
+        info "Restoring ${file} Module"
+        /opt/YAHM/bin/yahm-module -n ${LXCNAME} ${VERBOSE} ${force_switch} -m $file enable
+    done     
+    /opt/YAHM/bin/yahm-module -n ${LXCNAME} -f -m homematic-ip disable
     
     rm -rf ${YAHM_TMP}_update/
     info "STATUS: Update was successfully new version is: ${CCU2Version}"
@@ -383,6 +361,3 @@ for key in "$@"; do
         ;;
     esac
 done
-
-
-

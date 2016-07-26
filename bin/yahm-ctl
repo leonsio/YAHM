@@ -97,6 +97,9 @@ for key in "$@"; do
             info "Updating YAHM installation, for updatate CCU2 please use 'yahm-lxc update'"
             cd /opt/YAHM
             git pull
+            info "Updating CCU2-FW archive"
+            cd /var/lib/yahm
+            wget $QUIET -N https://raw.githubusercontent.com/leonsio/CCU2-FW/master/fw.list
             shift
             break;
         ;;
@@ -106,4 +109,3 @@ for key in "$@"; do
         ;;
     esac
 done
-
