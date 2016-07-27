@@ -95,8 +95,9 @@ for key in "$@"; do
         ;;
         update)
             info "Updating YAHM installation, for updatate CCU2 please use 'yahm-lxc update'"
-            cd /opt/YAHM
+            cd ${YAHM_DIR}
             git pull
+            git submodule foreach git pull origin master
             info "Updating CCU2-FW archive"
             cd ${YAHM_LIB}
             wget $QUIET -N https://raw.githubusercontent.com/leonsio/CCU2-FW/master/fw.list
