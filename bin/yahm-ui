@@ -15,12 +15,13 @@ INFO_IP=""
 INFO_STATE="unknow"
 
 update_info() {
- status=$(lxc-info -n ${LXCNAME})
- state=$(echo "$status" | grep -oP "State:.*\b([A-Z]{1,})\b|\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b")
- IFS=', ' read -r -a array <<< $state
- INFO_STATE=${array[1]}
- INFO_IP=${array[2]}
- return 0
+ if [ `check_yahm_installed` -eq 1 ]; then
+	status=$(lxc-info -n ${LXCNAME})
+ 	state=$(echo "$status" | grep -oP "State:.*\b([A-Z]{1,})\b|\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b")
+ 	IFS=', ' read -r -a array <<< $state
+ 	INFO_STATE=${array[1]}
+ 	INFO_IP=${array[2]}
+ fi
 }
 
 do_menu_ccu() {
@@ -318,7 +319,12 @@ do_finish_menu() {
 
 do_menu_status() {
   update_info
-  whiptail --msgbox " CCU Container ..: ${LXCNAME}\n CCU IP Adresse .: ${INFO_IP}\n CCU Status .....: ${INFO_STATE}" 20 60 2
+  
+  if [ `check_yahm_installed` -eq 1 ]; then
+	whiptail --msgbox " CCU Container ..: ${LXCNAME}\n CCU IP Adresse .: ${INFO_IP}\n CCU Status .....: ${INFO_STATE}" 20 60 2
+  else 
+	whiptail --msgbox " Keinen YAHM Container gefunden." 20 60 2
+  fi
 }
 
 calc_wt_size
@@ -327,11 +333,11 @@ while true; do
 
 
     FUNC=$(whiptail --title "YAHM Installation und Konfiguration" --menu "Optionen" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --ok-button Auswählen --nocancel \
-      "1 Installation" "YAHM Installieren oder Aktualisieren" \
-      "2 CCU " "CCU Installation / Update / Deinstallation" \
-      "3 Netzwerk" "Netzwerkeinstellungen" \
-      "4 Backup" "Datensicherung erstellen oder Rücksichern" \
-      "5 Module" "Module aktivieren oder deaktivieren" \
+      "1 CCU " "CCU Installation / Update / Deinstallation" \
+      "2 Netzwerk" "Netzwerkeinstellungen" \
+      "3 Backup" "Datensicherung erstellen oder Rücksichern" \
+      "4 Module" "Module aktivieren oder deaktivieren" \
+      "5 Update" "YAHM aktualisieren" \
       "6 Status" "YAHM Status anzeigen" \
       "7 Beenden" "YAHM-UI Beenden" \
       3>&1 1>&2 2>&3)
@@ -343,11 +349,11 @@ while true; do
       
     elif [ $RET -eq 0 ]; then
       case "$FUNC" in
-        1\ *) do_menu_install ;;
-        2\ *) do_menu_ccu ;;
-        3\ *) do_menu_network ;;
-        4\ *) do_menu_backup ;;
-        5\ *) do_menu_module ;;
+        1\ *) do_menu_ccu ;;
+        2\ *) do_menu_network ;;
+        3\ *) do_menu_backup ;;
+        4\ *) do_menu_module ;;
+        5\ *) do_menu_install ;;
         6\ *) do_menu_status ;;
         7\ *) do_finish_menu ;;
 
