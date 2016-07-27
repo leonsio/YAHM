@@ -98,7 +98,7 @@ for key in "$@"; do
             cd /opt/YAHM
             git pull
             info "Updating CCU2-FW archive"
-            cd /var/lib/yahm
+            cd ${YAHM_LIB}
             wget $QUIET -N https://raw.githubusercontent.com/leonsio/CCU2-FW/master/fw.list
             shift
             break;
