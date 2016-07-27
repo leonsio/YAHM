@@ -181,6 +181,7 @@ while true; do
 
 do_menu_backup_csave() {
   ${YAHM_DIR}/bin/yahm-backup -n ${LXCNAME} -d /home/pi full_backup
+  ASK_TO_RESTART=1
 }
 
 
@@ -229,6 +230,39 @@ calc_wt_size() {
   WT_MENU_HEIGHT=$(($WT_HEIGHT-7))
 }
 
+do_menu_module() {
+
+while true; do
+    FUNC=$(whiptail --title "YAHM Installation und Konfiguration (Module)" --menu "Optionen" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Zurück --ok-button Auswählen \
+      "1 Dissable HM-IP" "HMIP Interface abschalten" \
+      "2 activate PBC" "HM-MOD-RPI-PBC aktivieren" \
+      "3 deactivate PBC" "HM-MOD-RPI-PBC deaktivieren" \
+      "4 activate HM-LAN-GW" "Fake HM-LAN-GW aktivieren" \
+      "4 deactivate HM-LAN-GW" "Fake HM-LAN-GW deaktivieren" \
+      3>&1 1>&2 2>&3)
+    RET=$?
+    if [ $RET -eq 1 ]; then
+      return 0
+    elif [ $RET -eq 0 ]; then
+      case "$FUNC" in
+        1\ *) do_menu_module_action "homematic-ip" "disable" ;;
+        2\ *) do_menu_module_action "hm-mod-rpi-pcb" "enable" ;;
+        3\ *) do_menu_module_pcboff "hm-mod-rpi-pcb" "disable";;
+        2\ *) do_menu_module_action "hm-lan-fake-gw" "enable" ;;
+        3\ *) do_menu_module_pcboff "hm-lan-fake-gw" "disable";;
+        *) whiptail --msgbox "Programmer error: unrecognized option" 20 60 1 ;;
+      esac || whiptail --msgbox "There was an error running option $FUNC" 20 60 1
+    else
+     return 0
+    fi
+  done
+
+}
+
+do_menu_module_action() {
+ ${YAHM_DIR}/bin/yahm-module -f -m $1 $2
+ ASK_TO_RESTART=1
+}
 
 do_menu_network() {
 
@@ -317,6 +351,38 @@ do_finish_menu() {
   
 }
 
+
+do_menu_diag() {
+
+while true; do
+    FUNC=$(whiptail --title "YAHM Installation und Konfiguration (Diagnose)" --menu "Optionen" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Zurück --ok-button Auswählen \
+      "1 CCU Interfaces" "Interface Datei der CCU anzeigen" \
+      "2 CCU RDF" "rfd.conf Datei der CCU anzeigen" \
+      3>&1 1>&2 2>&3)
+    RET=$?
+    if [ $RET -eq 1 ]; then
+      return 0
+    elif [ $RET -eq 0 ]; then
+      case "$FUNC" in
+        1\ *) do_menu_diag_showFile "usr/local/etc/config/InterfacesList.xml" "Interfaces.xml" ;;
+        2\ *) do_menu_diag_showFile "usr/local/etc/config/rfd.conf" "rdf.conf" ;;
+        
+        *) whiptail --msgbox "Programmer error: unrecognized option" 20 60 1 ;;
+      esac || whiptail --msgbox "There was an error running option $FUNC" 20 60 1
+    else
+     return 0
+    fi
+  done
+
+
+}
+
+
+do_menu_diag_showFile() {
+  value=$(</var/lib/lxc/${LXCNAME}/root/$1)
+  whiptail --msgbox --backtitle $2 "${value}" --scrolltext 30 $WT_WIDTH 2
+}
+
 do_menu_status() {
   update_info
   
@@ -339,7 +405,8 @@ while true; do
       "4 Module" "Module aktivieren oder deaktivieren" \
       "5 Update" "YAHM aktualisieren" \
       "6 Status" "YAHM Status anzeigen" \
-      "7 Beenden" "YAHM-UI Beenden" \
+      "7 Diag" "Diagnose" \
+      "8 Beenden" "YAHM-UI Beenden" \
       3>&1 1>&2 2>&3)
     RET=$?
 
@@ -355,7 +422,8 @@ while true; do
         4\ *) do_menu_module ;;
         5\ *) do_menu_install ;;
         6\ *) do_menu_status ;;
-        7\ *) do_finish_menu ;;
+        7\ *) do_menu_diag ;;
+        8\ *) do_finish_menu ;;
 
         *) whiptail --msgbox "Programmer error: unrecognized option" 20 60 1 ;;
       esac || whiptail --msgbox "There was an error running option $FUNC" 20 60 1

@@ -55,10 +55,13 @@ full_backup()
     then
         die "ERROR: Can not find $LXCNAME container"
     fi
-
-    progress "Trying to stop ${LXCNAME} container"
-    lxc-stop $QUIET -k -n ${LXCNAME}
-
+    
+#thkl _ only stop if container is running
+    if [ $(lxc-info -n ${LXCNAME}|grep STOPPED|wc -l) -eq 0 ]; then
+		progress "Trying to stop ${LXCNAME} container"
+    	lxc-stop $QUIET -k -n ${LXCNAME}
+	fi
+	
     installed_version=`get_yahm_version ${LXCNAME}`
 
     progress "Creating new backup from ${LXCNAME} version ${installed_version}"
