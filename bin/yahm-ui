@@ -379,7 +379,7 @@ while true; do
 
 
 do_menu_diag_showFile() {
-  value=$(</var/lib/lxc/${LXCNAME}/root/$1)
+  value=$(<${LXC_ROOT_FS}/$1)
   whiptail --msgbox --backtitle $2 "${value}" --scrolltext 30 $WT_WIDTH 2
 }
 
