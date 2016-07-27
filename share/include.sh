@@ -28,6 +28,7 @@ QUIET="--quiet"
 VERBOSE=""
 DRY_RUN=0
 ARCH=""
+BRIDGE="yahmbr0"
 
 # Check if we can use colours in our output
 use_colour=0
@@ -320,4 +321,46 @@ install_package() {
     info "install ${package}"
     apt-get -qq -y install $package 2>&1 > /dev/null
     return $?
+}
+
+### Shared Network functionality
+
+show_bridges()
+{
+    info "Available Bridges"
+    brctl show
+}
+
+check_bridge_name()
+{
+    local brname=$1
+    local bridges=$(brctl show | awk 'NF>1 && NR>1 {print $1}')
+    for bridge in $bridges
+    do
+        if [ "$brname" = "$bridge" ]
+        then
+            echo 1
+            return 1
+        fi
+    done
+    echo 0
+}
+
+
+check_interface_name()
+{
+    # interface name
+    local int_name=$1
+
+    if  [[ ! `ip -d link show ${int_name} 2>/dev/null ` ]]; then
+        die "ERROR: Interface ${int_name} does not exists"
+    elif [[ `ip -d link show ${int_name} | tail -n +2 | grep loopback` ]] ; then
+        echo "local"
+    elif [[ `ip -d link show ${int_name} | tail -n +2 | grep vlan` ]] ; then
+        echo "vlan"
+    elif [[ `ip -d link show ${int_name} | tail -n +2 | grep bridge` ]] ; then
+        echo "bridge"
+    else
+        echo "physical"
+    fi
 }

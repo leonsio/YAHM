@@ -130,6 +130,13 @@ progress "Installing bash command completion"
 ln -sf /opt/YAHM/share/yahm_completion /etc/bash_completion.d/yahm_completion 
 info "Done"
 
+if [ "$1" = "ui" ] && [ "$DIST" != "ubuntu" ] 
+then
+    info "\n\tEnter UI mode\n"
+    /opt/YAHM/bin/yahm-ui
+    info "\n\tuse 'yahm-ui' to launch the UI again\n"
+fi
+
 if [ "$1" = "quickinstall" ] && [ "$DIST" != "ubuntu" ] 
 then
     info "\n\tEnter quick install mode\n"

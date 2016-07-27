@@ -1,0 +1,359 @@
+#!/bin/bash
+#
+# Thomas Kluge <th.kluge@me.com>
+# Yet Another Homematic Management 
+#
+# Graphical Interface for yahm command tools
+#
+
+set -e
+
+source /opt/YAHM/share/include.sh
+
+ASK_TO_RESTART=0
+INFO_IP=""
+INFO_STATE="unknow"
+
+update_info() {
+ status=$(lxc-info -n ${LXCNAME})
+ state=$(echo "$status" | grep -oP "State:.*\b([A-Z]{1,})\b|\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b")
+ IFS=', ' read -r -a array <<< $state
+ INFO_STATE=${array[1]}
+ INFO_IP=${array[2]}
+ return 0
+}
+
+do_menu_ccu() {
+while true; do
+    FUNC=$(whiptail --title "YAHM Installation und Konfiguration (CCU Installation)" --menu "Optionen" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Zurück --ok-button Auswählen \
+      "1 Neuinstallation" "CCU Container Neuinstallation" \
+      "2 Update" "CCU Firmwareupdate" \
+      "3 Deinstall" "CCU Container entfernen" \
+      3>&1 1>&2 2>&3)
+    RET=$?
+    if [ $RET -eq 1 ]; then
+      return 0
+    elif [ $RET -eq 0 ]; then
+      case "$FUNC" in
+        1\ *) do_menu_ccu_install ;;
+        2\ *) do_menu_ccu_update ;;
+        3\ *) do_menu_ccu_remove ;;
+
+        *) whiptail --msgbox "Programmer error: unrecognized option" 20 60 1 ;;
+      esac || whiptail --msgbox "There was an error running option $FUNC" 20 60 1
+    else
+     return 0
+    fi
+ done
+
+}
+
+
+do_menu_ccu_install() {
+ inst_yahm=0
+ inst_network=0
+ inst_hmip=0
+ inst_pcb=0
+ 
+# Check existing Installation 
+   
+   if [ `check_yahm_installed` -eq 1 ]
+    then
+		whiptail --yesno "Es existiert bereits eine CCU Installation. Soll diese gelöscht werden ?" 20 60 2
+		    if [ $? -eq 1 ]; then # no
+       		return 0
+	    fi
+    	# remove old stuff
+    	${YAHM_DIR}/bin/yahm-lxc -n ${LXCNAME} -f remove
+    fi   
+  
+    whiptail --title "YAHM Installation und Konfiguration (Installation)" --checklist  --separate-output \
+		    "Auszuführende Schritte ..." 20 78 4 \
+  			"YAHM" "CCU Container"  ON \
+  			"Network" "Netzwerkbridge einrichten" ON \
+  			"HMIP" "HM-IP abschalten"  ON \
+  			"PCB" "HM-MOD-RPI-PBC aktivieren" ON 2>results
+  			
+
+    while read choice
+do
+	case $choice in
+		YAHM) inst_yahm=1;;
+		Network) inst_network=1;;
+		HMIP) inst_hmip=1;;
+		PCB) inst_pcb=1;;
+	esac
+
+done < results
+
+if [ $inst_yahm -eq 1 ]; then
+ ${YAHM_DIR}/bin/yahm-lxc install
+fi
+
+if [ $inst_network -eq 1 ]; then
+ do_menu_network_createattachbridge
+fi
+
+if [ $inst_hmip -eq 1 ]; then
+ #start container and wayit abour 30 seconds
+ lxc-start -n ${LXCNAME} -d
+ progress "\tIwait about 30 seconds until ccu is full launched"
+ sleep 30
+ ${YAHM_DIR}/bin/yahm-module -f -m homematic-ip disable
+fi
+
+if [ $inst_pcb -eq 1 ]; then
+ ${YAHM_DIR}/bin/yahm-module -m hm-mod-rpi-pcb enable
+fi
+    
+  return 0
+}
+
+do_menu_ccu_update() {
+ 
+  if [ `check_yahm_installed` -eq 1 ]; then
+
+   whiptail --yesno "Hast Du ein Backup Deiner CCU gemacht ?" 20 60 2
+    if [ $? -eq 0 ]; then # yes
+       ${YAHM_DIR}/bin/yahm-lxc -n ${LXCNAME} update 
+    fi
+  
+  else 
+	whiptail --msgbox "Kein CCU Container ${LXCNAME} gefunden" 20 60 1
+  fi    
+  
+  return 0
+}
+
+do_menu_ccu_remove() {
+   if [ `check_yahm_installed` -eq 1 ]
+    then
+		whiptail --yesno "Bist Du sicher das Du den CCU Container ${LXCNAME} entfernen möchtest. Alle Daten gehen verloren ?" 20 60 2
+		    if [ $? -eq 1 ]; then # no
+       		return 0
+	    fi
+    	# stop ccu - remove stuff - remove network settings
+
+    	lxc-stop -k -n ${LXCNAME}
+
+    	${YAHM_DIR}/bin/yahm-lxc -n ${LXCNAME} -f remove
+    	
+    	if [ `check_bridge_name $BRIDGE` -eq 1 ]; then
+    		${YAHM_DIR}/bin/yahm-network dettach_bridge
+	    	${YAHM_DIR}/bin/yahm-network -w delete_bridge
+		fi
+	else 
+	    whiptail --msgbox "Kein CCU Container ${LXCNAME} gefunden" 20 60 1
+
+  fi   
+
+}
+
+
+do_menu_backup() {
+
+while true; do
+    FUNC=$(whiptail --title "YAHM Installation und Konfiguration (Datensicherung)" --menu "Optionen" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Zurück --ok-button Auswählen \
+      "1 Backup YAHM" "YAHM Container sichern" \
+      "2 Restore YAHM" "YAHM Container zurückspielen" \
+      "3 Backup CCU" "CCU Backup anlegen" \
+      "4 Restore CCU" "CCU Backup einspielen" \
+      3>&1 1>&2 2>&3)
+    RET=$?
+    if [ $RET -eq 1 ]; then
+      return 0
+    elif [ $RET -eq 0 ]; then
+      case "$FUNC" in
+        1\ *) do_menu_backup_csave ;;
+        2\ *) do_menu_backup_crestore ;;
+        3\ *) do_menu_backup_ccusave ;;
+        4\ *) do_menu_backup_ccurestore ;;
+
+        *) whiptail --msgbox "Programmer error: unrecognized option" 20 60 1 ;;
+      esac || whiptail --msgbox "There was an error running option $FUNC" 20 60 1
+    else
+     return 0
+    fi
+  done
+
+}
+
+do_menu_backup_csave() {
+  ${YAHM_DIR}/bin/yahm-backup -n ${LXCNAME} -d /home/pi full_backup
+}
+
+
+do_menu_backup_ccusave() {
+  ${YAHM_DIR}/bin/yahm-backup -n ${LXCNAME} -d /home/pi data_backup
+}
+
+do_menu_install() {
+
+while true; do
+    FUNC=$(whiptail --title "YAHM Installation und Konfiguration (Installation & Update)" --menu "Optionen" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Zurück --ok-button Auswählen \
+      "1 Update" "YAHM Manager aktualisieren" \
+      3>&1 1>&2 2>&3)
+    RET=$?
+    if [ $RET -eq 1 ]; then
+      return 0
+    elif [ $RET -eq 0 ]; then
+      case "$FUNC" in
+        1\ *) do_menu_install_update ;;
+
+        *) whiptail --msgbox "Programmer error: unrecognized option" 20 60 1 ;;
+      esac || whiptail --msgbox "There was an error running option $FUNC" 20 60 1
+    else
+     return 0
+    fi
+  done
+
+}
+
+do_menu_install_update() {
+  ${YAHM_DIR}/bin/yahm-ctl update
+}
+
+calc_wt_size() {
+  WT_HEIGHT=17
+  WT_WIDTH=$(tput cols)
+
+  if [ -z "$WT_WIDTH" ] || [ "$WT_WIDTH" -lt 60 ]; then
+    WT_WIDTH=80
+  fi
+
+  if [ "$WT_WIDTH" -gt 178 ]; then
+    WT_WIDTH=120
+  fi
+
+  WT_MENU_HEIGHT=$(($WT_HEIGHT-7))
+}
+
+
+do_menu_network() {
+
+while true; do
+    FUNC=$(whiptail --title "YAHM Installation und Konfiguration (Netzwerk)" --menu "Optionen" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Zurück --ok-button Auswählen \
+      "1 Create" "Bridge erzeugen" \
+      "2 Delete" "Bridge löschen" \
+      "3 Attach" "Bridge zu LXC hinzufügen" \
+      "4 Dettach" "Bridge von LXC entfernen" \
+      3>&1 1>&2 2>&3)
+    RET=$?
+    if [ $RET -eq 1 ]; then
+      return 0
+    elif [ $RET -eq 0 ]; then
+      case "$FUNC" in
+        1\ *) do_menu_network_createbridge ;;
+        2\ *) do_menu_network_deletebridge ;;
+        3\ *) do_menu_network_attachbridge ;;
+        4\ *) do_menu_network_dettachbridge ;;
+
+        *) whiptail --msgbox "Programmer error: unrecognized option" 20 60 1 ;;
+      esac || whiptail --msgbox "There was an error running option $FUNC" 20 60 1
+    else
+     return 0
+    fi
+  done
+  
+}
+
+do_menu_network_createbridge() {
+  
+# check existing bridge
+   if [ `check_bridge_name $BRIDGE` -eq 0 ]; then
+	   ${YAHM_DIR}/bin/yahm-network -w create_bridge
+   else
+     whiptail --msgbox "Es existiert schon eine Bridge mit dem Namen $BRIDGE" 20 60 2
+   fi
+}
+
+do_menu_network_deletebridge() {
+
+   if [ `check_bridge_name $BRIDGE` -eq 1 ]; then
+     ${YAHM_DIR}/bin/yahm-network -w delete_bridge
+   else
+     whiptail --msgbox "Es existiert keine Bridge mit dem Namen $BRIDGE" 20 60 2
+   fi
+}
+
+do_menu_network_attachbridge() {
+   if [ `check_bridge_name $BRIDGE` -eq 1 ]; then
+ 	${YAHM_DIR}/bin/yahm-network attach_bridge
+ 	ASK_TO_RESTART=1
+   else
+     whiptail --msgbox "Es existiert keine Bridge mit dem Namen $BRIDGE" 20 60 2
+   fi
+}
+
+do_menu_network_dettachbridge() {
+	${YAHM_DIR}/bin/yahm-network dettach_bridge
+	ASK_TO_RESTART=1
+}
+
+
+do_menu_network_createattachbridge() {
+   ${YAHM_DIR}/bin/yahm-network -w create_bridge
+   ${YAHM_DIR}/bin/yahm-network attach_bridge
+   ASK_TO_RESTART=1
+}
+
+do_finish_menu() {
+   
+   if [ $ASK_TO_RESTART -eq 1 ]; then
+    whiptail --yesno "Soll die CCU neu gestartet werden" 20 60 2
+    if [ $? -eq 0 ]; then # yes
+      # stop if container is running
+      if [ $(lxc-info -n ${LXCNAME}|grep STOPPED|wc -l) -eq 0 ]; then
+            lxc-stop $QUIET -k -n ${LXCNAME}
+      fi
+      
+      progress "Starting ${LXCNAME} LXC container"
+      lxc-start -n ${LXCNAME} -d
+    fi
+  fi
+
+  exit 0
+  
+}
+
+do_menu_status() {
+  update_info
+  whiptail --msgbox " CCU Container ..: ${LXCNAME}\n CCU IP Adresse .: ${INFO_IP}\n CCU Status .....: ${INFO_STATE}" 20 60 2
+}
+
+calc_wt_size
+
+while true; do
+
+
+    FUNC=$(whiptail --title "YAHM Installation und Konfiguration" --menu "Optionen" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --ok-button Auswählen --nocancel \
+      "1 Installation" "YAHM Installieren oder Aktualisieren" \
+      "2 CCU " "CCU Installation / Update / Deinstallation" \
+      "3 Netzwerk" "Netzwerkeinstellungen" \
+      "4 Backup" "Datensicherung erstellen oder Rücksichern" \
+      "5 Module" "Module aktivieren oder deaktivieren" \
+      "6 Status" "YAHM Status anzeigen" \
+      "7 Beenden" "YAHM-UI Beenden" \
+      3>&1 1>&2 2>&3)
+    RET=$?
+
+    if [ $RET -eq 1 ]; then
+     
+      do_finish_menu
+      
+    elif [ $RET -eq 0 ]; then
+      case "$FUNC" in
+        1\ *) do_menu_install ;;
+        2\ *) do_menu_ccu ;;
+        3\ *) do_menu_network ;;
+        4\ *) do_menu_backup ;;
+        5\ *) do_menu_module ;;
+        6\ *) do_menu_status ;;
+        7\ *) do_finish_menu ;;
+
+        *) whiptail --msgbox "Programmer error: unrecognized option" 20 60 1 ;;
+      esac || whiptail --msgbox "There was an error running option $FUNC" 20 60 1
+    else
+     exit 1
+    fi
+  done
