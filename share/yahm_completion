@@ -1,3 +1,5 @@
+shopt -s progcomp
+
 _backup()
 {
   COMPREPLY=()
@@ -14,16 +16,85 @@ _ctl()
 
 _lxc()
 {
-  COMPREPLY=()
-  local word="${COMP_WORDS[COMP_CWORD]}"
-  COMPREPLY=( $(compgen -W "install update remove" -- "$word") )
+    # todo ggf um Beschreibung erweitern: http://stackoverflow.com/questions/7267185/bash-autocompletion-add-description-for-possible-completions
+    local cur prev firstword lastword complete_words complete_options
+ 
+    # Don't break words at : and =, see [1] and [2]
+    COMP_WORDBREAKS=${COMP_WORDBREAKS//[:=]}
+ 
+    cur=${COMP_WORDS[COMP_CWORD]}
+    prev=${COMP_WORDS[COMP_CWORD-1]}
+
+    GLOBAL_COMMANDS="\
+        install\
+        remove\
+        update"
+ 
+    GLOBAL_FLAGS="\
+        -n\
+        -f\
+        -b\
+        -p\
+        -v\
+        -d"
+
+    #echo -e "\nprev = $prev, cur = $cur, firstword = $firstword, lastword = $lastword\n"
+
+    case "${prev}" in
+    -n)
+        compopt -o nospace
+        YAHM_DIR="/var/lib/lxc/"
+        YAHM_NAMES=$(cd ${YAHM_DIR} && set -- */; printf "%s\n" "${@%/}")
+        COMPREPLY=( $(compgen -W "${YAHM_NAMES}" -- $cur) )
+        return 0
+        ;;
+    -d)
+        # Unescape space
+        cur=${cur//\\ / }
+        # Expand tilder to $HOME
+        [[ ${cur} == "~/"* ]] && cur=${cur/\~/$HOME}
+        # Show completion if path exist (and escape spaces)
+        compopt -o filenames
+        local files=("${cur}"*)
+        [[ -e ${files[0]} ]] && COMPREPLY=( "${files[@]// /\ }" )
+        return 0
+        ;;
+    -b)
+        if [ ! -f /var/lib/yahm/fw.list ]
+        then
+            cd /var/lib/yahm/
+            wget -q -N https://raw.githubusercontent.com/leonsio/CCU2-FW/master/fw.list
+        fi
+        ALL_FW=$(cat /var/lib/yahm/fw.list | grep -Po '(?<=CCU2-)\d.\d\d?.\d\d?')
+        COMPREPLY=( $(compgen -W "${ALL_FW}" -- $cur) )
+        return 0
+        ;;
+    install|update|remove)
+        return 0
+        ;;
+    *)
+        complete_words="$GLOBAL_COMMANDS"
+        complete_options="$GLOBAL_FLAGS"
+        ;;
+    esac
+
+    # Either display words or options, depending on the user input
+    if [[ $cur == -* ]]; then
+        COMPREPLY=( $( compgen -W "$complete_options" -- $cur ))
+ 
+    else
+        COMPREPLY=( $( compgen -W "$complete_words" -- $cur ))
+    fi
+ 
+    return 0
+
 }
 
 _module()
 {
   COMPREPLY=()
   local word="${COMP_WORDS[COMP_CWORD]}"
-  COMPREPLY=( $(compgen -W "enable dissable available installed" -- "$word") )
+  COMPREPLY=( $(compgen -W "enable disable available installed" -- "$word") )
 }
 
 _network()
@@ -38,5 +109,4 @@ complete -F _backup yahm-backup
 complete -F _ctl yahm-ctl
 complete -F _lxc yahm-lxc
 complete -F _network yahm-network
-complete -F _module yahm-moduleroot
-
+complete -F _module yahm-module
