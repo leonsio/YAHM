@@ -26,7 +26,7 @@ update_info() {
 
 do_menu_ccu() {
 while true; do
-    FUNC=$(whiptail --title "YAHM Installation und Konfiguration (CCU Installation)" --menu "Optionen" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Zurück --ok-button Auswählen \
+    FUNC=$(whiptail --title "YAHM Installation und Konfiguration (CCU Installation - ${LXCNAME})" --menu "Optionen" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Zurück --ok-button Auswählen \
       "1 Neuinstallation" "CCU Container Neuinstallation" \
       "2 Update" "CCU Firmwareupdate" \
       "3 Deinstall" "CCU Container entfernen" \
@@ -60,7 +60,7 @@ do_menu_ccu_install() {
    
    if [ `check_yahm_installed` -eq 1 ]
     then
-		whiptail --yesno "Es existiert bereits eine CCU Installation. Soll diese gelöscht werden ?" 20 60 2
+		whiptail --yesno "Es existiert bereits eine CCU Installation ${LXCNAME} . Soll diese gelöscht werden ?" 20 60 2
 		    if [ $? -eq 1 ]; then # no
        		return 0
 	    fi
@@ -68,7 +68,7 @@ do_menu_ccu_install() {
     	${YAHM_DIR}/bin/yahm-lxc -n ${LXCNAME} -f remove
     fi   
   
-    whiptail --title "YAHM Installation und Konfiguration (Installation)" --checklist  --separate-output \
+    whiptail --title "YAHM Installation und Konfiguration (Installation - ${LXCNAME})" --checklist  --separate-output \
 		    "Auszuführende Schritte ..." 20 78 4 \
   			"YAHM" "CCU Container"  ON \
   			"Network" "Netzwerkbridge einrichten" ON \
@@ -88,7 +88,7 @@ do
 done < results
 
 if [ $inst_yahm -eq 1 ]; then
- ${YAHM_DIR}/bin/yahm-lxc install
+ ${YAHM_DIR}/bin/yahm-lxc -n ${LXCNAME} install
 fi
 
 if [ $inst_network -eq 1 ]; then
@@ -100,11 +100,11 @@ if [ $inst_hmip -eq 1 ]; then
  lxc-start -n ${LXCNAME} -d
  progress "\tIwait about 30 seconds until ccu is full launched"
  sleep 30
- ${YAHM_DIR}/bin/yahm-module -f -m homematic-ip disable
+ ${YAHM_DIR}/bin/yahm-module -f -m homematic-ip -n ${LXCNAME} disable
 fi
 
 if [ $inst_pcb -eq 1 ]; then
- ${YAHM_DIR}/bin/yahm-module -m hm-mod-rpi-pcb enable
+ ${YAHM_DIR}/bin/yahm-module -m hm-mod-rpi-pcb -n ${LXCNAME} enable
 fi
     
   return 0
@@ -140,8 +140,8 @@ do_menu_ccu_remove() {
     	${YAHM_DIR}/bin/yahm-lxc -n ${LXCNAME} -f remove
     	
     	if [ `check_bridge_name $BRIDGE` -eq 1 ]; then
-    		${YAHM_DIR}/bin/yahm-network dettach_bridge
-	    	${YAHM_DIR}/bin/yahm-network -w delete_bridge
+    		${YAHM_DIR}/bin/yahm-network -n ${LXCNAME} dettach_bridge
+	    	${YAHM_DIR}/bin/yahm-network -n ${LXCNAME} -w delete_bridge
 		fi
 	else 
 	    whiptail --msgbox "Kein CCU Container ${LXCNAME} gefunden" 20 60 1
@@ -154,7 +154,7 @@ do_menu_ccu_remove() {
 do_menu_backup() {
 
 while true; do
-    FUNC=$(whiptail --title "YAHM Installation und Konfiguration (Datensicherung)" --menu "Optionen" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Zurück --ok-button Auswählen \
+    FUNC=$(whiptail --title "YAHM Installation und Konfiguration (Datensicherung - ${LXCNAME})" --menu "Optionen" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Zurück --ok-button Auswählen \
       "1 Backup YAHM" "YAHM Container sichern" \
       "2 Restore YAHM" "YAHM Container zurückspielen" \
       "3 Backup CCU" "CCU Backup anlegen" \
@@ -256,7 +256,7 @@ calc_wt_size() {
 do_menu_module() {
 
 while true; do
-    FUNC=$(whiptail --title "YAHM Installation und Konfiguration (Module)" --menu "Optionen" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Zurück --ok-button Auswählen \
+    FUNC=$(whiptail --title "YAHM Installation und Konfiguration (Module - ${LXCNAME})" --menu "Optionen" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Zurück --ok-button Auswählen \
       "1 Dissable HM-IP" "HMIP Interface abschalten" \
       "2 activate PBC" "HM-MOD-RPI-PBC aktivieren" \
       "3 deactivate PBC" "HM-MOD-RPI-PBC deaktivieren" \
@@ -285,7 +285,7 @@ while true; do
 }
 
 do_menu_module_action() {
- ${YAHM_DIR}/bin/yahm-module -f -m $1 $2
+ ${YAHM_DIR}/bin/yahm-module -n ${LXCNAME} -f -m $1 $2
  ASK_TO_RESTART=1
 }
 
@@ -321,7 +321,7 @@ do_menu_network_createbridge() {
   
 # check existing bridge
    if [ `check_bridge_name $BRIDGE` -eq 0 ]; then
-	   ${YAHM_DIR}/bin/yahm-network -w create_bridge
+	   ${YAHM_DIR}/bin/yahm-network -n ${LXCNAME} -w create_bridge
    else
      whiptail --msgbox "Es existiert schon eine Bridge mit dem Namen $BRIDGE" 20 60 2
    fi
@@ -330,7 +330,7 @@ do_menu_network_createbridge() {
 do_menu_network_deletebridge() {
 
    if [ `check_bridge_name $BRIDGE` -eq 1 ]; then
-     ${YAHM_DIR}/bin/yahm-network -w delete_bridge
+     ${YAHM_DIR}/bin/yahm-network -n ${LXCNAME} -w delete_bridge
    else
      whiptail --msgbox "Es existiert keine Bridge mit dem Namen $BRIDGE" 20 60 2
    fi
@@ -338,7 +338,7 @@ do_menu_network_deletebridge() {
 
 do_menu_network_attachbridge() {
    if [ `check_bridge_name $BRIDGE` -eq 1 ]; then
- 	${YAHM_DIR}/bin/yahm-network attach_bridge
+ 	${YAHM_DIR}/bin/yahm-network -n ${LXCNAME} attach_bridge
  	ASK_TO_RESTART=1
    else
      whiptail --msgbox "Es existiert keine Bridge mit dem Namen $BRIDGE" 20 60 2
@@ -346,24 +346,15 @@ do_menu_network_attachbridge() {
 }
 
 do_menu_network_dettachbridge() {
-	${YAHM_DIR}/bin/yahm-network dettach_bridge
+	${YAHM_DIR}/bin/yahm-network -n ${LXCNAME} dettach_bridge
 	ASK_TO_RESTART=1
 }
 
 
 do_menu_network_createattachbridge() {
-  {
-   while (true)
-   do
-	  ${YAHM_DIR}/bin/yahm-network -w create_bridge
-  	  echo 50   
-      ${YAHM_DIR}/bin/yahm-network attach_bridge
-      ASK_TO_RESTART=1
-   break
-   done
-   echo 100
-   sleep 2     
-   }| whiptail --title "Netzwerk" --gauge "Netzwerkbridge anlegen" 8 78 0
+    ${YAHM_DIR}/bin/yahm-network -n ${LXCNAME} -w create_bridge
+    ${YAHM_DIR}/bin/yahm-network -n ${LXCNAME} attach_bridge
+    ASK_TO_RESTART=1
 }
 
 do_finish_menu() {
@@ -389,7 +380,7 @@ do_finish_menu() {
 do_menu_diag() {
 
 while true; do
-    FUNC=$(whiptail --title "YAHM Installation und Konfiguration (Diagnose)" --menu "Optionen" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Zurück --ok-button Auswählen \
+    FUNC=$(whiptail --title "YAHM Installation und Konfiguration (Diagnose - ${LXCNAME})" --menu "Optionen" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Zurück --ok-button Auswählen \
       "1 CCU Interfaces" "Interface Datei der CCU anzeigen" \
       "2 CCU RDF" "rfd.conf Datei der CCU anzeigen" \
       3>&1 1>&2 2>&3)
@@ -409,6 +400,14 @@ while true; do
   done
 
 
+}
+
+do_menu_container() {
+  LXCNAME=$(whiptail --inputbox "Aktuellen Container " 8 78 "${LXCNAME}" --title "YAHM Container ändern" 3>&1 1>&2 2>&3)
+  
+  LXC_ROOT=/var/lib/lxc/$LXCNAME
+  LXC_ROOT_FS=/var/lib/lxc/$LXCNAME/root
+  LXC_ROOT_MODULES=/var/lib/lxc/$LXCNAME/.modules
 }
 
 
@@ -439,8 +438,9 @@ while true; do
       "4 Module" "Module aktivieren oder deaktivieren" \
       "5 Update" "YAHM aktualisieren" \
       "6 Status" "YAHM Status anzeigen" \
-      "7 Diag" "Diagnose" \
-      "8 Beenden" "YAHM-UI Beenden" \
+      "7 Name" "Container wechseln aktuell:${LXCNAME}" \
+      "8 Diag" "Diagnose" \
+      "9 Beenden" "YAHM-UI Beenden" \
       3>&1 1>&2 2>&3)
     RET=$?
 
@@ -456,8 +456,9 @@ while true; do
         4\ *) do_menu_module ;;
         5\ *) do_menu_install ;;
         6\ *) do_menu_status ;;
-        7\ *) do_menu_diag ;;
-        8\ *) do_finish_menu ;;
+        7\ *) do_menu_container ;;
+        8\ *) do_menu_diag ;;
+        9\ *) do_finish_menu ;;
 
         *) whiptail --msgbox "Programmer error: unrecognized option" 20 60 1 ;;
       esac || whiptail --msgbox "There was an error running option $FUNC" 20 60 1
