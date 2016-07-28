@@ -165,10 +165,10 @@ while true; do
       return 0
     elif [ $RET -eq 0 ]; then
       case "$FUNC" in
-        1\ *) do_menu_backup_csave ;;
-        2\ *) do_menu_backup_crestore ;;
-        3\ *) do_menu_backup_ccusave ;;
-        4\ *) do_menu_backup_ccurestore ;;
+        1\ *) do_menu_backup_action 0 ;;
+        2\ *) do_menu_backup_action 1 ;;
+        3\ *) do_menu_backup_action 2 ;;
+        4\ *) do_menu_backup_action 3 ;;
 
         *) whiptail --msgbox "Programmer error: unrecognized option" 20 60 1 ;;
       esac || whiptail --msgbox "There was an error running option $FUNC" 20 60 1
@@ -179,15 +179,38 @@ while true; do
 
 }
 
-do_menu_backup_csave() {
-  ${YAHM_DIR}/bin/yahm-backup -n ${LXCNAME} -d /home/pi full_backup
-  ASK_TO_RESTART=1
+do_menu_backup_action() {
+  
+  case $1 in
+        0)
+          backupfile="/tmp/yahm_backup"
+		  ${YAHM_DIR}/bin/yahm-backup -n ${LXCNAME} -d /home/pi full_backup
+		  whiptail --msgbox "Das YAHM Backup wurde unter ${backupfile} angelegt" 20 60 1
+  		  ASK_TO_RESTART=1
+  		  break;
+  		  ;;
+        1)
+          backupfile="/tmp/yahm_backup"
+		  ${YAHM_DIR}/bin/yahm-backup -n ${LXCNAME} -d ${backupfile} full_backup
+  		  ASK_TO_RESTART=1
+  		  break;
+  		  ;;
+        2)
+          backupfile="/tmp/homematic_ccu_backup.sbk"
+          info "Backup " 
+		  ${YAHM_DIR}/bin/yahm-backup -n ${LXCNAME} -d ${backupfile} data_backup
+		  whiptail --msgbox "Das CCU Backup wurde unter ${backupfile} angelegt" 20 60 1
+  		  break;
+  		  ;;
+        3)
+		  ${YAHM_DIR}/bin/yahm-backup -n ${LXCNAME} -d /home/pi data_restore
+  		  ASK_TO_RESTART=1
+  		  break;
+  		  ;;
+  esac
 }
 
 
-do_menu_backup_ccusave() {
-  ${YAHM_DIR}/bin/yahm-backup -n ${LXCNAME} -d /home/pi data_backup
-}
 
 do_menu_install() {
 
@@ -246,10 +269,12 @@ while true; do
     elif [ $RET -eq 0 ]; then
       case "$FUNC" in
         1\ *) do_menu_module_action "homematic-ip" "disable" ;;
-        2\ *) do_menu_module_action "hm-mod-rpi-pcb" "enable" ;;
-        3\ *) do_menu_module_pcboff "hm-mod-rpi-pcb" "disable";;
+        2\ *) do_menu_module_action "hm-mod-rpi-pcb" "enable" 
+		        whiptail --msgbox "Reboot PI ..." 20 60 1;;
+        3\ *) do_menu_module_action "hm-mod-rpi-pcb" "disable"
+		        whiptail --msgbox "Reboot PI ..." 20 60 1;;
         2\ *) do_menu_module_action "hm-lan-fake-gw" "enable" ;;
-        3\ *) do_menu_module_pcboff "hm-lan-fake-gw" "disable";;
+        3\ *) do_menu_module_action "hm-lan-fake-gw" "disable";;
         *) whiptail --msgbox "Programmer error: unrecognized option" 20 60 1 ;;
       esac || whiptail --msgbox "There was an error running option $FUNC" 20 60 1
     else
@@ -327,9 +352,18 @@ do_menu_network_dettachbridge() {
 
 
 do_menu_network_createattachbridge() {
-   ${YAHM_DIR}/bin/yahm-network -w create_bridge
-   ${YAHM_DIR}/bin/yahm-network attach_bridge
-   ASK_TO_RESTART=1
+  {
+   while (true)
+   do
+	  ${YAHM_DIR}/bin/yahm-network -w create_bridge
+  	  echo 50   
+      ${YAHM_DIR}/bin/yahm-network attach_bridge
+      ASK_TO_RESTART=1
+   break
+   done
+   echo 100
+   sleep 2     
+   }| whiptail --title "Netzwerk" --gauge "Netzwerkbridge anlegen" 8 78 0
 }
 
 do_finish_menu() {
