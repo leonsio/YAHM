@@ -116,17 +116,28 @@ diff -wrupN root/etc/init.d/S00eQ3SystemStart newroot/etc/init.d/S00eQ3SystemSta
 diff -wrupN root/etc/init.d/S61rfd newroot/etc/init.d/S61rfd
 --- root/etc/init.d/S61rfd	2016-04-27 17:50:38.556909859 +0200
 +++ newroot/etc/init.d/S61rfd	2016-04-27 17:24:27.766517516 +0200
-@@ -38,8 +38,8 @@ init() {
+@@ -18,8 +18,8 @@ init() {
+        cp $CFG_TEMPLATE_DIR/rfd.conf /etc/config
+    else
+        sed -i 's/\/dev\/ttyAPP0/\/dev\/mmd_bidcos/' /etc/config/rfd.conf || true
+-       sed -i 's/^AccessFile/#AccessFile/' /etc/config/rfd.conf || true
+-       sed -i 's/^ResetFile/#ResetFile/' /etc/config/rfd.conf || true
++#      sed -i 's/^AccessFile/#AccessFile/' /etc/config/rfd.conf || true
++#      sed -i 's/^ResetFile/#ResetFile/' /etc/config/rfd.conf || true
+                 if ! grep -q "Improved Coprocessor Initialization" /etc/config/rfd.conf ; then
+                         sed -i 's/\[Interface 0\]/Improved\ Coprocessor\ Initialization\ =\ true\n\n&/' /etc/config/rfd.conf || true
+                 fi
+@@ -44,8 +44,8 @@ init() {
  start() {
- 	echo -n "Starting rfd: "
- 	init
--	echo "Waiting for multimacd to get ready"
--	eq3configcmd wait-for-file -f /dev/mmd_bidcos -p 1 -t 5
-+#	echo "Waiting for multimacd to get ready"
-+#	eq3configcmd wait-for-file -f /dev/mmd_bidcos -p 1 -t 5
- 	echo "Starting rfd"
- 	start-stop-daemon -S -q -b -m -p $PIDFILE --exec /bin/rfd -- -f /etc/config/rfd.conf -l $LOGLEVEL_RFD
- 	echo "OK"
+    echo -n "Starting rfd: "
+    init
+-   echo "Waiting for multimacd to get ready"
+-   eq3configcmd wait-for-file -f /dev/mmd_bidcos -p 1 -t 5
++#  echo "Waiting for multimacd to get ready"
++#  eq3configcmd wait-for-file -f /dev/mmd_bidcos -p 1 -t 5
+    echo "Starting rfd"
+    start-stop-daemon -S -q -b -m -p $PIDFILE --exec /bin/rfd -- -f /etc/config/rfd.conf -l $LOGLEVEL_RFD
+    echo "OK"
 diff -wrupN root/etc/init.d/S99eQ3SystemStarted newroot/etc/init.d/S99eQ3SystemStarted
 --- root/etc/init.d/S99eQ3SystemStarted	2016-04-27 17:50:38.556909859 +0200
 +++ newroot/etc/init.d/S99eQ3SystemStarted	2016-04-27 17:24:27.776517455 +0200

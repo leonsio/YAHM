@@ -161,7 +161,7 @@ create_lxc_container()
 
     progress "Applying patch"
     cd $LXC_ROOT_FS
-    patch $QUIET --input "${YAHM_DIR}/share/patches/${CCU2Version}.patch" -p1
+    patch $QUIET -l --input "${YAHM_DIR}/share/patches/${CCU2Version}.patch" -p1
 
     progress "Applying scripts"
     cd $LXC_ROOT_FS
