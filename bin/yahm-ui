@@ -8,6 +8,32 @@
 
 set -e
 
+#START: Hilfe Output falls yahm-ui mit irgend einem Flag ausgeführt wird (-h /--help)
+show_help ()
+{
+cat << EOF
+YAHM Management
+
+Ausgabe hilfe Seite
+
+Usage Example:
+
+./yahm-ui [FLAG] COMMAND
+./yahm-ui -f
+
+Flags:
+-f          - Force operation (no halt on errors).
+-v          - Verbose output/Version?
+
+Commands:
+ggf. funktionen falls vorhanden
+
+EOF
+exit 1
+}
+PARAMETER="vf"
+#END
+
 source /opt/YAHM/share/include.sh
 
 ASK_TO_RESTART=0
