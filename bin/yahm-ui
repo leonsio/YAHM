@@ -124,7 +124,7 @@ do_menu_ccu_install() {
     fi   
   
     whiptail --title "YAHM Installation und Konfiguration (Installation - ${LXCNAME})" --checklist  --separate-output \
-		    "Auszuführende Schritte ..." 20 78 4 \
+		    "Auszuführende Schritte ..." 20 78 8 \
   			"YAHM" "CCU Container"  ON \
   			"Network" "Netzwerkbridge einrichten" ON \
   			"HMIP" "HM-IP abschalten"  ON \
@@ -161,6 +161,7 @@ fi
 if [ $inst_pcb -eq 1 ]; then
  ${YAHM_DIR}/bin/yahm-module -m hm-mod-rpi-pcb -n ${LXCNAME} enable
 fi
+
     
   return 0
 }
@@ -315,7 +316,8 @@ while true; do
       "2 activate PBC" "HM-MOD-RPI-PBC aktivieren" \
       "3 deactivate PBC" "HM-MOD-RPI-PBC deaktivieren" \
       "4 activate HM-LAN-GW" "Fake HM-LAN-GW aktivieren" \
-      "4 deactivate HM-LAN-GW" "Fake HM-LAN-GW deaktivieren" \
+      "5 deactivate HM-LAN-GW" "Fake HM-LAN-GW deaktivieren" \
+      "6 install Homebridge" "Homebridge installieren (HomeKit)" \
       3>&1 1>&2 2>&3)
     RET=$?
     if [ $RET -eq 1 ]; then
@@ -327,8 +329,9 @@ while true; do
 		        whiptail --msgbox "Reboot PI ..." 20 60 1;;
         3\ *) do_menu_module_action "hm-mod-rpi-pcb" "disable"
 		        whiptail --msgbox "Reboot PI ..." 20 60 1;;
-        2\ *) do_menu_module_action "hm-lan-fake-gw" "enable" ;;
-        3\ *) do_menu_module_action "hm-lan-fake-gw" "disable";;
+        4\ *) do_menu_module_action "hm-lan-fake-gw" "enable" ;;
+        5\ *) do_menu_module_action "hm-lan-fake-gw" "disable";;
+        6\ *) do_menu_module_action "homebridge" "enable";;
         *) whiptail --msgbox "Programmer error: unrecognized option" 20 60 1 ;;
       esac || whiptail --msgbox "There was an error running option $FUNC" 20 60 1
     else
@@ -437,7 +440,8 @@ while true; do
     FUNC=$(whiptail --title "YAHM Installation und Konfiguration (Diagnose - ${LXCNAME})" --menu "Optionen" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Zurück --ok-button Auswählen \
       "1 CCU Interfaces" "Interface Datei der CCU anzeigen" \
       "2 CCU RFD" "rfd.conf Datei der CCU anzeigen" \
-      "3 Network" "Raspberry Network" \
+      "3 CCU Tweak" "WebGUI Diagnose aktivieren"\
+      "4 Network" "Raspberry Network" \
       3>&1 1>&2 2>&3)
     RET=$?
     if [ $RET -eq 1 ]; then
@@ -446,8 +450,8 @@ while true; do
       case "$FUNC" in
         1\ *) do_menu_diag_showFile "${LXC_ROOT_FS}/usr/local/etc/config/InterfacesList.xml" "Interfaces.xml" ;;
         2\ *) do_menu_diag_showFile "${LXC_ROOT_FS}/usr/local/etc/config/rfd.conf" "rfd.conf" ;;
-        3\ *) do_menu_diag_showFile "/etc/network/interfaces" "Interfaces" ;;
-        
+        4\ *) do_menu_diag_showFile "/etc/network/interfaces" "Interfaces" ;;
+        3\ *) do_menu_ccu_tweak ;; 
         *) whiptail --msgbox "Programmer error: unrecognized option" 20 60 1 ;;
       esac || whiptail --msgbox "There was an error running option $FUNC" 20 60 1
     else
@@ -455,6 +459,16 @@ while true; do
     fi
   done
 
+
+}
+
+do_menu_ccu_tweak() {
+  if [ `check_container_installed` -eq 1 ]; then
+    echo "CP_DEVCONFIG=1" > ${LXC_ROOT_FS}/usr/local/etc/config/tweaks
+	whiptail --msgbox "Diagnose wurde aktiviert. Siehe WebGUI Systemsteuerung" 20 60 2
+  else 
+	whiptail --msgbox " Keinen YAHM Container ${LXCNAME} gefunden." 20 60 2
+  fi
 
 }
 
@@ -473,9 +487,8 @@ do_menu_diag_showFile() {
 }
 
 do_menu_status() {
-  update_info
-  
   if [ `check_container_installed` -eq 1 ]; then
+	update_info
 	whiptail --msgbox " CCU Container ..: ${LXCNAME}\n CCU IP Adresse .: ${INFO_IP}\n CCU Status .....: ${INFO_STATE}" 20 60 2
   else 
 	whiptail --msgbox " Keinen YAHM Container ${LXCNAME} gefunden." 20 60 2
