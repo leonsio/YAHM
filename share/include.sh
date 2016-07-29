@@ -264,6 +264,18 @@ check_yahm_installed()
     fi
 }
 
+check_container_installed()
+{
+    file="${LXC_ROOT}/config"
+    if [ -f "$file" ]
+    then
+        echo 1 
+    else
+        echo 0
+    fi
+}
+
+
 get_yahm_version()
 {
     local container_name=$1
