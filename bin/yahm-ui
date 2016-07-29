@@ -15,7 +15,7 @@ INFO_IP=""
 INFO_STATE="unknow"
 
 update_info() {
- if [ `check_yahm_installed` -eq 1 ]; then
+ if [ `check_container_installed` -eq 1 ]; then
 	status=$(lxc-info -n ${LXCNAME})
  	state=$(echo "$status" | grep -oP "State:.*\b([A-Z]{1,})\b|\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b")
  	IFS=', ' read -r -a array <<< $state
@@ -24,12 +24,19 @@ update_info() {
  fi
 }
 
+do_show_notfound() {
+  whiptail --msgbox "Kein CCU Container ${LXCNAME} gefunden" 20 60 1
+}
+
 do_menu_ccu() {
 while true; do
     FUNC=$(whiptail --title "YAHM Installation und Konfiguration (CCU Installation - ${LXCNAME})" --menu "Optionen" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Zurück --ok-button Auswählen \
       "1 Neuinstallation" "CCU Container Neuinstallation" \
       "2 Update" "CCU Firmwareupdate" \
       "3 Deinstall" "CCU Container entfernen" \
+      "-" "" \
+      "4 Start" "CCU Container starten" \
+      "5 Stop" "CCU Container beenden" \
       3>&1 1>&2 2>&3)
     RET=$?
     if [ $RET -eq 1 ]; then
@@ -39,6 +46,8 @@ while true; do
         1\ *) do_menu_ccu_install ;;
         2\ *) do_menu_ccu_update ;;
         3\ *) do_menu_ccu_remove ;;
+        4\ *) do_menu_ccu_start ;;
+        5\ *) do_menu_ccu_stop ;;
 
         *) whiptail --msgbox "Programmer error: unrecognized option" 20 60 1 ;;
       esac || whiptail --msgbox "There was an error running option $FUNC" 20 60 1
@@ -47,6 +56,26 @@ while true; do
     fi
  done
 
+}
+
+do_menu_ccu_start() {
+    if [ `check_container_installed` -eq 1 ]
+    then
+     ${YAHM_DIR}/bin/yahm-ctl -n ${LXCNAME} start
+     do_menu_status 
+     else 
+		do_show_notfound
+    fi  
+}
+
+do_menu_ccu_stop() {
+    if [ `check_container_installed` -eq 1 ]
+    then
+     ${YAHM_DIR}/bin/yahm-ctl -n ${LXCNAME} stop
+     do_menu_status
+	else 
+		do_show_notfound
+   fi  
 }
 
 
@@ -58,7 +87,7 @@ do_menu_ccu_install() {
  
 # Check existing Installation 
    
-   if [ `check_yahm_installed` -eq 1 ]
+   if [ `check_container_installed` -eq 1 ]
     then
 		whiptail --yesno "Es existiert bereits eine CCU Installation ${LXCNAME} . Soll diese gelöscht werden ?" 20 60 2
 		    if [ $? -eq 1 ]; then # no
@@ -98,7 +127,7 @@ fi
 if [ $inst_hmip -eq 1 ]; then
  #start container and wayit abour 30 seconds
  lxc-start -n ${LXCNAME} -d
- progress "\tIwait about 30 seconds until ccu is full launched"
+ progress "\twait about 30 seconds until ccu is full launched"
  sleep 30
  ${YAHM_DIR}/bin/yahm-module -f -m homematic-ip -n ${LXCNAME} disable
 fi
@@ -112,7 +141,7 @@ fi
 
 do_menu_ccu_update() {
  
-  if [ `check_yahm_installed` -eq 1 ]; then
+  if [ `check_container_installed` -eq 1 ]; then
 
    whiptail --yesno "Hast Du ein Backup Deiner CCU gemacht ?" 20 60 2
     if [ $? -eq 0 ]; then # yes
@@ -120,14 +149,14 @@ do_menu_ccu_update() {
     fi
   
   else 
-	whiptail --msgbox "Kein CCU Container ${LXCNAME} gefunden" 20 60 1
+	do_show_notfound
   fi    
   
   return 0
 }
 
 do_menu_ccu_remove() {
-   if [ `check_yahm_installed` -eq 1 ]
+   if [ `check_container_installed` -eq 1 ]
     then
 		whiptail --yesno "Bist Du sicher das Du den CCU Container ${LXCNAME} entfernen möchtest. Alle Daten gehen verloren ?" 20 60 2
 		    if [ $? -eq 1 ]; then # no
@@ -144,8 +173,7 @@ do_menu_ccu_remove() {
 	    	${YAHM_DIR}/bin/yahm-network -n ${LXCNAME} -w delete_bridge
 		fi
 	else 
-	    whiptail --msgbox "Kein CCU Container ${LXCNAME} gefunden" 20 60 1
-
+		do_show_notfound
   fi   
 
 }
@@ -382,15 +410,17 @@ do_menu_diag() {
 while true; do
     FUNC=$(whiptail --title "YAHM Installation und Konfiguration (Diagnose - ${LXCNAME})" --menu "Optionen" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Zurück --ok-button Auswählen \
       "1 CCU Interfaces" "Interface Datei der CCU anzeigen" \
-      "2 CCU RDF" "rfd.conf Datei der CCU anzeigen" \
+      "2 CCU RFD" "rfd.conf Datei der CCU anzeigen" \
+      "3 Network" "Raspberry Network" \
       3>&1 1>&2 2>&3)
     RET=$?
     if [ $RET -eq 1 ]; then
       return 0
     elif [ $RET -eq 0 ]; then
       case "$FUNC" in
-        1\ *) do_menu_diag_showFile "usr/local/etc/config/InterfacesList.xml" "Interfaces.xml" ;;
-        2\ *) do_menu_diag_showFile "usr/local/etc/config/rfd.conf" "rdf.conf" ;;
+        1\ *) do_menu_diag_showFile "${LXC_ROOT_FS}/usr/local/etc/config/InterfacesList.xml" "Interfaces.xml" ;;
+        2\ *) do_menu_diag_showFile "${LXC_ROOT_FS}/usr/local/etc/config/rfd.conf" "rfd.conf" ;;
+        3\ *) do_menu_diag_showFile "/etc/network/interfaces" "Interfaces" ;;
         
         *) whiptail --msgbox "Programmer error: unrecognized option" 20 60 1 ;;
       esac || whiptail --msgbox "There was an error running option $FUNC" 20 60 1
@@ -403,8 +433,8 @@ while true; do
 }
 
 do_menu_container() {
-  LXCNAME=$(whiptail --inputbox "Aktuellen Container " 8 78 "${LXCNAME}" --title "YAHM Container ändern" 3>&1 1>&2 2>&3)
   
+  LXCNAME=$(whiptail --inputbox "Aktuellen Container " 8 78 "${LXCNAME}" --title "YAHM Container ändern" 3>&1 1>&2 2>&3)
   LXC_ROOT=/var/lib/lxc/$LXCNAME
   LXC_ROOT_FS=/var/lib/lxc/$LXCNAME/root
   LXC_ROOT_MODULES=/var/lib/lxc/$LXCNAME/.modules
@@ -412,17 +442,17 @@ do_menu_container() {
 
 
 do_menu_diag_showFile() {
-  value=$(<${LXC_ROOT_FS}/$1)
+  value=$(<$1)
   whiptail --msgbox --backtitle $2 "${value}" --scrolltext 30 $WT_WIDTH 2
 }
 
 do_menu_status() {
   update_info
   
-  if [ `check_yahm_installed` -eq 1 ]; then
+  if [ `check_container_installed` -eq 1 ]; then
 	whiptail --msgbox " CCU Container ..: ${LXCNAME}\n CCU IP Adresse .: ${INFO_IP}\n CCU Status .....: ${INFO_STATE}" 20 60 2
   else 
-	whiptail --msgbox " Keinen YAHM Container gefunden." 20 60 2
+	whiptail --msgbox " Keinen YAHM Container ${LXCNAME} gefunden." 20 60 2
   fi
 }
 
