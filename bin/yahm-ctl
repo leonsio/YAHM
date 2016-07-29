@@ -53,12 +53,19 @@ for key in "$@"; do
                 die "${LXCNAME} container is already running"
             fi
 
+            if [ "$BOARD_TYPE" = "Raspberry Pi" ] && [ -e ${LXC_ROOT_MODULES}/hm-mod-rpi-pcb ]
+            then
+                echo 0 > /sys/class/gpio/gpio18/value
+                sleep 0.1
+                echo 1 > /sys/class/gpio/gpio18/value
+            fi
+
             if [ $IS_VERBOSE -eq 1 ] 
             then
                 progress "Starting ${LXCNAME} LXC container in debug mode"
                 lxc-start -n ${LXCNAME}
             else
-		mkdir -p /var/log/yahm
+		        mkdir -p /var/log/yahm
                 progress "Starting ${LXCNAME} LXC container"
                 lxc-start $QUIET -n ${LXCNAME} -d -L /var/log/yahm/${LXCNAME}_console.log
             fi
@@ -69,7 +76,12 @@ for key in "$@"; do
           if [ $(lxc-info -n ${LXCNAME}|grep STOPPED|wc -l) -eq 1 ]
             then 
                 die "${LXCNAME} container is already stopped"
-            fi  
+            fi
+
+            if [ "$BOARD_TYPE" = "Raspberry Pi" ] && [ -e ${LXC_ROOT_MODULES}/hm-mod-rpi-pcb ]
+            then
+                echo 0 > /sys/class/gpio/gpio18/value
+            fi
 
             progress "Stopping ${LXCNAME} LXC container" 
             lxc-stop $QUIET -k -n ${LXCNAME}
