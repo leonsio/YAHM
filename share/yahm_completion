@@ -1,23 +1,122 @@
 shopt -s progcomp
 
+# @todo Wildcard Handling überarbeiten
+# @todo GLOBAL_FLAGS wirklich global machen (-n -f -v) und in Funktion mit lokalen mergen
+# @todo YAHM/share/include.sh verwenden
+
 _backup()
 {
-  COMPREPLY=()
-  local word="${COMP_WORDS[COMP_CWORD]}"
-  COMPREPLY=( $(compgen -W "data_backup data_restore full_backup full_restore" -- "$word") )
+    local cur prev complete_words complete_options
+
+    # Don't break words at : and =, see [1] and [2]
+    COMP_WORDBREAKS=${COMP_WORDBREAKS//[:=]}
+
+    cur=${COMP_WORDS[COMP_CWORD]}
+    prev=${COMP_WORDS[COMP_CWORD-1]}
+
+    GLOBAL_COMMANDS="\
+        data_backup\
+        data_restore\
+        full_backup\
+        full_restore"
+
+    GLOBAL_FLAGS="\
+        -n\
+        -f\
+        -v\
+        -d"
+
+    case "${prev}" in
+        -n)
+            YAHM_DIR="/var/lib/lxc/"
+            YAHM_NAMES=$(cd ${YAHM_DIR} && set -- */; printf "%s\n" "${@%/}")
+            COMPREPLY=( $(compgen -W "${YAHM_NAMES}" -- $cur) )
+            return 0
+            ;;
+        -d)
+            # Unescape space
+            cur=${cur//\\ / }
+            # Expand tilder to $HOME
+            [[ ${cur} == "~/"* ]] && cur=${cur/\~/$HOME}
+            # Show completion if path exist (and escape spaces)
+            compopt -o filenames
+            local files=("${cur}"*)
+            [[ -e ${files[0]} ]] && COMPREPLY=( "${files[@]// /\ }" )
+            return 0
+            ;;
+        data_backup|data_restore|full_backup|full_restore)
+            return 0
+            ;;
+        *)
+            complete_words="$GLOBAL_COMMANDS"
+            complete_options="$GLOBAL_FLAGS"
+            ;;
+    esac
+
+    # Either display words or options, depending on the user input
+    if [[ $cur == -* ]]; then
+        COMPREPLY=( $( compgen -W "$complete_options" -- $cur ))
+
+    else
+        COMPREPLY=( $( compgen -W "$complete_words" -- $cur ))
+    fi
+
+    return 0
 }
 
 _ctl()
 {
-  COMPREPLY=()
-  local word="${COMP_WORDS[COMP_CWORD]}"
-  COMPREPLY=( $(compgen -W "start stop info join update" -- "$word") )
+    local cur prev complete_words complete_options
+
+    # Don't break words at : and =, see [1] and [2]
+    COMP_WORDBREAKS=${COMP_WORDBREAKS//[:=]}
+
+    cur=${COMP_WORDS[COMP_CWORD]}
+    prev=${COMP_WORDS[COMP_CWORD-1]}
+
+    GLOBAL_COMMANDS="\
+        start\
+        stop\
+        join\
+        info\
+        update"
+
+    GLOBAL_FLAGS="\
+        -n\
+        -f\
+        -v"
+
+    case "${prev}" in
+        -n)
+            YAHM_DIR="/var/lib/lxc/"
+            YAHM_NAMES=$(cd ${YAHM_DIR} && set -- */; printf "%s\n" "${@%/}")
+            COMPREPLY=( $(compgen -W "${YAHM_NAMES}" -- $cur) )
+            return 0
+        ;;
+        start|stop|info|join|update)
+            return 0
+        ;;
+        *)
+            complete_words="$GLOBAL_COMMANDS"
+            complete_options="$GLOBAL_FLAGS"
+        ;;
+    esac
+
+    # Either display words or options, depending on the user input
+    if [[ $cur == -* ]]; then
+        COMPREPLY=( $( compgen -W "$complete_options" -- $cur ))
+
+    else
+        COMPREPLY=( $( compgen -W "$complete_words" -- $cur ))
+    fi
+
+    return 0
 }
 
 _lxc()
 {
     # todo ggf um Beschreibung erweitern: http://stackoverflow.com/questions/7267185/bash-autocompletion-add-description-for-possible-completions
-    local cur prev firstword lastword complete_words complete_options
+    local cur prev complete_words complete_options
  
     # Don't break words at : and =, see [1] and [2]
     COMP_WORDBREAKS=${COMP_WORDBREAKS//[:=]}
@@ -42,7 +141,7 @@ _lxc()
 
     case "${prev}" in
     -n)
-        compopt -o nospace
+        #compopt -o nospace
         YAHM_DIR="/var/lib/lxc/"
         YAHM_NAMES=$(cd ${YAHM_DIR} && set -- */; printf "%s\n" "${@%/}")
         COMPREPLY=( $(compgen -W "${YAHM_NAMES}" -- $cur) )
@@ -87,23 +186,128 @@ _lxc()
     fi
  
     return 0
-
 }
 
 _module()
 {
-  COMPREPLY=()
-  local word="${COMP_WORDS[COMP_CWORD]}"
-  COMPREPLY=( $(compgen -W "enable disable available installed" -- "$word") )
+    local cur prev complete_words complete_options
+
+    # Don't break words at : and =, see [1] and [2]
+    COMP_WORDBREAKS=${COMP_WORDBREAKS//[:=]}
+
+    cur=${COMP_WORDS[COMP_CWORD]}
+    prev=${COMP_WORDS[COMP_CWORD-1]}
+
+    GLOBAL_COMMANDS="\
+        enable\
+        disable\
+        available\
+        installed"
+
+    GLOBAL_FLAGS="\
+        -n\
+        -f\
+        -v\
+        -m"
+
+    case "${prev}" in
+        -n)
+            YAHM_DIR="/var/lib/lxc/"
+            YAHM_NAMES=$(cd ${YAHM_DIR} && set -- */; printf "%s\n" "${@%/}")
+            COMPREPLY=( $(compgen -W "${YAHM_NAMES}" -- $cur) )
+            return 0
+        ;;
+        -m)
+            YAHM_DIR="/opt/YAHM/share/modules/"
+            YAHM_MODULES=$(find ${YAHM_DIR} -maxdepth 1 -type f -printf '%f\n')
+            COMPREPLY=( $(compgen -W "${YAHM_MODULES}" -- $cur) )
+            return 0
+        ;;
+        enable|disable|available|installed)
+            return 0
+        ;;
+        *)
+            complete_words="$GLOBAL_COMMANDS"
+            complete_options="$GLOBAL_FLAGS"
+        ;;
+    esac
+
+    # Either display words or options, depending on the user input
+    if [[ $cur == -* ]]; then
+        COMPREPLY=( $( compgen -W "$complete_options" -- $cur ))
+
+    else
+        COMPREPLY=( $( compgen -W "$complete_words" -- $cur ))
+    fi
+
+    return 0
 }
 
 _network()
 {
-  COMPREPLY=()
-  local word="${COMP_WORDS[COMP_CWORD]}"
-  COMPREPLY=( $(compgen -W "create_bridge delete_bridge attach_bridge dettach_bridge show_bridge" -- "$word") )
-}
+    # todo ggf um Beschreibung erweitern: http://stackoverflow.com/questions/7267185/bash-autocompletion-add-description-for-possible-completions
+    local cur prev complete_words complete_options
 
+    # Don't break words at : and =, see [1] and [2]
+    COMP_WORDBREAKS=${COMP_WORDBREAKS//[:=]}
+
+    cur=${COMP_WORDS[COMP_CWORD]}
+    prev=${COMP_WORDS[COMP_CWORD-1]}
+
+    GLOBAL_COMMANDS="\
+        create_bridge\
+        delete_bridge\
+        attach_bridge\
+        dettach_bridge\
+        show_bridge"
+
+    GLOBAL_FLAGS="\
+        -n\
+        -f\
+        -v\
+        -b\
+        -i\
+        -d\
+        -w"
+
+    case "${prev}" in
+        -n)
+            YAHM_DIR="/var/lib/lxc/"
+            YAHM_NAMES=$(cd ${YAHM_DIR} && set -- */; printf "%s\n" "${@%/}")
+            COMPREPLY=( $(compgen -W "${YAHM_NAMES}" -- $cur) )
+            return 0
+        ;;
+        -i)
+            # @todo geht bestimmt besser
+            INTERFACES=$(systemctl -a | grep net-devices | grep -v "/sys/subsystem" | awk '{print $1}' | cut -d"-" -f5 | cut -d"." -f1)
+            COMPREPLY=( $(compgen -W "${INTERFACES}" -- $cur) )
+            return 0
+            systemctl -a | grep net-devices | grep -v "/sys/subsystem"
+        ;;
+        -b)
+            BRIDGES=$(brctl show | awk 'NF>1 && NR>1 {print $1}')
+            COMPREPLY=( $(compgen -W "${BRIDGES}" -- $cur) )
+            return 0
+        ;;
+        create_bridge|delete_bridge|attach_bridge|dettach_bridge|show_bridge)
+            return 0
+        ;;
+        *)
+            complete_words="$GLOBAL_COMMANDS"
+            complete_options="$GLOBAL_FLAGS"
+        ;;
+    esac
+
+    # Either display words or options, depending on the user input
+    if [[ $cur == -* ]]; then
+        COMPREPLY=( $( compgen -W "$complete_options" -- $cur ))
+
+    else
+        COMPREPLY=( $( compgen -W "$complete_words" -- $cur ))
+    fi
+
+    return 0
+}
 
 complete -F _backup yahm-backup
 complete -F _ctl yahm-ctl
