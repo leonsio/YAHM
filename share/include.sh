@@ -376,3 +376,18 @@ check_interface_name()
         echo "physical"
     fi
 }
+
+check_git_update()
+{
+    cd ${YAHM_DIR}
+    git remote update >/dev/null
+	LOCAL=$(git rev-parse @)
+	REMOTE=$(git rev-parse @{u})
+	BASE=$(git merge-base @ @{u})
+
+	if [ $LOCAL = $REMOTE ]; then
+    	echo 0
+	elif [ $LOCAL = $BASE ]; then
+    	echo 1
+	fi
+}

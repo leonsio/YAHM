@@ -146,7 +146,7 @@ delete_bridge()
     # warning or check? dettach from lxc
     info "WARNING: If this bridge be in use by lxc, please dettach it with 'yahm-network dettach_bridge' first. You have 5 Seconds to cancel this Operation..."
         countdown
-    info "... to late ;)"
+    info "... too late ;)"
 
     # create copy of interfaces file
     rm -rf /tmp/yahm_interfaces
@@ -204,7 +204,7 @@ delete_bridge()
     then
         progress "WARNING: Writing network changes. To cancel this operation type CTRL+C you have 5 seconds..."
         countdown
-        info "... to late ;)"
+        info "... too late ;)"
 
         # fix for Armbian
 #        if [ -f /etc/armbian.txt ]
@@ -221,7 +221,7 @@ delete_bridge()
 
         progress "WARNING: Your system is configured now, restarting network to apply the changes. To cancel this operation type CTRL+C you have 5 seconds..."
         countdown
-        info "... to late ;)"
+        info "... too late ;)"
         service networking restart
     else
         info "Your system is not changed, if thesse changes appearing correctly please run this script with -w flag"
@@ -342,7 +342,7 @@ create_bridge()
     then
         progress "WARNING: Writing network changes. To cancel this operation type CTRL+C you have 5 seconds..."
         countdown
-        info "... to late ;)"
+        info "... too late ;)"
 
 #        if [ -f /etc/armbian.txt ]
 #        then
@@ -358,7 +358,7 @@ create_bridge()
 
         progress "WARNING: Your system is configured now, restarting network to apply the changes. You may get new IP address from DHCP\n. To cancel this operation type CTRL+C you have 5 seconds..."
         countdown
-        info "... to late ;)"
+        info "... too late ;)"
 
         service networking restart
 	ip addr flush dev ${INTERFACE}

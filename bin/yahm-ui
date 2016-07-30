@@ -170,10 +170,9 @@ do_menu_ccu_update() {
  
   if [ `check_container_installed` -eq 1 ]; then
 
-   whiptail --yesno "Hast Du ein Backup Deiner CCU gemacht ?" 20 60 2
-    if [ $? -eq 0 ]; then # yes
+   if (whiptail --yesno "Hast Du ein Backup Deiner CCU gemacht ?" 20 60 2) then
        ${YAHM_DIR}/bin/yahm-lxc -n ${LXCNAME} update 
-    fi
+   fi
   
   else 
 	do_show_notfound
@@ -266,29 +265,6 @@ do_menu_backup_action() {
 }
 
 
-
-do_menu_install() {
-
-while true; do
-    FUNC=$(whiptail --title "YAHM Installation und Konfiguration (Installation & Update)" --menu "Optionen" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Zurück --ok-button Auswählen \
-      "1 Update" "YAHM Manager aktualisieren" \
-      3>&1 1>&2 2>&3)
-    RET=$?
-    if [ $RET -eq 1 ]; then
-      return 0
-    elif [ $RET -eq 0 ]; then
-      case "$FUNC" in
-        1\ *) do_menu_install_update ;;
-
-        *) whiptail --msgbox "Programmer error: unrecognized option" 20 60 1 ;;
-      esac || whiptail --msgbox "There was an error running option $FUNC" 20 60 1
-    else
-     return 0
-    fi
-  done
-
-}
-
 do_menu_install_update() {
   ${YAHM_DIR}/bin/yahm-ctl update
 }
@@ -337,21 +313,18 @@ while true; do
 do_menu_show_module_state() {
   
   if [ -e ${LXC_ROOT_MODULES}/$1 ] ; then
-    whiptail --yesno "$1 ist aktuell installiert. Möchtest Du es entfernen ? " 20 60 --defaultno
-    if [ $? -eq 0 ]; then # yes
+    if (whiptail --yesno --title "YAHM" "$1 ist aktuell installiert. Möchtest Du es entfernen ? " 20 60 --defaultno) then
       do_menu_module_action $1 disable
     fi
   else
-    whiptail --yesno "$1 ist aktuell nicht installiert. Möchtest Du es installieren ? " 20 60 --defaultno
-    if [ $? -eq 0 ]; then # yes
-      do_menu_module_action $1 enable
+    if (whiptail --yesno --title "YAHM" "$1 ist aktuell nicht installiert. Möchtest Du es installieren ? " 20 60 --defaultno) then
+	  do_menu_module_action $1 enable
     fi
   fi
 }
 
 do_menu_module_action() {
- ${YAHM_DIR}/bin/yahm-module -n ${LXCNAME} -f -m $1 $2
- ASK_TO_RESTART=1
+  ${YAHM_DIR}/bin/yahm-module -n ${LXCNAME} -f -m $1 $2
 }
 
 do_menu_network() {
@@ -425,8 +398,8 @@ do_menu_network_createattachbridge() {
 do_finish_menu() {
    
    if [ $ASK_TO_RESTART -eq 1 ]; then
-    whiptail --yesno "Soll die CCU neu gestartet werden" 20 60 2
-    if [ $? -eq 0 ]; then # yes
+    if (whiptail --yesno "Soll die CCU neu gestartet werden" 20 60 2) then
+
       # stop if container is running
       if [ $(lxc-info -n ${LXCNAME}|grep STOPPED|wc -l) -eq 0 ]; then
             lxc-stop $QUIET -k -n ${LXCNAME}
@@ -504,6 +477,28 @@ do_menu_status() {
 }
 
 calc_wt_size
+    
+    #do it only once a day
+    sema="/tmp/yahm_updatecheck"
+    
+    if [ -f "$sema" ]
+    then
+		ts=$(stat -c %y ${sema})
+		lastrun=$(echo "$ts" | grep -oP "(0[1-9]|[12]\d|3[01]) ")
+    
+    	if [ $lastrun -ne $(date +%d) ]
+    	then
+       	   progress "Checking for updates"
+    	   touch ${sema}
+	       if [ `check_git_update` -eq 1 ]; then
+             if (whiptail --yesno --title "Horray !!" "Es gibt ein Update für YAHM.\nMöchtest Du es installieren ?" 20 60 2) then
+	          do_menu_install_update
+	         fi
+	       fi
+        fi
+     else
+       touch ${sema}
+     fi    
 
 while true; do
 
@@ -513,11 +508,10 @@ while true; do
       "2 Netzwerk" "Netzwerkeinstellungen" \
       "3 Backup" "Datensicherung erstellen oder Rücksichern" \
       "4 Module" "Module aktivieren oder deaktivieren" \
-      "5 Update" "YAHM aktualisieren" \
-      "6 Status" "YAHM Status anzeigen" \
-      "7 Name" "Container wechseln aktuell:${LXCNAME}" \
-      "8 Diag" "Diagnose" \
-      "9 Beenden" "YAHM-UI Beenden" \
+      "5 Status" "YAHM Status anzeigen" \
+      "6 Name" "Container wechseln aktuell:${LXCNAME}" \
+      "7 Diag" "Diagnose" \
+      "8 Beenden" "YAHM-UI Beenden" \
       3>&1 1>&2 2>&3)
     RET=$?
 
@@ -531,11 +525,10 @@ while true; do
         2\ *) do_menu_network ;;
         3\ *) do_menu_backup ;;
         4\ *) do_menu_module ;;
-        5\ *) do_menu_install ;;
-        6\ *) do_menu_status ;;
-        7\ *) do_menu_container ;;
-        8\ *) do_menu_diag ;;
-        9\ *) do_finish_menu ;;
+        5\ *) do_menu_status ;;
+        6\ *) do_menu_container ;;
+        7\ *) do_menu_diag ;;
+        8\ *) do_finish_menu ;;
 
         *) whiptail --msgbox "Programmer error: unrecognized option" 20 60 1 ;;
       esac || whiptail --msgbox "There was an error running option $FUNC" 20 60 1

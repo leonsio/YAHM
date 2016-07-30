@@ -3,17 +3,20 @@
 # CuxD
 # 
 
-description="CuxD for Yahm (CCU Restart)"
+description="CuxD 1.7 for Yahm"
 
 _module_install()
 {
+ clear
+  if (whiptail --yesno --title "CUXd" "Zur Installation muss die CCU neu starten. Fortfahren ? " 20 60) then
+
 
   progress "Download ..."
   tmpdest="${YAHM_TMP}/cuxd.tar.gz"
   mkdir -p $YAHM_TMP
     
   cuxdurl="http://homematic-forum.de/forum/download/file.php?id=31361"
-  wget --tries=3 --retry-connrefused  -O $tmpdest $cuxdurl
+  wget -q --tries=3 --retry-connrefused  -O $tmpdest $cuxdurl
     if [ ! -f "$tmpdest" ] 
     then
         die "ERROR: Can not download cuxd. Are you connected to the internet?"
@@ -22,40 +25,60 @@ _module_install()
   progress "Moving ..."
   
   # little roundtrip over opt cause /var is tmp
-  mv $tmpdest $LXC_ROOT_FS/opt/new_firmware.tar.gz
+  mv $tmpdest $LXC_ROOT_FS/opt/new_firmware.tar.gz >/dev/null
   # move it from the inside .. 
-  lxc-attach -n ${LXCNAME} -- mv /opt/new_firmware.tar.gz /var/new_firmware.tar.gz  
+  lxc-attach -n ${LXCNAME} -- mv /opt/new_firmware.tar.gz /var/new_firmware.tar.gz  >/dev/null
   progress "running install script ..."
 
-  lxc-attach -n ${LXCNAME} -- /bin/update_firmware_run  
+  lxc-attach -n ${LXCNAME} -- /bin/update_firmware_run >/dev/null
 
   progress "CCU restart ..."
-  lxc-attach -n ${LXCNAME} -- /sbin/reboot  
+  lxc-attach -n ${LXCNAME} -- /sbin/reboot >/dev/null
   progress "waiting for shutdown ..."
 
-  pids=$(pidof ReGaHss)
-  while kill -0 "$pids"
+  wait_until_process_isgone ReGaHss
+  
+  progress "Rega is death Jim !"
+
+  progress "waiting until Rega is back alive .... (cuxd needs 2 boots)"
+
+  wait_for_process ReGaHss
+  
+  progress "Rega is back ... reboot"
+  lxc-attach -n ${LXCNAME} -- /sbin/reboot 
+
+  wait_until_process_isgone ReGaHss
+
+  progress "aaand we are done ..."
+  
+  return 0
+  
+  else
+   return 1
+  fi
+}
+
+wait_until_process_isgone() {
+
+  pids=$(pidof $1)
+  while kill -0 "$pids" 2>/dev/null
   do
       echo -n "."
       sleep 1
   done
+}
 
-echo "Rega is gone"
-
-  progress "waiting until Rega is alive .... (cuxd needs 2 boots)"
-  until pids=$(pidof ReGaHss)
+wait_for_process() {
+  until pids=$(pidof $1)
   do   
    sleep 1
   done
-  progress "Rega is alive ... reboot"
-  lxc-attach -n ${LXCNAME} -- /sbin/reboot  
-  return 0
 }
 
 _module_remove()
 {
   progress "Removing CuxD"
-  lxc-attach -n ${LXCNAME} -- /etc/config/rc.d/cuxdaemon uninstall
-  lxc-attach -n ${LXCNAME} -- rm -rf /etc/config/rc.d/cuxdaemon
+  lxc-attach -n ${LXCNAME} -- /etc/config/rc.d/cuxdaemon uninstall >/dev/null
+  lxc-attach -n ${LXCNAME} -- rm -rf /etc/config/rc.d/cuxdaemon >/dev/null
   progress "Done"
 }

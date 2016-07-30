@@ -18,19 +18,23 @@ _module_install()
     update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.6 40 --slave /usr/bin/g++ g++ /usr/bin/g++-4.7 >/dev/null
 
 	progress "Installing Node"
-	cd /home/pi
-	wget https://nodejs.org/dist/v4.0.0/node-v4.0.0-linux-armv7l.tar.gz 
-	tar -xvf node-v4.0.0-linux-armv7l.tar.gz >/dev/null
-	sudo cp -R node-v4.0.0-linux-armv7l/* /usr/local/
+    mkdir -p $YAHM_TMP
+  
+	wget -q https://nodejs.org/dist/v4.0.0/node-v4.0.0-linux-armv7l.tar.gz -O $YAHM_TMP/nodejs.tar.gz
+	mkdir -p $YAHM_TMP/nodejs/
+	
+	tar -xvf $YAHM_TMP/nodejs.tar.gz -C $YAHM_TMP/nodejs/ >/dev/null
+    cp -R $YAHM_TMP/nodejs/node-v4.0.0-linux-armv7l/* /usr/local/
 	
 	progress "Cleaning ..."
-	rm /home/pi/node-v4.0.0-linux-armv7l.tar.gz
-	rm /home/pi/node-v4.0.0-linux-armv7l -R
+	rm $YAHM_TMP/nodejs.tar.gz
+	rm $YAHM_TMP/nodejs/ -R
 
 	progress "Installing Homebridge"
-    sudo  npm install -g homebridge
+    npm install -g homebridge --unsafe-perm >/dev/null
 	progress "Installing Homematic Plugin"
-    sudo npm install -g homebridge-homematic
+    npm install -g homebridge-homematic --unsafe-perm >/dev/null
+    
     mkdir /home/pi/.homebridge
     chown pi:pi /home/pi/.homebridge
     configfile="/home/pi/.homebridge/config.json"
@@ -67,16 +71,26 @@ whiptail --yesno "Would you like to start homebridge at boot by default?" $DEFAU
 RET=$?
 if [ $RET -eq 0 ]; then
 
-    wget https://raw.githubusercontent.com/thkl/homebridge/xmlrpc/homebridge_local -O homebridge
-  	sudo mv /home/pi/homebridge /etc/init.d/homebridge
-  	sudo chmod 755 /etc/init.d/homebridge
-	sudo update-rc.d homebridge defaults
+    wget -q https://raw.githubusercontent.com/thkl/homebridge/xmlrpc/homebridge_local -O $YAHM_TMP/homebridge
+    mv $YAHM_TMP/homebridge /etc/init.d/homebridge
+  	chmod 755 /etc/init.d/homebridge
+    update-rc.d homebridge defaults
+    service homebridge start
 fi
 
 }
 
 _module_remove()
 {
-  	echo "There is currently no autopurge"
-
+  	progress "Kill it with fire "
+    service homebridge stop
+  	progress "Remove Config"
+  	rm -r /home/pi/.homebridge
+	progress "Remove Homebridge"
+	npm uninstall -g homebridge --unsafe-perm >/dev/null
+	progress "Remove Homematic Plugin"
+    npm uninstall -g homebridge-homematic --unsafe-perm >/dev/null
+    progress "Remove Lauchndaemon"
+    update-rc.d homebridge remove
+    rm /etc/init.d/homebridge
 }
