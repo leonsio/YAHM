@@ -42,7 +42,7 @@ Es wird automatisch ein aktuelles CCU2 Image installiert und das Netzwerk konfig
 wget -nv -O- https://raw.githubusercontent.com/leonsio/YAHM/develop/yahm-init | sudo -E  bash -s quickinstall -
 ```
 
-### UI Modus 
+### UI Modus:
 
 ```
 wget -nv -O- https://raw.githubusercontent.com/leonsio/YAHM/develop/yahm-init | sudo -E  bash -s ui -
