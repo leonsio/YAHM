@@ -266,13 +266,35 @@ EOF
 	echo "$job" >>/tmp/mycron
 	crontab /tmp/mycron
 	rm /tmp/mycron
-    whiptail --msgbox "Cron Job (tgl. 0 Uhr) wurde eingerichtet." --title "Yes !" 20 60 1
+    (whiptail --msgbox "Cron Job (tgl. 0 Uhr) wurde eingerichtet." --title "Yes !" 20 60 1  3>&1 1>&2 2>&3)
 
 	else
-	  whiptail --msgbox "${backup_path} nicht vorhanden oder nicht beschreibbar." --title "Oh nooo" 20 60 1
+	  (whiptail --msgbox "${backup_path} nicht vorhanden oder nicht beschreibbar." --title "Oh nooo" 20 60 1  3>&1 1>&2 2>&3)
     fi
    fi
  fi
+}
+
+ask_for_backup_path() {
+    backup_path=$(whiptail --inputbox "In welchem Pfad soll das Backup abgelegt werden" 20 60 "$HOME"  3>&1 1>&2 2>&3)
+	if [ -w $backup_path ]
+	then
+	  echo $backup_path
+	else
+	  (whiptail --msgbox "${backup_path} nicht vorhanden oder nicht beschreibbar." --title "Oh nooo" 20 60 1  3>&1 1>&2 2>&3)
+	  echo "invalid"
+    fi
+}
+
+ask_for_backup_file() {
+    backup_file=$(whiptail --inputbox "Welche Backup Datei soll eingespielt werden ?" 20 60 "$1"  3>&1 1>&2 2>&3)
+	if [ -f $backup_file ]
+	then
+	  echo $backup_file
+	else
+	  (whiptail --msgbox "${backup_file} nicht vorhanden." --title "Oh nooo" 20 60 1  3>&1 1>&2 2>&3)
+	  echo "invalid"
+    fi
 }
 
 
@@ -280,29 +302,44 @@ do_menu_backup_action() {
   
   case $1 in
         0)
-          backupfile="/tmp/yahm_backup"
-		  ${YAHM_DIR}/bin/yahm-backup -n ${LXCNAME} -d /home/pi full_backup
-		  whiptail --msgbox "Das YAHM Backup wurde unter ${backupfile} angelegt" 20 60 1
-  		  ASK_TO_RESTART=1
+          ${YAHM_DIR}/bin/yahm-backup -n ${LXCNAME} full_backup
+		  whiptail --msgbox "Das CCU Backup wurde unter ${YAHM_TMP}/yahm_backup-${installed_version}.tgz angelegt" 20 60 1
   		  break;
   		  ;;
         1)
-          backupfile="/tmp/yahm_backup"
-		  ${YAHM_DIR}/bin/yahm-backup -n ${LXCNAME} -d ${backupfile} full_backup
-  		  ASK_TO_RESTART=1
-  		  break;
+          backupfile=$(ask_for_backup_file "${YAHM_TMP}/yahm_backup-${installed_version}.tgz")
+          if [ "$backupfile" == "invalid" ]
+          then
+	       break;
+          else
+		   ${YAHM_DIR}/bin/yahm-backup -n ${LXCNAME} -d ${backupfile} full_restore
+  		   ASK_TO_RESTART=1
+  		   break;
+  		  fi
   		  ;;
         2)
-          backupfile="/tmp/homematic_ccu_backup.sbk"
-          info "Backup " 
-		  ${YAHM_DIR}/bin/yahm-backup -n ${LXCNAME} -d ${backupfile} data_backup
-		  whiptail --msgbox "Das CCU Backup wurde unter ${backupfile} angelegt" 20 60 1
+          path=$(ask_for_backup_path)
+          if [ "$path" == "invalid" ]
+          then
+	       break;
+          else
+	          backupfile="$path/homematic_ccu_backup.sbk"
+          	  info "Backup " 
+          	  ${YAHM_DIR}/bin/yahm-backup -n ${LXCNAME} -d ${backupfile} data_backup
+			  whiptail --msgbox "Das CCU Backup wurde unter ${backupfile} angelegt" 20 60 1
+  		  fi
   		  break;
   		  ;;
         3)
-		  ${YAHM_DIR}/bin/yahm-backup -n ${LXCNAME} -d /home/pi data_restore
-  		  ASK_TO_RESTART=1
-  		  break;
+          backupfile=$(ask_for_backup_file "${YAHM_TMP}/homematic_ccu_backup.sbk")
+          if [ "$backupfile" == "invalid" ]
+          then
+	       break;
+          else
+		   ${YAHM_DIR}/bin/yahm-backup -n ${LXCNAME} -d ${backupfile} data_restore
+  		   ASK_TO_RESTART=1
+  		   break;
+  		  fi
   		  ;;
   esac
 }
@@ -460,6 +497,7 @@ do_finish_menu() {
 
 do_menu_diag() {
 
+
 while true; do
     FUNC=$(whiptail --title "YAHM Installation und Konfiguration (Diagnose - ${LXCNAME})" --menu "Optionen" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Zurück --ok-button Auswählen \
       "1 CCU Interfaces" "Interface Datei der CCU anzeigen" \
@@ -521,7 +559,9 @@ do_menu_status() {
 
 calc_wt_size
 
-progress "Welcome to YAHM-UI"  
+installed_version=`get_yahm_version ${LXCNAME}`
+
+progress "Welcome to YAHM-UI "  
 
 mainoptions=()
 mainoptions+=("1 CCU" "CCU Installation / Update / Deinstallation")
