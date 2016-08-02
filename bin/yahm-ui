@@ -64,7 +64,7 @@ do_show_notfound() {
 do_menu_ccu() {
 while true; do
     FUNC=$(whiptail --title "YAHM Installation und Konfiguration (CCU Installation - ${LXCNAME})" --menu "Optionen" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Zurück --ok-button Auswählen \
-      "1 Neuinstallation" "CCU Container Neuinstallation" \
+      "1 Neuinstallation" "CCU Container Neuinstallation mit Firmware $CCUFW" \
       "2 Update" "CCU Firmwareupdate" \
       "3 Deinstall" "CCU Container entfernen" \
       "-" "" \
@@ -634,7 +634,13 @@ do_menu_expert_changeOption() {
         3)
         BRIDGE=$newvalue;;
         4)
-        CCUFW=$newvalue;;
+        if [ `yahm_compatibility $newvalue` -eq 0 ]
+        then
+          CCUFW=$newvalue
+        else
+          whiptail --msgbox "Firmwareversion $newvalue wurde nicht gefunden." --title "Uhh that sucks..." 20 60 1  
+        fi
+          ;;
     esac
 }
 
