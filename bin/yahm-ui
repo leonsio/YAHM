@@ -40,6 +40,13 @@ ASK_TO_RESTART=0
 INFO_IP=""
 INFO_STATE="unknow"
 
+#Default Options
+
+CCUFW="2.21.10"
+BRIDGE="yahmbr0"
+IFACE="eth0"
+
+
 update_info() {
  if [ `check_container_installed` -eq 1 ]; then
 	status=$(lxc-info -n ${LXCNAME})
@@ -145,7 +152,7 @@ done < results
 reboot=""
 
 if [ $inst_yahm -eq 1 ]; then
- ${YAHM_DIR}/bin/yahm-lxc -n ${LXCNAME} install
+ ${YAHM_DIR}/bin/yahm-lxc -n ${LXCNAME} -b $CCUFW install
 fi
 
 if [ $inst_network -eq 1 ]; then
@@ -454,10 +461,10 @@ do_menu_network() {
 
 while true; do
     FUNC=$(whiptail --title "YAHM Installation und Konfiguration (Netzwerk)" --menu "Optionen" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Zurück --ok-button Auswählen \
-      "1 Create" "Bridge erzeugen" \
-      "2 Delete" "Bridge löschen" \
-      "3 Attach" "Bridge zu LXC hinzufügen" \
-      "4 Dettach" "Bridge von LXC entfernen" \
+      "1 Create" "Bridge $BRIDGE auf $IFACE erzeugen" \
+      "2 Delete" "Bridge $BRIDGE von $IFACE löschen" \
+      "3 Attach" "Bridge $BRIDGE zu LXC hinzufügen" \
+      "4 Dettach" "Bridge $BRIDGE von LXC entfernen" \
       3>&1 1>&2 2>&3)
     RET=$?
     if [ $RET -eq 1 ]; then
@@ -482,7 +489,7 @@ do_menu_network_createbridge() {
   
 # check existing bridge
    if [ `check_bridge_name $BRIDGE` -eq 0 ]; then
-	   ${YAHM_DIR}/bin/yahm-network -n ${LXCNAME} -w create_bridge
+	   ${YAHM_DIR}/bin/yahm-network -n ${LXCNAME} -w -i $IFACE -b $BRIDGE create_bridge
    else
      whiptail --msgbox "Es existiert schon eine Bridge mit dem Namen $BRIDGE" 20 60 2
    fi
@@ -491,7 +498,7 @@ do_menu_network_createbridge() {
 do_menu_network_deletebridge() {
 
    if [ `check_bridge_name $BRIDGE` -eq 1 ]; then
-     ${YAHM_DIR}/bin/yahm-network -n ${LXCNAME} -w delete_bridge
+     ${YAHM_DIR}/bin/yahm-network -n ${LXCNAME} -w -b $BRIDGE delete_bridge
    else
      whiptail --msgbox "Es existiert keine Bridge mit dem Namen $BRIDGE" 20 60 2
    fi
@@ -499,7 +506,7 @@ do_menu_network_deletebridge() {
 
 do_menu_network_attachbridge() {
    if [ `check_bridge_name $BRIDGE` -eq 1 ]; then
- 	${YAHM_DIR}/bin/yahm-network -n ${LXCNAME} attach_bridge
+ 	${YAHM_DIR}/bin/yahm-network -n ${LXCNAME} -b $BRIDGE attach_bridge
  	ASK_TO_RESTART=1
    else
      whiptail --msgbox "Es existiert keine Bridge mit dem Namen $BRIDGE" 20 60 2
@@ -507,14 +514,14 @@ do_menu_network_attachbridge() {
 }
 
 do_menu_network_dettachbridge() {
-	${YAHM_DIR}/bin/yahm-network -n ${LXCNAME} dettach_bridge
+	${YAHM_DIR}/bin/yahm-network -n ${LXCNAME} -b $BRIDGE dettach_bridge
 	ASK_TO_RESTART=1
 }
 
 
 do_menu_network_createattachbridge() {
-    ${YAHM_DIR}/bin/yahm-network -n ${LXCNAME} -w create_bridge
-    ${YAHM_DIR}/bin/yahm-network -n ${LXCNAME} attach_bridge
+    ${YAHM_DIR}/bin/yahm-network -n ${LXCNAME} -w -i $IFACE -b $BRIDGE create_bridge
+    ${YAHM_DIR}/bin/yahm-network -n ${LXCNAME} -b $BRIDGE attach_bridge
     ASK_TO_RESTART=1
 }
 
@@ -577,12 +584,58 @@ do_menu_ccu_tweak() {
 
 }
 
-do_menu_container() {
-  
-  LXCNAME=$(whiptail --inputbox "Aktuellen Container " 8 78 "${LXCNAME}" --title "YAHM Container ändern" 3>&1 1>&2 2>&3)
-  LXC_ROOT=/var/lib/lxc/$LXCNAME
-  LXC_ROOT_FS=/var/lib/lxc/$LXCNAME/root
-  LXC_ROOT_MODULES=/var/lib/lxc/$LXCNAME/.modules
+do_menu_expert() {
+while true; do
+    FUNC=$(whiptail --title "YAHM Experteneinstellungen" --menu "Optionen" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Zurück --ok-button Auswählen \
+      "1 Container" "Yahm Containername: ${LXCNAME}" \
+      "2 Interface" "Host Interface: ${IFACE}" \
+      "3 Bridge" "Bridge: ${BRIDGE}" \
+      "4 Firmware" "CCU Firmware: ${CCUFW}" \
+      3>&1 1>&2 2>&3)
+    RET=$?
+    if [ $RET -eq 1 ]; then
+      return 0
+    elif [ $RET -eq 0 ]; then
+      case "$FUNC" in
+        1\ *) do_menu_expert_changeOption 1 "Ändert den Namen des YAHM Containers" ${LXCNAME};;
+        2\ *) do_menu_expert_changeOption 2 "Ändert das Netzwerkinterface über welchen das Hostsystem angebunden ist" ${IFACE};;
+        3\ *) do_menu_expert_changeOption 3 "Ändert den Namen der Netzwerkbridge" ${BRIDGE};;
+        4\ *) do_menu_expert_changeOption 4 "Ändert die zu installierende Firmwareversion" ${CCUFW};; 
+        *) whiptail --msgbox "Programmer error: unrecognized option" 20 60 1 ;;
+      esac || whiptail --msgbox "There was an error running option $FUNC" 20 60 1
+    else
+     return 0
+    fi
+  done
+}
+
+
+do_menu_expert_changeOption() {
+
+
+   newvalue=$(whiptail --inputbox "$2" 8 78 $3 --title "YAHM Experteneinstellungen" 3>&1 1>&2 2>&3)
+   
+   case $1 in
+        1)
+        LXCNAME=$newvalue
+        LXC_ROOT=/var/lib/lxc/$LXCNAME
+  		LXC_ROOT_FS=/var/lib/lxc/$LXCNAME/root
+  		LXC_ROOT_MODULES=/var/lib/lxc/$LXCNAME/.modules
+  		;;
+        2)
+        
+        if [$(grep $newvalue /proc/net/dev |wc -l) -eq 1]
+        then
+          IFACE=$newvalue
+        else
+          whiptail --msgbox "Netzwerkinterface $newvalue ist nicht vorhanden" --title "Oh noooh !" 20 60 1  
+        fi
+        ;;
+        3)
+        BRIDGE=$newvalue;;
+        4)
+        CCUFW=$newvalue;;
+    esac
 }
 
 
@@ -612,7 +665,7 @@ mainoptions+=("2 Netzwerk" "Netzwerkeinstellungen")
 mainoptions+=("3 Backup" "Datensicherung erstellen oder Rücksichern")
 mainoptions+=("4 Module" "Module aktivieren oder deaktivieren")
 mainoptions+=("5 Status" "YAHM Status anzeigen")
-mainoptions+=("6 Name" "Container wechseln aktuell:${LXCNAME}")
+mainoptions+=("6 Expert" "Experteneinstellungen")
 mainoptions+=("7 Diag" "Diagnose")
 
 progress "Update Check" 
@@ -644,7 +697,7 @@ while true; do
         3\ *) do_menu_backup ;;
         4\ *) do_menu_module ;;
         5\ *) do_menu_status ;;
-        6\ *) do_menu_container ;;
+        6\ *) do_menu_expert ;;
         7\ *) do_menu_diag ;;
         8\ *) do_menu_install_update;;
         0\ *) do_finish_menu ;;
