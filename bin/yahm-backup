@@ -7,9 +7,6 @@
 #
 
 
-# Stop on Errors
-set -e
-
 # Hilfe Output
 show_help ()
 {
@@ -41,6 +38,13 @@ DATA_FILE=""
 
 # Include laden
 source /opt/YAHM/share/include.sh
+
+# Stop on Errors only if not force
+if [ $IS_FORCE -ne 1 ]
+then
+ set -e
+fi
+
 
 mkdir -p ${YAHM_TMP}
 
