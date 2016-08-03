@@ -14,21 +14,33 @@ fi
 #echo ${0##*/}
 #exit;
 
-#Default Settings
-LXCNAME=yahm
-CCU2Version="2.21.10"
+# Default path
 YAHM_DIR=/opt/YAHM
 YAHM_TOOLS=/opt/YAHM/share/tools
 YAHM_TMP=/tmp/YAHM
 YAHM_LIB=/var/lib/yahm
+
+# Default names/variables (Raspberry/YAHM)
+LXCNAME="yahm"
+CCU2Version="2.21.10"
+BRIDGE="yahmbr0"
+INTERFACE="eth0"
+
+#######################################
+## DO NOT CHANGE THE FOLLOWING LINES ##
+#######################################
+
+# Default options
+YAHM_VERSION="1.5"
 OPTIND=1
-IS_FORCE=0
-IS_VERBOSE=0
 QUIET="--quiet"
 VERBOSE=""
-DRY_RUN=0
 ARCH=""
-BRIDGE="yahmbr0"
+
+# Default behavior YAHM
+IS_FORCE=0
+IS_VERBOSE=0
+DRY_RUN=0
 
 # Check if we can use colours in our output
 use_colour=0
@@ -146,6 +158,14 @@ shift $((OPTIND-1))
 LXC_ROOT=/var/lib/lxc/$LXCNAME
 LXC_ROOT_FS=/var/lib/lxc/$LXCNAME/root
 LXC_ROOT_MODULES=/var/lib/lxc/$LXCNAME/.modules
+
+# Develop Branch warning
+cd ${YAHM_DIR}
+GIT_BRANCH=$(git branch | grep -e "^*" | cut -d' ' -f 2)
+if [ "$GIT_BRANCH" == "develop" ]
+then
+    error "\n!!! You are using develop branch, this branch is unstable. Using at your own risk !!!!\n"
+fi
 
 get_ccu2_actual_version()
 {

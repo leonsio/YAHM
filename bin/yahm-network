@@ -10,9 +10,6 @@
 # Stop on Errors
 set -e
 
-# Default Parameter
-BRIDGE="yahmbr0"
-INTERFACE="eth0"
 WRITE=0
 # Hilfe Output
 show_help ()

@@ -106,13 +106,43 @@ for key in "$@"; do
             break;
         ;;
         update)
-            info "Updating YAHM installation, for updatate CCU2 please use 'yahm-lxc update'"
             cd ${YAHM_DIR}
+            progress "Updating YAHM installation, for updatate CCU2 please use 'yahm-lxc update'"
             git pull
+            progress "Updating all YAHM modules"
             git submodule foreach git pull origin master
-            info "Updating CCU2-FW archive"
+            progress "Updating CCU2-FW archive"
             cd ${YAHM_LIB}
             wget $QUIET -N https://raw.githubusercontent.com/leonsio/CCU2-FW/master/fw.list
+
+            # wir machen nur Updates innerhalb von Releases durch
+            if [ "$GIT_BRANCH" != "develop" ]
+            then
+                if [ ! -f $YAHM_DIR/VERSION ]
+                then
+                    info "YAHM version 1.0 (or below) found"
+                    YAHM_OLD_VERSION="1.0"
+                else
+                    # wir fangen Update mit der alten Version an
+                    YAHM_OLD_VERSION=$YAHM_VERSION
+                    info "YAHM version ${YAHM_OLD_VERSION} found"
+                fi
+                # Aktuelle Version bestimmen, kommt aus dem GIT
+                YAHM_NEW_VERSION=$(cat $YAHM_DIR/VERSION)
+
+                if [ $(ver ${YAHM_NEW_VERSION}) -gt $(ver ${YAHM_OLD_VERSION}) ]
+                then
+                    info "New YAHM version ${YAHM_NEW_VERSION} found, updating"
+
+                    # Für das nächste Release müsste ich mir was besseres einfallen lassen
+                    if [ -f ${YAHM_DIR}/share/patches/YAHM/${YAHM_OLD_VERSION}_${YAHM_NEW_VERSION}.sh ]
+                    then
+                        progress "Update File ${YAHM_OLD_VERSION}_${YAHM_NEW_VERSION}.sh found, executing"
+                        ${YAHM_DIR}/share/patches/YAHM/${YAHM_OLD_VERSION}_${YAHM_NEW_VERSION}.sh ${YAHM_DIR}
+                    fi
+                fi
+            fi
+
             shift
             break;
         ;;
