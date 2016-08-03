@@ -79,8 +79,8 @@ while true; do
         1\ *) do_menu_ccu_install ;;
         2\ *) do_menu_ccu_update ;;
         3\ *) do_menu_ccu_remove ;;
-        4\ *) do_menu_ccu_start ;;
-        5\ *) do_menu_ccu_stop ;;
+        4\ *) do_menu_ccu_start 1;;
+        5\ *) do_menu_ccu_stop 1;;
 
         *) whiptail --msgbox "Programmer error: unrecognized option" 20 60 1 ;;
       esac || whiptail --msgbox "There was an error running option $FUNC" 20 60 1
@@ -95,7 +95,10 @@ do_menu_ccu_start() {
     if [ `check_container_installed` -eq 1 ]
     then
      ${YAHM_DIR}/bin/yahm-ctl -n ${LXCNAME} start
-     do_menu_status 
+      if [ $1 -eq 1 ]
+      then
+       do_menu_status 
+      fi
      else 
 		do_show_notfound
     fi  
@@ -105,7 +108,10 @@ do_menu_ccu_stop() {
     if [ `check_container_installed` -eq 1 ]
     then
      ${YAHM_DIR}/bin/yahm-ctl -n ${LXCNAME} stop
-     do_menu_status
+     if [ $1 -eq 1 ]
+     then
+	     do_menu_status
+	 fi
 	else 
 		do_show_notfound
    fi  
@@ -407,10 +413,27 @@ do_menu_backup_myself() {
      break
     else
      backupfile=$backuppath/yahm_host_backup.img
-     (whiptail --msgbox "Sicherung wird jetzt in $backuppath erzeugt. Bitte beachte, die Sicherung ist exakt so groß wie die SD Karte. Und es wird etwas dauern." --title "Saving all the bits...." 20 60 1)
+     
+     (whiptail --yesno "Sicherung wird jetzt in $backuppath erzeugt. Bitte beachte, die Sicherung ist exakt so groß wie die SD Karte. Und es wird etwas dauern." --title "Saving all the bits...." --no-button "Abbrechen" --yes-button "Backup erstellen" 20 60 2)
+     if [ $? -eq 1 ]; then # no
+       		return 0
+	 fi
+     
+     (whiptail --yesno "Es wird dringend empfohlen den Container während des Backups anzuhalten, um die Integrität der Daten zu gewährleisten." --title "Drive safely !" --no-button "Nicht stoppen" --yes-button "Container stoppen" 20 60 2)
+     stop=$?
+     
+     if [ $stop -eq 0 ]
+     then 
+		 do_menu_ccu_stop 0
+	 fi
+	 
      progress "Sichere .. das dauert jetzt ein wenig ...."
-     dd if=/dev/mmcblk0 of=$backupfile bs=1MB
-     (whiptail --msgbox "Hostsystem wurde in $backupfile gesichert." --title "You're save now !" 20 60 1)
+     dd if=/dev/mmcblk0 of=$backupfile bs=8MB
+     if [ $stop -eq 0 ]
+     then 
+		 do_menu_ccu_start 0
+     fi
+	 (whiptail --msgbox "Hostsystem wurde in $backupfile gesichert." --title "You're save now !" 20 60 1)
     fi
    fi
 }
