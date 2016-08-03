@@ -29,6 +29,7 @@ Flags:
 Commands:
 start       - Starting LXC container
 stop        - Stopping LXC container
+restart     - Restarting LXC container
 info        - Show LXC information (IP)
 join        - Enter LXC console
 update      - Update YAHM installation
@@ -45,9 +46,8 @@ if [[ $# != 1 ]]; then
     show_help
 fi
 
-for key in "$@"; do
-    case $key in
-        start)
+do_start_container()
+{
             if [ $(lxc-info -n ${LXCNAME}|grep RUNNING |wc -l) -eq 1 ]
             then
                 die "${LXCNAME} container is already running"
@@ -69,10 +69,10 @@ for key in "$@"; do
                 progress "Starting ${LXCNAME} LXC container"
                 lxc-start $QUIET -n ${LXCNAME} -d -L /var/log/yahm/${LXCNAME}_console.log
             fi
-            shift
-            break;
-        ;;
-        stop)
+}
+
+do_stop_container()
+{
           if [ $(lxc-info -n ${LXCNAME}|grep STOPPED|wc -l) -eq 1 ]
             then 
                 die "${LXCNAME} container is already stopped"
@@ -85,8 +85,26 @@ for key in "$@"; do
 
             progress "Stopping ${LXCNAME} LXC container" 
             lxc-stop $QUIET -k -n ${LXCNAME}
+}
+
+for key in "$@"; do
+    case $key in
+        start)
+            do_start_container
             shift
             break;
+        ;;
+        stop)
+            do_stop_container
+            shift
+            break;
+        ;;
+        restart)
+           do_stop_container
+           sleep 1
+           do_start_container
+           shift
+           break;
         ;;
         join)
             if [ $(lxc-info -n ${LXCNAME}|grep STOPPED|wc -l) -eq 1 ]

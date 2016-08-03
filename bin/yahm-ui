@@ -117,7 +117,7 @@ do_menu_ccu_install() {
  inst_network=0
  inst_hmip=0
  inst_pcb=0
- 
+ inst_cm=0
 # Check existing Installation 
    
    if [ `check_container_installed` -eq 1 ]
@@ -135,7 +135,8 @@ do_menu_ccu_install() {
   			"YAHM" "CCU Container"  ON \
   			"Network" "Netzwerkbridge einrichten" ON \
   			"HMIP" "HM-IP abschalten"  ON \
-  			"PCB" "HM-MOD-RPI-PBC aktivieren" ON 2>results
+  			"PCB" "HM-MOD-RPI-PBC aktivieren" ON\
+  			"Cloudmatic" "Cloudmatic Fernzugang vorbereiten" ON 2>results
   			
 
     while read choice
@@ -145,6 +146,7 @@ do
 		Network) inst_network=1;;
 		HMIP) inst_hmip=1;;
 		PCB) inst_pcb=1;;
+		Cloudmatic) inst_cm=1;;
 	esac
 
 done < results
@@ -162,10 +164,17 @@ fi
 if [ $inst_hmip -eq 1 ]; then
  #start container and wayit abour 30 seconds
  lxc-start -n ${LXCNAME} -d
- progress "\twait about 30 seconds until ccu is full launched"
+ progress "wait about 30 seconds until ccu is full launched"
  sleep 30
  ${YAHM_DIR}/bin/yahm-module -f -m homematic-ip -n ${LXCNAME} disable
 fi
+
+if [ $inst_cm -eq 1 ]; then
+ progress "installing Cloudmatic Module"
+ sleep 30
+ ${YAHM_DIR}/bin/yahm-module -f -m meinhomematic -n ${LXCNAME} enable
+fi
+
 
 if [ $inst_pcb -eq 1 ]; then
  ${YAHM_DIR}/bin/yahm-module -m hm-mod-rpi-pcb -n ${LXCNAME} enable
@@ -253,6 +262,7 @@ while true; do
       "3 Backup CCU" "CCU Backup anlegen" \
       "4 Restore CCU" "CCU Backup einspielen" \
       "5 Cron Backup" "Tägliches Backup der CCU" \
+      "6 Backup myself" "Gesamtes Hostsystem sichern" \
       3>&1 1>&2 2>&3)
     RET=$?
     if [ $RET -eq 1 ]; then
@@ -264,6 +274,7 @@ while true; do
         3\ *) do_menu_backup_action 2 ;;
         4\ *) do_menu_backup_action 3 ;;
         5\ *) do_menu_backup_acron ;;
+        6\ *) do_menu_backup_myself;;
         *) whiptail --msgbox "Programmer error: unrecognized option" 20 60 1 ;;
       esac || whiptail --msgbox "There was an error running option $FUNC" 20 60 1
     else
@@ -315,7 +326,7 @@ EOF
 }
 
 ask_for_backup_path() {
-    backup_path=$(whiptail --inputbox "In welchem Pfad soll das Backup abgelegt werden" 20 60 "$HOME"  3>&1 1>&2 2>&3)
+    backup_path=$(whiptail --inputbox "In welchem Pfad soll das Backup abgelegt werden" 20 60 $1  3>&1 1>&2 2>&3)
 	if [ -w $backup_path ]
 	then
 	  echo $backup_path
@@ -357,7 +368,7 @@ do_menu_backup_action() {
   		  fi
   		  ;;
         2)
-          path=$(ask_for_backup_path)
+          path=$(ask_for_backup_path $HOME)
           if [ "$path" == "invalid" ]
           then
 	       break;
@@ -383,6 +394,26 @@ do_menu_backup_action() {
   esac
 }
 
+do_menu_backup_myself() {
+
+   backuppath=$(ask_for_backup_path "/mnt")
+   if [ "$backuppath" == "invalid" ]
+   then
+	break;
+   else
+    if [ $(mountpoint $backuppath|grep not|wc -l) -eq 1 ]
+    then
+     whiptail --msgbox "$backuppath darf kein lokaler Pfad sein. Entweder USB oder Netzwerklaufwerk." --title "Damn it ! " 20 60 1
+     break
+    else
+     backupfile=$backuppath/yahm_host_backup.img
+     (whiptail --msgbox "Sicherung wird jetzt in $backuppath erzeugt. Bitte beachte, die Sicherung ist exakt so groß wie die SD Karte. Und es wird etwas dauern." --title "Saving all the bits...." 20 60 1)
+     progress "Sichere .. das dauert jetzt ein wenig ...."
+     dd if=/dev/mmcblk0 of=$backupfile bs=1MB
+     (whiptail --msgbox "Hostsystem wurde in $backupfile gesichert." --title "You're save now !" 20 60 1)
+    fi
+   fi
+}
 
 do_menu_install_update() {
   ${YAHM_DIR}/bin/yahm-ctl update
