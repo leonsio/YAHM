@@ -670,7 +670,8 @@ do_menu_expert_changeOption() {
 
 
    newvalue=$(whiptail --inputbox "$2" 8 78 $3 --title "YAHM Experteneinstellungen" 3>&1 1>&2 2>&3)
-   
+   if [ -n "$newvalue" ]
+   then
    case $1 in
         1)
         LXCNAME=$newvalue
@@ -698,6 +699,7 @@ do_menu_expert_changeOption() {
         fi
           ;;
     esac
+    fi
 }
 
 
