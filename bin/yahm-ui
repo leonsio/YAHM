@@ -157,7 +157,9 @@ if [ $inst_yahm -eq 1 ]; then
 fi
 
 if [ $inst_network -eq 1 ]; then
- do_menu_network_createattachbridge
+  do_menu_network_createbridge
+  sleep 2
+  do_menu_network_attachbridge
 fi
 
 if [ $inst_hmip -eq 1 ]; then
@@ -540,11 +542,12 @@ while true; do
   
 }
 
+
 do_menu_network_createbridge() {
   
 # check existing bridge
    if [ `check_bridge_name $BRIDGE` -eq 0 ]; then
-	   ${YAHM_DIR}/bin/yahm-network -n ${LXCNAME} -w -i $IFACE -b $BRIDGE create_bridge
+	   ${YAHM_DIR}/bin/yahm-network -n ${LXCNAME} -w -i $INTERFACE -b $BRIDGE create_bridge
    else
      whiptail --msgbox "Es existiert schon eine Bridge mit dem Namen $BRIDGE" 20 60 2
    fi
@@ -573,12 +576,6 @@ do_menu_network_dettachbridge() {
 	ASK_TO_RESTART=1
 }
 
-
-do_menu_network_createattachbridge() {
-    ${YAHM_DIR}/bin/yahm-network -n ${LXCNAME} -w -i $INTERFACE -b $BRIDGE create_bridge
-    ${YAHM_DIR}/bin/yahm-network -n ${LXCNAME} -b $BRIDGE attach_bridge
-    ASK_TO_RESTART=1
-}
 
 do_finish_menu() {
    progress "Finishing"
