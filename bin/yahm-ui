@@ -57,7 +57,7 @@ do_show_notfound() {
 do_menu_ccu() {
 while true; do
     FUNC=$(whiptail --title "YAHM Installation und Konfiguration (CCU Installation - ${LXCNAME})" --menu "Optionen" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Zurück --ok-button Auswählen \
-      "1 Neuinstallation" "CCU Container Neuinstallation mit Firmware $CCUFW" \
+      "1 Neuinstallation" "CCU Container Neuinstallation mit Firmware $CCU2Version" \
       "2 Update" "CCU Firmwareupdate" \
       "3 Deinstall" "CCU Container entfernen" \
       "-" "" \
@@ -170,7 +170,6 @@ fi
 
 if [ $inst_cm -eq 1 ]; then
  progress "installing Cloudmatic Module"
- sleep 30
  ${YAHM_DIR}/bin/yahm-module -f -m meinhomematic -n ${LXCNAME} enable
 fi
 
