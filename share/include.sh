@@ -41,6 +41,7 @@ ARCH=""
 IS_FORCE=0
 IS_VERBOSE=0
 DRY_RUN=0
+RESTART=1
 
 # Check if we can use colours in our output
 use_colour=0
@@ -109,7 +110,7 @@ do
             set +e
             ;;
         b)
-	    BUILD=$OPTARG
+	        BUILD=$OPTARG
             BRIDGE=$OPTARG
             ;;
         i)
@@ -123,11 +124,11 @@ do
             DATA_FILE=$OPTARG
             ;;
         p)
+            PATCH_FILE=$OPTARG
             if [ ! -f "${PATCH_FILE}" ]
             then
                 die "Specified patch file can not be found"
             fi
-            PATCH_FILE=$OPTARG
             ;;
         m)
             MODULE=$OPTARG
@@ -135,6 +136,17 @@ do
             if [ ! -f "${YAHM_DIR}/share/modules/${MODULE}" ]
             then
                 die "Specified module can not be found"
+            fi
+            ;;
+        r)
+            if [ $OPTARG == "false" ] || [ $OPTARG == "no" ] || [ $OPTARG == "0" ]
+            then
+                RESTART=0
+            elif [ $OPTARG == "true" ] || [ $OPTARG == "yes" ] || [ $OPTARG == "1" ]
+            then
+                RESTART=1
+            else
+                die "Unsupported option"
             fi
             ;;
         v)
