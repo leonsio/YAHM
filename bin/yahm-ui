@@ -31,7 +31,7 @@ ggf. funktionen falls vorhanden
 EOF
 exit 1
 }
-PARAMETER="vf"
+PARAMETER="vfn:"
 #END
 
 source /opt/YAHM/share/include.sh
@@ -647,6 +647,7 @@ while true; do
       "2 Interface" "Host Interface: ${INTERFACE}" \
       "3 Bridge" "Bridge: ${BRIDGE}" \
       "4 Firmware" "CCU Firmware: ${CCU2Version}" \
+      "5 GIT Branch" ": ${GIT_BRANCH}" \
       3>&1 1>&2 2>&3)
     RET=$?
     if [ $RET -eq 1 ]; then
@@ -656,8 +657,9 @@ while true; do
         1\ *) do_menu_expert_changeOption 1 "Ändert den Namen des YAHM Containers" ${LXCNAME};;
         2\ *) do_menu_expert_changeOption 2 "Ändert das Netzwerkinterface über welchen das Hostsystem angebunden ist" ${INTERFACE};;
         3\ *) do_menu_expert_changeOption 3 "Ändert den Namen der Netzwerkbridge" ${BRIDGE};;
-        4\ *) do_menu_expert_changeOption 4 "Ändert die zu installierende Firmwareversion" ${CCU2Version};; 
-        *) whiptail --msgbox "Programmer error: unrecognized option" 20 60 1 ;;
+        4\ *) do_menu_expert_changeOption 4 "Ändert die zu installierende Firmwareversion" ${CCU2Version};;
+        5\ *) do_menu_expert_gitBranches  5 "Änderung des YAHM-Branches" ${GIT_BRANCH};;
+      *) whiptail --msgbox "Programmer error: unrecognized option" 20 60 1 ;;
       esac || whiptail --msgbox "There was an error running option $FUNC" 20 60 1
     else
      return 0
@@ -665,7 +667,38 @@ while true; do
   done
 }
 
+do_menu_expert_gitBranches() {
 
+    GIT_BRANCHES=$(cd ${YAHM_DIR} && git branch | awk -F ' +' '! /\(no branch\)/ {print $2}')
+
+    RADIOLIST=()
+    for _branch in $GIT_BRANCHES
+    do
+        if [ "$_branch" == "$3" ]
+        then
+            RADIOLIST+=("$_branch" "" "ON")
+        else
+            RADIOLIST+=("$_branch" "" "OFF")
+        fi
+    done
+    let ARLENGTH=${#RADIOLIST[@]}
+
+    newvalue=$(whiptail --title "$2" --radiolist "Bitte Branch auswählen" 20 50 $ARLENGTH "${RADIOLIST[@]}" 3>&1 1>&2 2>&3)
+
+    status=$(cd ${YAHM_DIR} && git checkout ${newvalue} 2>&1)
+
+    RET=$?
+    if [ $RET -eq 0 ]
+    then
+        progress "Branch was successfully changed. Please restart UI"
+        exit
+    else
+        whiptail --msgbox "There was an error running option:\n $status" 20 60 1
+        progress "Exit"
+        exit 1
+    fi
+
+}
 do_menu_expert_changeOption() {
 
 
@@ -708,8 +741,21 @@ do_menu_diag_showFile() {
 
 do_menu_status() {
   if [ `check_container_installed` -eq 1 ]; then
+    CCU2_BRIDGE=`get_ccu2_bridge`
+    CCU2_BRIDGE_INTERFACE=`get_bridge_interface $CCU2_BRIDGE`
 	update_info
-	whiptail --msgbox " CCU Container ..: ${LXCNAME}\n CCU IP Adresse .: ${INFO_IP}\n CCU Status .....: ${INFO_STATE}" 20 60 2
+	whiptail --msgbox "
+YAHM Status:
+    GIT Branch .....: ${GIT_BRANCH}
+    YAHM Version ...: ${YAHM_VERSION}
+CCU2 Container Status:
+    CCU Container ..: ${LXCNAME}
+    CCU Status .....: ${INFO_STATE}
+CCU2 Netzwerk Status:
+    CCU IP Adresse .: ${INFO_IP}
+    CCU Interface ..: ${CCU2_BRIDGE_INTERFACE}
+    CCU Bridge .....: ${CCU2_BRIDGE}
+    " 20 60 2
   else 
 	whiptail --msgbox " Keinen YAHM Container ${LXCNAME} gefunden." 20 60 2
   fi
@@ -751,7 +797,7 @@ while true; do
 
       progress "ESC finish" 
       do_finish_menu
-      
+
     elif [ $RET -eq 0 ]; then
       case "$FUNC" in
         1\ *) do_menu_ccu ;;
