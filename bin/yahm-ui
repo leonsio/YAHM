@@ -57,7 +57,7 @@ do_show_notfound() {
 do_menu_ccu() {
 while true; do
     FUNC=$(whiptail --title "YAHM Installation und Konfiguration (CCU Installation - ${LXCNAME})" --menu "Optionen" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Zurück --ok-button Auswählen \
-      "1 Neuinstallation" "CCU Container Neuinstallation mit Firmware $CCUFW" \
+      "1 Neuinstallation" "CCU Container Neuinstallation mit Firmware $CCU2Version" \
       "2 Update" "CCU Firmwareupdate" \
       "3 Deinstall" "CCU Container entfernen" \
       "-" "" \
@@ -170,7 +170,6 @@ fi
 
 if [ $inst_cm -eq 1 ]; then
  progress "installing Cloudmatic Module"
- sleep 30
  ${YAHM_DIR}/bin/yahm-module -f -m meinhomematic -n ${LXCNAME} enable
 fi
 
@@ -300,7 +299,7 @@ do_menu_backup_acron() {
    if (whiptail --yesno --title "YAHM Backup" "Tägliches Backup ist ausgeschalten. Möchtest Du es einschalten ?" 20 60 --defaultno) then
 	#ask for path
 	backup_path=$(whiptail --inputbox "In welchem Pfad soll das Backup abgelegt werden" 20 60 "$HOME" 3>&1 1>&2 2>&3)
-	if [ -w $backup_path ]
+	if [ -n "$backup_path" ] && [ -w $backup_path ]
 	then
 	cat > "$command" <<EOF
 #!/bin/bash
@@ -326,7 +325,7 @@ EOF
 
 ask_for_backup_path() {
     backup_path=$(whiptail --inputbox "In welchem Pfad soll das Backup abgelegt werden" 20 60 $1  3>&1 1>&2 2>&3)
-	if [ -w $backup_path ]
+	if [ -n "$backup_path" ] && [ -w $backup_path ]
 	then
 	  echo $backup_path
 	else
@@ -337,7 +336,7 @@ ask_for_backup_path() {
 
 ask_for_backup_file() {
     backup_file=$(whiptail --inputbox "Welche Backup Datei soll eingespielt werden ?" 20 60 "$1"  3>&1 1>&2 2>&3)
-	if [ -f $backup_file ]
+	if  [ -n $backup_file ] && [ -f $backup_file ]
 	then
 	  echo $backup_file
 	else
@@ -703,7 +702,8 @@ do_menu_expert_changeOption() {
 
 
    newvalue=$(whiptail --inputbox "$2" 8 78 $3 --title "YAHM Experteneinstellungen" 3>&1 1>&2 2>&3)
-   
+   if [ -n "$newvalue" ]
+   then
    case $1 in
         1)
         LXCNAME=$newvalue
@@ -731,6 +731,7 @@ do_menu_expert_changeOption() {
         fi
           ;;
     esac
+    fi
 }
 
 
