@@ -241,10 +241,19 @@ check_ccu2_archive()
     [[ $ALL_FW =~ $CCU2_VERSION ]] && echo 1 || echo 0
 }
 
-
-get_ccu2_patch()
+# Gibt installierte Bridge zurück
+get_ccu2_bridge()
 {
-  echo "not ready"
+    CCU2_BRIDGE=$(cat ${LXC_ROOT}/config.network  | grep "lxc.network.link" | cut -d" " -f3)
+    echo $CCU2_BRIDGE
+}
+
+# Achtung gibt nur das Erste Interface zurück, mehrere Interfaces werden nicht unterstützt
+get_bridge_interface()
+{
+    BRIDGE_NAME=$1
+    BRIDGE_INTERFACE=$(brctl show ${BRIDGE_NAME} | awk 'NF>1 && NR>1 {print $4}')
+    echo $BRIDGE_INTERFACE
 }
 
 get_yahm_name()
