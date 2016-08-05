@@ -177,9 +177,17 @@ EOF
         sed  -e 's/#ComPortFile = \/dev\/mmd_bidcos/ComPortFile = \/dev\/mmd_bidcos/' -i $file_rfd_conf
         sed  -e 's/#AccessFile = \/dev\/null/AccessFile = \/dev\/null/' -i $file_rfd_conf
         sed  -e 's/#ResetFile = \/dev\/ccu2-ic200/ResetFile = \/dev\/ccu2-ic200/' -i $file_rfd_conf
+
+	    #remove Improved Coprocessor Stuff 
+	    if [ $(cat $file_rfd_conf|grep "\Improved\ Coprocessor\ Initialization\ =\ true"|wc -l) -eq 1 ];then
+   	   	  progress "disabling new coprocessor initialization"
+    	  sed 's/Improved Coprocessor Initialization = true/Improved Coprocessor Initialization = false/' -i $file_rfd_conf
+    	fi
+        
         info "Modification rfd.conf done."
     fi
-
+    
+    
     # IP ausgeben
 #    IP=$(lxc-info -n ${LXCNAME} |grep -E -o "([0-9]{1,3}[\.]){3}[0-9]{1,3}")
 #    echo 'Homematic CCU2 IP:' $IP
@@ -241,8 +249,16 @@ _module_remove()
         sed  -e 's/ComPortFile = \/dev\/mmd_bidcos/#ComPortFile = \/dev\/mmd_bidcos/' -i $file_rfd_conf
         sed  -e 's/AccessFile = \/dev\/null/#AccessFile = \/dev\/null/' -i $file_rfd_conf
         sed  -e 's/ResetFile = \/dev\/ccu2-ic200/#ResetFile = \/dev\/ccu2-ic200/' -i $file_rfd_conf
+        
+        if [ $(cat $file_rfd_conf|grep "\Improved\ Coprocessor\ Initialization\ =\ false"|wc -l) -eq 1 ];then
+         progress "enabling new coprocessor initialization again"
+         sed 's/Improved Coprocessor Initialization = false/Improved Coprocessor Initialization = true/' -i $file_rfd_conf
+        fi
+        
         progress "Uninstall modification in rfd.conf is done."
     fi
+
+
 
     progress "Removing devices inside LXC container"
     if [ -e $LXC_ROOT_FS/dev/mmd_bidcos ];then
