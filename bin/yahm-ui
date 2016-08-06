@@ -419,7 +419,9 @@ do_menu_backup_myself() {
     else
      backupfile=$backuppath/yahm_host_backup.img
      
-     (whiptail --yesno "Sicherung wird jetzt in $backuppath erzeugt. Bitte beachte, die Sicherung ist exakt so groß wie die SD Karte. Und es wird etwas dauern." --title "Saving all the bits...." --no-button "Abbrechen" --yes-button "Backup erstellen" 20 60 2)
+     sz=$(df -h|sed -n 2p|awk '{print $2}')
+     
+     (whiptail --yesno "Sicherung wird jetzt in $backuppath erzeugt. Bitte beachte, die Sicherung ist exakt so groß wie die SD Karte ( ${$sz}) . Und es wird etwas dauern. (ca 2min / GB)" --title "Saving all the bits...." --no-button "Abbrechen" --yes-button "Backup erstellen" 20 60 2)
      if [ $? -eq 255 ]; then # no
        		return 0
 	 fi
@@ -432,7 +434,7 @@ do_menu_backup_myself() {
 		 do_menu_ccu_stop 0
 	 fi
 	 
-     progress "Sichere .. das dauert jetzt ein wenig ...."
+     progress "Sichere ${$sz}.. das dauert jetzt ein wenig (ca 2min / GB) ...."
      dd if=/dev/mmcblk0 of=$backupfile bs=8MB
      ret=$?
      
@@ -773,10 +775,16 @@ do_menu_diag_showFile() {
 
 do_menu_status() {
   if [ `check_container_installed` -eq 1 ]; then
-    CCU2_BRIDGE=`get_ccu2_bridge`
+    
+	CCU2_BRIDGE=`get_ccu2_bridge`
     CCU2_BRIDGE_INTERFACE=`get_bridge_interface $CCU2_BRIDGE`
 	update_info
 	whiptail --msgbox "
+System Status:
+    Root Partition..: $(df -h|sed -n 2p|awk '{print $2}')
+    Benutzt ........: $(df -h|sed -n 2p|awk '{print $3}')
+    Frei ...........: $(df -h|sed -n 2p|awk '{print $4}')
+	
 YAHM Status:
     GIT Branch .....: ${GIT_BRANCH}
     YAHM Version ...: ${YAHM_VERSION}
@@ -789,7 +797,7 @@ CCU2 Netzwerk Status:
     CCU IP Adresse .: ${INFO_IP}
     CCU Interface ..: ${CCU2_BRIDGE_INTERFACE}
     CCU Bridge .....: ${CCU2_BRIDGE}
-    " --title "Sure u\'r waiting for theese Infos ..." 20 60 2
+    " --title "Sure u'r waiting for theese Infos ..." 30 60 2
   else 
 	whiptail --msgbox " Keinen YAHM Container ${LXCNAME} gefunden." 20 60 2
   fi

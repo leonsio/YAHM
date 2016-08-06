@@ -9,27 +9,32 @@ _module_install()
 {
 	progress "Zeroconf ..."
 	apt-get -y --force-yes install libavahi-compat-libdnssd-dev 2>&1 > /dev/null
+	mkdir -p $YAHM_TMP
 	
-	progress "GCC ..."
-	apt-get -y --force-yes install make 2>&1 > /dev/null
+#	progress "GCC ..."
+#	apt-get -y --force-yes install make 2>&1 > /dev/null
 	
-	progress "Setup GCC"
-	update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.9 60 --slave /usr/bin/g++ g++ /usr/bin/g++-4.9 >/dev/null
-    update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.6 40 --slave /usr/bin/g++ g++ /usr/bin/g++-4.7 >/dev/null
+#	progress "Setup GCC"
+#	update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.9 60 --slave /usr/bin/g++ g++ /usr/bin/g++-4.9 >/dev/null
+#   update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.6 40 --slave /usr/bin/g++ g++ /usr/bin/g++-4.7 >/dev/null
 
-	progress "Installing Node"
-    mkdir -p $YAHM_TMP
+#	progress "Installing Node"
+#   mkdir -p $YAHM_TMP
   
-	wget -q https://nodejs.org/dist/v4.0.0/node-v4.0.0-linux-armv7l.tar.gz -O $YAHM_TMP/nodejs.tar.gz
-	mkdir -p $YAHM_TMP/nodejs/
+#	wget -q https://nodejs.org/dist/v4.0.0/node-v4.0.0-linux-armv7l.tar.gz -O $YAHM_TMP/nodejs.tar.gz
+#	mkdir -p $YAHM_TMP/nodejs/
 	
-	tar -xvf $YAHM_TMP/nodejs.tar.gz -C $YAHM_TMP/nodejs/ >/dev/null
-    cp -R $YAHM_TMP/nodejs/node-v4.0.0-linux-armv7l/* /usr/local/
+#	tar -xvf $YAHM_TMP/nodejs.tar.gz -C $YAHM_TMP/nodejs/ >/dev/null
+#   cp -R $YAHM_TMP/nodejs/node-v4.0.0-linux-armv7l/* /usr/local/
 	
-	progress "Cleaning ..."
-	rm $YAHM_TMP/nodejs.tar.gz
-	rm $YAHM_TMP/nodejs/ -R
+#	progress "Cleaning ..."
+#	rm $YAHM_TMP/nodejs.tar.gz
+#	rm $YAHM_TMP/nodejs/ -R
 
+    progress "Install NodeV6"
+	curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash - >/dev/null
+	apt-get install -y nodejs >/dev/null
+	
 	progress "Installing Homebridge"
     npm install -g homebridge --unsafe-perm >/dev/null
 	progress "Installing Homematic Plugin"
