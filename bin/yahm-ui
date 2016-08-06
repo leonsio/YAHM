@@ -421,7 +421,7 @@ do_menu_backup_myself() {
      
      sz=$(df -h|sed -n 2p|awk '{print $2}')
      
-     (whiptail --yesno "Sicherung wird jetzt in $backuppath erzeugt. Bitte beachte, die Sicherung ist exakt so groß wie die SD Karte ( ${$sz}) . Und es wird etwas dauern. (ca 2min / GB)" --title "Saving all the bits...." --no-button "Abbrechen" --yes-button "Backup erstellen" 20 60 2)
+     (whiptail --yesno "Sicherung wird jetzt in $backuppath erzeugt. Bitte beachte, die Sicherung ist exakt so groß wie die SD Karte (${sz}) . Und es wird etwas dauern. (ca 2min / GB)" --title "Saving all the bits...." --no-button "Abbrechen" --yes-button "Backup erstellen" 20 60 2)
      if [ $? -eq 255 ]; then # no
        		return 0
 	 fi
@@ -434,7 +434,7 @@ do_menu_backup_myself() {
 		 do_menu_ccu_stop 0
 	 fi
 	 
-     progress "Sichere ${$sz}.. das dauert jetzt ein wenig (ca 2min / GB) ...."
+     progress "Sichere ${sz}.. das dauert jetzt ein wenig (ca 2min / GB) ...."
      dd if=/dev/mmcblk0 of=$backupfile bs=8MB
      ret=$?
      
