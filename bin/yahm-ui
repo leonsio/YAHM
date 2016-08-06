@@ -163,10 +163,16 @@ if [ $inst_network -eq 1 ]; then
 fi
 
 if [ $inst_hmip -eq 1 ]; then
- #start container and wayit abour 30 seconds
+ #start container and wait for Rega
  lxc-start -n ${LXCNAME} -d
- progress "wait about 30 seconds until ccu is full launched"
- sleep 30
+ progress "waiting for RegaHSS to launch ..."
+ 
+ until pids=$(pidof ReGaHss)
+  do   
+   echo -n "."
+   sleep 1
+  done
+  
  ${YAHM_DIR}/bin/yahm-module -f -m homematic-ip -n ${LXCNAME} disable
 fi
 
@@ -467,6 +473,14 @@ do_menu_module() {
     for file in $files
     do
         description=`cat ${YAHM_DIR}/share/modules/${file}  | grep description -m1 | cut -d'"' -f2` 
+
+        if [ -e ${LXC_ROOT_MODULES}/${file} ]
+        then
+		 description="[X] ${description}"
+		else
+		 description="[ ] ${description}"
+		fi
+		
         modules+=("$file" "$description")
     done 
 
@@ -478,7 +492,15 @@ while true; do
     if [ $RET -eq 1 ]; then
       return 0
     elif [ $RET -eq 0 ]; then
+      
+    if [ `check_container_installed` -eq 1 ]; then
        do_menu_show_module_state $FUNC
+	else 
+	  whiptail --msgbox " Keinen YAHM Container ${LXCNAME} gefunden." 20 60 2
+	  return 0
+    fi
+
+      
     else
      return 0
     fi
@@ -643,7 +665,7 @@ while true; do
       "2 Interface" "Host Interface: ${INTERFACE}" \
       "3 Bridge" "Bridge: ${BRIDGE}" \
       "4 Firmware" "CCU Firmware: ${CCU2Version}" \
-      "5 GIT Branch" ": ${GIT_BRANCH}" \
+      "5 GIT" "Branch: ${GIT_BRANCH}" \
       3>&1 1>&2 2>&3)
     RET=$?
     if [ $RET -eq 1 ]; then
@@ -680,6 +702,9 @@ do_menu_expert_gitBranches() {
     let ARLENGTH=${#RADIOLIST[@]}
 
     newvalue=$(whiptail --title "$2" --radiolist "Bitte Branch auswählen" 20 50 $ARLENGTH "${RADIOLIST[@]}" 3>&1 1>&2 2>&3)
+    # check Esc Key first (value will be empty)
+    if [ -n "$newvalue" ] 
+    then
 
     status=$(cd ${YAHM_DIR} && git checkout ${newvalue} 2>&1)
 
@@ -692,6 +717,7 @@ do_menu_expert_gitBranches() {
         whiptail --msgbox "There was an error running option:\n $status" 20 60 1
         progress "Exit"
         exit 1
+    fi
     fi
 
 }
@@ -734,7 +760,7 @@ do_menu_expert_changeOption() {
 
 do_menu_diag_showFile() {
   value=$(<$1)
-  whiptail --msgbox --backtitle $2 "${value}" --scrolltext 30 $WT_WIDTH 2
+  whiptail --msgbox --backtitle $2 "${value}" --scrolltext --title "Information at your fingertips" 30 $WT_WIDTH 2
 }
 
 do_menu_status() {
