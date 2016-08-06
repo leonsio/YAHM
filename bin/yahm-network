@@ -29,7 +29,8 @@ Flags:
 -b          - Bridge name       (default=yahmbr0)
 -i          - Interface name    (default=eth0)
 -d          - Dry run (test configuration, without writing changes)
--w          - Write network changes 
+-w          - Write network changes
+-r          - Restart network after changes (default=true)
 
 Commands:
 create_bridge   -  Creating new bridge for LXC Container
@@ -41,7 +42,7 @@ EOF
 exit 1
 }
 
-PARAMETER="db:i:wfvn:"
+PARAMETER="db:i:wfvn:r:"
 is_static=0
 
 # Include laden
@@ -219,7 +220,10 @@ delete_bridge()
         progress "WARNING: Your system is configured now, restarting network to apply the changes. To cancel this operation type CTRL+C you have 5 seconds..."
         countdown
         info "... too late ;)"
-        service networking restart
+        if [ $RESTART -eq 1 ]
+        then
+            service networking restart
+        fi
     else
         info "Your system is not changed, if thesse changes appearing correctly please run this script with -w flag"
     fi
@@ -356,8 +360,10 @@ create_bridge()
         progress "WARNING: Your system is configured now, restarting network to apply the changes. You may get new IP address from DHCP\n. To cancel this operation type CTRL+C you have 5 seconds..."
         countdown
         info "... too late ;)"
-
-        service networking restart
+        if [ $RESTART -eq 1 ]
+        then
+            service networking restart
+        fi
 	ip addr flush dev ${INTERFACE}
 
 	if [ $is_static -eq 0 ]
