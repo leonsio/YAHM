@@ -122,7 +122,8 @@ do_menu_ccu_install() {
    if [ `check_container_installed` -eq 1 ]
     then
 		whiptail --yesno "Es existiert bereits eine CCU Installation ${LXCNAME} . Soll diese gelöscht werden ?" 20 60 2
-		    if [ $? -eq 255 ]; then # no
+		ret=$?
+		    if [ $ret -eq 1 ] || [ $ret -eq 255 ]; then # no
        		return 0
 	    fi
     	# remove old stuff
@@ -216,7 +217,8 @@ do_menu_ccu_remove() {
    if [ `check_container_installed` -eq 1 ]
     then
 		whiptail --yesno "Bist Du sicher das Du den CCU Container ${LXCNAME} entfernen möchtest. Alle Daten gehen verloren ?" 20 60 2
-		    if [ $? -eq 255 ]; then # no
+		    ret=$?
+		    if [ $ret -eq 1 ] || [ $ret -eq 255 ]; then # no
        		return 0
 	    fi
     	# stop ccu - remove stuff - remove network settings
@@ -422,7 +424,8 @@ do_menu_backup_myself() {
      sz=$(df -h|sed -n 2p|awk '{print $2}')
      
      (whiptail --yesno "Sicherung wird jetzt in $backuppath erzeugt. Bitte beachte, die Sicherung ist exakt so groß wie die SD Karte (${sz}) . Und es wird etwas dauern. (ca 2min / GB)" --title "Saving all the bits...." --no-button "Abbrechen" --yes-button "Backup erstellen" 20 60 2)
-     if [ $? -eq 255 ]; then # no
+	 ret=$?    
+     if [ $ret -eq 1 ] || [ $ret -eq 255 ]; then # no
        		return 0
 	 fi
      
