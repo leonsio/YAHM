@@ -122,7 +122,7 @@ do_menu_ccu_install() {
    if [ `check_container_installed` -eq 1 ]
     then
 		whiptail --yesno "Es existiert bereits eine CCU Installation ${LXCNAME} . Soll diese gelöscht werden ?" 20 60 2
-		    if [ $? -eq 1 ]; then # no
+		    if [ $? -eq 255 ]; then # no
        		return 0
 	    fi
     	# remove old stuff
@@ -215,7 +215,7 @@ do_menu_ccu_remove() {
    if [ `check_container_installed` -eq 1 ]
     then
 		whiptail --yesno "Bist Du sicher das Du den CCU Container ${LXCNAME} entfernen möchtest. Alle Daten gehen verloren ?" 20 60 2
-		    if [ $? -eq 1 ]; then # no
+		    if [ $? -eq 255 ]; then # no
        		return 0
 	    fi
     	# stop ccu - remove stuff - remove network settings
@@ -415,7 +415,7 @@ do_menu_backup_myself() {
      backupfile=$backuppath/yahm_host_backup.img
      
      (whiptail --yesno "Sicherung wird jetzt in $backuppath erzeugt. Bitte beachte, die Sicherung ist exakt so groß wie die SD Karte. Und es wird etwas dauern." --title "Saving all the bits...." --no-button "Abbrechen" --yes-button "Backup erstellen" 20 60 2)
-     if [ $? -eq 1 ]; then # no
+     if [ $? -eq 255 ]; then # no
        		return 0
 	 fi
      
@@ -701,7 +701,7 @@ do_menu_expert_gitBranches() {
     done
     let ARLENGTH=${#RADIOLIST[@]}
 
-    newvalue=$(whiptail --title "$2" --radiolist "Bitte Branch auswählen" 20 50 $ARLENGTH "${RADIOLIST[@]}" 3>&1 1>&2 2>&3)
+    newvalue=$(whiptail --title "$2" --radiolist "Bitte Branch auswählen" 20 50 $ARLENGTH "${RADIOLIST[@]}" --ok-button "Wechseln" --cancel-button "Abbrechen" 3>&1 1>&2 2>&3)
     # check Esc Key first (value will be empty)
     if [ -n "$newvalue" ] 
     then
@@ -772,14 +772,16 @@ do_menu_status() {
 YAHM Status:
     GIT Branch .....: ${GIT_BRANCH}
     YAHM Version ...: ${YAHM_VERSION}
+
 CCU2 Container Status:
     CCU Container ..: ${LXCNAME}
     CCU Status .....: ${INFO_STATE}
+
 CCU2 Netzwerk Status:
     CCU IP Adresse .: ${INFO_IP}
     CCU Interface ..: ${CCU2_BRIDGE_INTERFACE}
     CCU Bridge .....: ${CCU2_BRIDGE}
-    " 20 60 2
+    " --title "Sure u\'r waiting for theese Infos ..." 20 60 2
   else 
 	whiptail --msgbox " Keinen YAHM Container ${LXCNAME} gefunden." 20 60 2
   fi
