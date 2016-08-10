@@ -700,7 +700,12 @@ while true; do
 
 do_menu_expert_gitBranches() {
 
-    GIT_BRANCHES=$(cd ${YAHM_DIR} && git branch | awk -F ' +' '! /\(no branch\)/ {print $2}')
+    for BRANCH in $(cd ${YAHM_DIR} && git branch -a | grep remotes | grep -v HEAD | grep -v master);
+    do
+        git branch --track "${BRANCH#remotes/origin/}" "${BRANCH}";
+    done
+
+    GIT_BRANCHES=$(cd ${YAHM_DIR} && git branch -a | awk -F ' +' '! /\(no branch\)/ {print $2}')
 
     RADIOLIST=()
     for _branch in $GIT_BRANCHES
