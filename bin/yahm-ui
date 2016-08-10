@@ -641,6 +641,7 @@ while true; do
       "2 CCU RFD" "rfd.conf Datei der CCU anzeigen" \
       "3 CCU Tweak" "WebGUI Diagnose aktivieren"\
       "4 Network" "Raspberry Network" \
+      "5 CCU Log" "CCU Log anzeigen" \
       3>&1 1>&2 2>&3)
     RET=$?
     if [ $RET -eq 1 ]; then
@@ -651,6 +652,7 @@ while true; do
         2\ *) do_menu_diag_showFile "${LXC_ROOT_FS}/usr/local/etc/config/rfd.conf" "rfd.conf" ;;
         4\ *) do_menu_diag_showFile "/etc/network/interfaces" "Interfaces" ;;
         3\ *) do_menu_ccu_tweak ;; 
+        5\ *) do_menu_ccu_log;;
         *) whiptail --msgbox "Programmer error: unrecognized option" 20 60 1 ;;
       esac || whiptail --msgbox "There was an error running option $FUNC" 20 60 1
     else
@@ -659,6 +661,11 @@ while true; do
   done
 
 
+}
+
+do_menu_ccu_log() {
+  whiptail --title "CCU Log" --scrolltext --textbox /dev/stdin 30 $WT_WIDTH 2 <<<"$(lxc-attach -n ${LXCNAME} -- cat /var/log/messages)" 
+  return 0
 }
 
 do_menu_ccu_tweak() {
