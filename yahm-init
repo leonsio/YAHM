@@ -121,7 +121,7 @@ info "done"
 progress "Downloading actual version from git repository"
 mkdir -p /opt
 cd /opt
-git clone --recursive https://github.com/leonsio/YAHM.git  2>>/var/log/yahm/git.log >>/var/log/yahm/git.log
+git clone --recursive https://github.com/leonsio/YAHM.git --branch release_1.0  2>>/var/log/yahm/git.log >>/var/log/yahm/git.log
 
 progress "Including YAHM into PATH"
 ln -sf /opt/YAHM/bin/* /usr/sbin/
