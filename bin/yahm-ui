@@ -705,7 +705,7 @@ do_menu_expert_gitBranches() {
         git branch --track "${BRANCH#remotes/origin/}" "${BRANCH}";
     done
 
-    GIT_BRANCHES=$(cd ${YAHM_DIR} && git branch -a | awk -F ' +' '! /\(no branch\)/ {print $2}')
+    GIT_BRANCHES=$(cd ${YAHM_DIR} && git branch  | awk -F ' +' '! /\(no branch\)/ {print $2}')
 
     RADIOLIST=()
     for _branch in $GIT_BRANCHES
