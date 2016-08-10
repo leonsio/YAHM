@@ -157,7 +157,15 @@ data_backup()
     then
         die "${LXCNAME} container is not running."
     fi
-
+	
+	progress "Ask Rega to save the DOM"
+	echo "#!/bin/tclsh
+	load tclrega.so
+	rega system.Save()" > $LXC_ROOT_FS/opt/regasave.sh
+	chmod +x $LXC_ROOT_FS/opt/regasave.sh
+	lxc-attach -n ${LXCNAME} -- ./opt/regasave.sh
+    rm $LXC_ROOT_FS/opt/regasave.sh
+    
     progress "Creating Backup from /usr/local folder"
     cd ${LXC_ROOT_FS}
     tar $VERBOSE -czf ${YAHM_TMP}/usr_local.tar.gz usr/local
