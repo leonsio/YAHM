@@ -679,13 +679,29 @@ do_menu_ccu_tweak() {
 }
 
 do_menu_expert() {
+
 while true; do
+
+#fetch Serial from yahm
+
+if [ `check_container_installed` -eq 1 ]; then
+	status=$(cat ${LXC_ROOT_FS}/usr/local/etc/config/ids)
+ 	state=$(echo "$status" | grep -oP "([A-Z]{3}[0-9]{7})")
+ 	IFS=', ' read -r -a array <<< $state
+ 	CCUSerial=${array[0]}
+else 
+    CCUSerial="????????"
+fi
+
+
+
     FUNC=$(whiptail --title "YAHM Experteneinstellungen" --menu "Optionen" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Zurück --ok-button Auswählen \
       "1 Container" "Yahm Containername: ${LXCNAME}" \
       "2 Interface" "Host Interface: ${INTERFACE}" \
       "3 Bridge" "Bridge: ${BRIDGE}" \
       "4 Firmware" "CCU Firmware: ${CCU2Version}" \
       "5 GIT" "Branch: ${GIT_BRANCH}" \
+      "6 CCU" "Seriennummer: ${CCUSerial}" \
       3>&1 1>&2 2>&3)
     RET=$?
     if [ $RET -eq 1 ]; then
@@ -697,12 +713,25 @@ while true; do
         3\ *) do_menu_expert_changeOption 3 "Ändert den Namen der Netzwerkbridge" ${BRIDGE};;
         4\ *) do_menu_expert_changeOption 4 "Ändert die zu installierende Firmwareversion" ${CCU2Version};;
         5\ *) do_menu_expert_gitBranches  5 "Änderung des YAHM-Branches" ${GIT_BRANCH};;
+        6\ *) do_menu_expert_setSerial $CCUSerial;;
       *) whiptail --msgbox "Programmer error: unrecognized option" 20 60 1 ;;
       esac || whiptail --msgbox "There was an error running option $FUNC" 20 60 1
     else
      return 0
     fi
   done
+}
+
+do_menu_expert_setSerial() {
+   newvalue=$(whiptail --inputbox "Seriennummer der CCU:" 8 78 $1 --title "YAHM Experteneinstellungen" 3>&1 1>&2 2>&3)
+   if [ -n "$newvalue" ]
+   then
+   # delete old serial
+      awk '!/Serial.*/' ${LXC_ROOT_FS}/usr/local/etc/config/ids > /tmp/ids
+      echo "SerialNumber = $newvalue" >> /tmp/ids
+      mv  /tmp/ids ${LXC_ROOT_FS}/usr/local/etc/config/ids
+      whiptail --msgbox "Bitte CCU Container neu starten" --title "One more thing" 20 60 1
+   fi
 }
 
 do_menu_expert_gitBranches() {
