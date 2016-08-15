@@ -63,6 +63,7 @@ while true; do
       "-" "" \
       "4 Start" "CCU Container starten" \
       "5 Stop" "CCU Container beenden" \
+      "6 Restart" "CCU Container neu starten" \
       3>&1 1>&2 2>&3)
     RET=$?
     if [ $RET -eq 1 ]; then
@@ -74,6 +75,7 @@ while true; do
         3\ *) do_menu_ccu_remove ;;
         4\ *) do_menu_ccu_start 1;;
         5\ *) do_menu_ccu_stop 1;;
+        6\ *) do_menu_ccu_restart 1;;
 
         *) whiptail --msgbox "Programmer error: unrecognized option" 20 60 1 ;;
       esac || whiptail --msgbox "There was an error running option $FUNC" 20 60 1
@@ -109,6 +111,20 @@ do_menu_ccu_stop() {
 		do_show_notfound
    fi  
 }
+
+do_menu_ccu_restart() {
+    if [ `check_container_installed` -eq 1 ]
+    then
+     ${YAHM_DIR}/bin/yahm-ctl -n ${LXCNAME} restart
+      if [ $1 -eq 1 ]
+      then
+       do_menu_status 
+      fi
+     else 
+		do_show_notfound
+    fi  
+}
+
 
 
 do_menu_ccu_install() {
@@ -684,15 +700,19 @@ while true; do
 
 #fetch Serial from yahm
 
-if [ `check_container_installed` -eq 1 ]; then
-	status=$(cat ${LXC_ROOT_FS}/usr/local/etc/config/ids)
- 	state=$(echo "$status" | grep -oP "([A-Z]{3}[0-9]{7})")
+if [ ! -e ${LXC_ROOT_FS}/usr/local/etc/config/ids ] ; then
+    CCUSerial="*** Please Reboot ***"
+else
+
+ if [ `check_container_installed` -eq 1 ]; then
+ 	status=$(cat ${LXC_ROOT_FS}/usr/local/etc/config/ids)
+  	state=$(echo "$status" | grep -oP "([A-Z]{3}[0-9]{7})")
  	IFS=', ' read -r -a array <<< $state
  	CCUSerial=${array[0]}
-else 
+ else 
     CCUSerial="????????"
+ fi
 fi
-
 
 
     FUNC=$(whiptail --title "YAHM Experteneinstellungen" --menu "Optionen" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Zurück --ok-button Auswählen \
@@ -726,11 +746,11 @@ do_menu_expert_setSerial() {
    newvalue=$(whiptail --inputbox "Seriennummer der CCU:" 8 78 $1 --title "YAHM Experteneinstellungen" 3>&1 1>&2 2>&3)
    if [ -n "$newvalue" ]
    then
-   # delete old serial
-      awk '!/Serial.*/' ${LXC_ROOT_FS}/usr/local/etc/config/ids > /tmp/ids
-      echo "SerialNumber = $newvalue" >> /tmp/ids
-      mv  /tmp/ids ${LXC_ROOT_FS}/usr/local/etc/config/ids
-      whiptail --msgbox "Bitte CCU Container neu starten" --title "One more thing" 20 60 1
+   # exchange serial
+      sed -i ${LXC_ROOT_FS}/etc/init.d/S50eq3configd -e "s/echo \"SerialNumber=.*\"/echo \"SerialNumber=$newvalue\"/"
+   # remove old ids    
+      rm ${LXC_ROOT_FS}/usr/local/etc/config/ids
+      whiptail --msgbox "Bitte CCU Container neu starten." --title "One more thing" 20 60 1
    fi
 }
 
