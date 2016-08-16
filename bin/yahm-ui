@@ -658,6 +658,7 @@ while true; do
       "3 CCU Tweak" "WebGUI Diagnose aktivieren"\
       "4 Network" "Raspberry Network" \
       "5 CCU Log" "CCU Log anzeigen" \
+      "6 Check" "Auto Check" \
       3>&1 1>&2 2>&3)
     RET=$?
     if [ $RET -eq 1 ]; then
@@ -669,6 +670,7 @@ while true; do
         4\ *) do_menu_diag_showFile "/etc/network/interfaces" "Interfaces" ;;
         3\ *) do_menu_ccu_tweak ;; 
         5\ *) do_menu_ccu_log;;
+        6\ *) do_check_system;;
         *) whiptail --msgbox "Programmer error: unrecognized option" 20 60 1 ;;
       esac || whiptail --msgbox "There was an error running option $FUNC" 20 60 1
     else
@@ -868,16 +870,21 @@ CCU2 Netzwerk Status:
 }
 
 do_check_system() {
- progress "integrity check"
- 
- # Check RFD.conf
- if [ -e ${LXC_ROOT_MODULES}/hm-mod-rpi-pcb ] ; then 
-  info "HM-MOD-RPI-PCB - rfd.conf ... Check ..."
-  if [ $(cat ${LXC_ROOT_FS}/usr/local/etc/config/rfd.conf|grep "\Improved\ Coprocessor\ Initialization\ =\ true"|wc -l) -eq 1 ];then
-    (whiptail --msgbox --title "Oh nooooo" "Es wurde das HM-MOD-RPI-PCB Modul installiert, aber eine Anpassung in der Konfigurationsdatei fehlt. Eventuell wurde diese ja durch ein eingespieltes Backup überschrieben. Bitte reinstalliere das YAHM Modul HM-MOD-RPI-PCB um dieses Problem zu lösen."  --ok-button "Alles klar, mach ich " 20 70 2)
-  fi
- fi
- progress " ... done"
+  message=``
+  files=`ls ${YAHM_DIR}/share/tools/checks`
+    for file in $files
+    do
+      source ${YAHM_DIR}/share/tools/checks/${file}
+
+	  if [ `_check_proceed` -eq 1 ]; then
+	    msg=`cat ${YAHM_DIR}/share/tools/checks/${file} | grep _check_fail -m1 | cut -d'"' -f2`
+      else
+        msg=`cat ${YAHM_DIR}/share/tools/checks/${file} | grep _check_ok -m1 | cut -d'"' -f2`
+      fi
+      message="${message} * ${msg}\n" 
+    done   
+  
+  whiptail --msgbox "${message}" --title "And now the results ..." 20 60 2
 }
 
 calc_wt_size
@@ -885,10 +892,6 @@ calc_wt_size
 installed_version=`get_yahm_version ${LXCNAME}`
 
 progress "Welcome to YAHM-UI "  
-
-
-
-do_check_system
 
 mainoptions=()
 mainoptions+=("1 CCU" "CCU Installation / Update / Deinstallation")
