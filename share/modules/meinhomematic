@@ -33,8 +33,6 @@ _module_install()
 	sed -i ${LXC_ROOT_FS}/opt/mh/startup.sh -e "s|echo SerialNumber=$l1 > $USER_DIR/ids|#echo SerialNumber=$l1\ > $USER_DIR/ids|g" 
     sed -i ${LXC_ROOT_FS}/opt/mh/startup.sh -e "s|echo BidCoS-Address=$l2 >> $USER_DIR/ids|#echo BidCoS-Address=$l2\ >> $USER_DIR/ids|g"
     
-    cp ${LXC_ROOT_FS}/usr/local/etc/config/ids ${LXC_ROOT_FS}/usr/local/etc/config/addons/mh
-   
 }
 
 _module_remove()
