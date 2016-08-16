@@ -27,6 +27,14 @@ _module_install()
 		info "create tun device for lxccu - fertig!"
 		mknod -m 666 ${LXC_ROOT_FS}/dev/net/tun c 10 200 2> /dev/null
 	fi
+	
+	progress "Removing Serial Fetching"
+	
+	sed -i ${LXC_ROOT_FS}/opt/mh/startup.sh -e "s|echo SerialNumber=$l1 > $USER_DIR/ids|#echo SerialNumber=$l1\ > $USER_DIR/ids|g" 
+    sed -i ${LXC_ROOT_FS}/opt/mh/startup.sh -e "s|echo BidCoS-Address=$l2 >> $USER_DIR/ids|#echo BidCoS-Address=$l2\ >> $USER_DIR/ids|g"
+    
+    cp ${LXC_ROOT_FS}/usr/local/etc/config/ids ${LXC_ROOT_FS}/usr/local/etc/config/addons/mh
+   
 }
 
 _module_remove()
