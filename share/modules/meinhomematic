@@ -30,9 +30,8 @@ _module_install()
 	
 	progress "Removing Serial Fetching"
 	
-	sed -i ${LXC_ROOT_FS}/opt/mh/startup.sh -e "s|echo SerialNumber=$l1 > $USER_DIR/ids|#echo SerialNumber=$l1\ > $USER_DIR/ids|g" 
-    sed -i ${LXC_ROOT_FS}/opt/mh/startup.sh -e "s|echo BidCoS-Address=$l2 >> $USER_DIR/ids|#echo BidCoS-Address=$l2\ >> $USER_DIR/ids|g"
-    
+	sed -i ${LXC_ROOT_FS}/opt/mh/startup.sh -e "s|l1=.*|l1=`grep Serial /proc/cpuinfo | sed 's|Serial||' | sed 's|:||' | sed 's/^[ \t]*//'`|g"    
+	sed -i ${LXC_ROOT_FS}/opt/mh/startup.sh -e "s|l2=.*|l2=`ifconfig | grep 'eth0' -m 1| tr -s ' ' | cut -d ' ' -f5 | tr ':' '-'`|g"    
 }
 
 _module_remove()
