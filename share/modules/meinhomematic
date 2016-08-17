@@ -30,7 +30,14 @@ _module_install()
 	
 	progress "Removing Serial Fetching"
 	
-	sed -i ${LXC_ROOT_FS}/opt/mh/startup.sh -e "s|l1=.*|l1=`grep Serial /proc/cpuinfo | sed 's|Serial||' | sed 's|:||' | sed 's/^[ \t]*//'`|g"    
+	serial=$(whiptail --inputbox "Wenn ein vorhandenes Abo übernommen werden soll, bitte hier die Seriennummer der alten CCU eintragen"  10 78  3>&1 1>&2 2>&3)
+	if [ -n "$serial" ]
+    then
+    	sed -i ${LXC_ROOT_FS}/opt/mh/startup.sh -e "s|l1=.*|l1=${serial}|g"    
+    else
+		sed -i ${LXC_ROOT_FS}/opt/mh/startup.sh -e "s|l1=.*|l1=`grep Serial /proc/cpuinfo | sed 's|Serial||' | sed 's|:||' | sed 's/^[ \t]*//'`|g"    
+    fi
+	
 	sed -i ${LXC_ROOT_FS}/opt/mh/startup.sh -e "s|l2=.*|l2=`ifconfig | grep 'eth0' -m 1| tr -s ' ' | cut -d ' ' -f5 | tr ':' '-'`|g"    
 }
 
