@@ -1,0 +1,75 @@
+#!/bin/bash
+#
+# thkl 2016
+#
+# RPC Interface Watchdog
+# 
+
+file_watchdogpath=$LXC_ROOT_FS/usr/local/addons/watchdog
+
+description="RPC Interface Watchdog"
+
+
+_module_install()
+{
+    mkdir $file_watchdogpath
+	progress "Install TCL File"
+    cat > $file_watchdogpath/watchdog.tcl <<EOF
+#!/bin/tclsh
+#
+# Gateway Watchdog
+# =================================================
+# Call
+# tclsh watchdog.tcl
+# thkl 2016
+# =================================================
+
+load tclrpc.so
+load tclrega.so
+
+set gateways [xmlrpc http://127.0.0.1:2001/ listBidcosInterfaces]
+foreach _gateway \$gateways {
+ regexp {ADDRESS\s([A-Z]{3}[0-9]{7})\s.*?DUTY_CYCLE\s(-?[0-9]{1,})} \$_gateway dummy address status
+ set ifstatus 1
+ if {\$status == -1} {
+   set ifstatus 0
+ }
+ rega_script "var x=dom.GetObject('IF_\$address');if(x){x.State(\$ifstatus);}"
+}
+EOF
+
+internalpath=/usr/local/addons/watchdog
+
+	progress "Install CRON"
+	job="5 * * * * /bin/tclsh $internalpath/watchdog.tcl"
+
+cat > $file_watchdogpath/install.sh <<EOF
+#!/bin/sh
+crontab -u root -l > /tmp/mycron
+echo "$job" >>/tmp/mycron
+crontab /tmp/mycron
+rm /tmp/mycron
+EOF
+
+	lxc-attach -n ${LXCNAME} -- /bin/sh $internalpath/install.sh
+	rm $file_watchdogpath/install.sh
+
+    whiptail --msgbox "Bitte lege für alle zu überwachenden Gateways bzw das PI Modul eine CCU Variable vom Typ LogikWert mit dem Namen IF_[SERIENNUMMER] an"  10 78
+	
+}
+
+_module_remove()
+{
+    internalpath=/usr/local/addons/watchdog
+    command="/bin/tclsh $internalpath/watchdog.tcl"
+    progress "Remove CronJob"
+    cat > $file_watchdogpath/remove.sh <<EOF
+#!/bin/sh
+crontab -u root -l | grep -v '$command'  | crontab -u root -
+EOF
+
+    lxc-attach -n ${LXCNAME} -- /bin/sh $internalpath/remove.sh
+    progress "Remove Addon"
+    rm -R $file_watchdogpath
+ 
+ }
