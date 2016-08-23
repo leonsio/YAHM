@@ -2,12 +2,12 @@
 #
 # thkl 2016
 #
-# RPC Interface Watchdog
+# RFD Interface Watchdog
 # 
 
 file_watchdogpath=$LXC_ROOT_FS/usr/local/addons/watchdog
 
-description="RPC Interface Watchdog"
+description="RFD Interface Watchdog"
 
 
 _module_install()
