@@ -33,6 +33,7 @@ foreach _gateway \$gateways {
  set ifstatus 1
  if {\$status == -1} {
    set ifstatus 0
+   catch {exec logger -s -t "RFD_Interface_Watchdog" -p local1.3 "Lost Connection to \$address"}
  }
  rega_script "var x=dom.GetObject('IF_\$address');if(x){x.State(\$ifstatus);}"
 }
