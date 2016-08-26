@@ -500,6 +500,8 @@ while true; do
    modules=()
     for file in $files
     do
+     if [[ -f ${YAHM_DIR}/share/modules/${file} ]]; then
+    	 
         description=`cat ${YAHM_DIR}/share/modules/${file}  | grep description -m1 | cut -d'"' -f2` 
 
         if [ -e ${LXC_ROOT_MODULES}/${file} ]
@@ -510,6 +512,7 @@ while true; do
 		fi
 		
         modules+=("$file" "$description")
+      fi
     done 
 
 
