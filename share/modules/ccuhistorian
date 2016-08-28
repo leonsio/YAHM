@@ -74,7 +74,7 @@ _module_install()
 
 
 DIR=/opt/ccu-historian/
-CMD="/usr/bin/java -jar /opt/ccu-historian/ccu-historian.jar -config /opt/ccu-historian/ccu-historian.config"
+CMD="/usr/bin/java  -Duser.timezone=Europe/Berlin -jar /opt/ccu-historian/ccu-historian.jar -config /opt/ccu-historian/ccu-historian.config"
 
 name=ccu-historian
 pid_file="/var/run/\$name.pid"
