@@ -74,10 +74,10 @@ _module_install()
 
 
 DIR=/opt/ccu-historian/
-CMD=/usr/bin/java -jar /opt/ccu-historian/ccu-historian.jar -config /opt/ccu-historian/ccu-historian.config
+CMD="/usr/bin/java -jar /opt/ccu-historian/ccu-historian.jar -config /opt/ccu-historian/ccu-historian.config"
 
-name=`basename \$0`
-pid_file="/var/run/\\\$name.pid"
+name=ccu-historian
+pid_file="/var/run/\$name.pid"
 stdout_log="/var/log/\$name.log"
 stderr_log="/var/log/\$name.err"
 
@@ -94,8 +94,8 @@ case "\$1" in
     if is_running; then
         echo "Already started"
     else
-        cd "\$dir"
-            sudo \$cmd >> "\$stdout_log" 2>> "\$stderr_log" &
+        cd "\$DIR"
+            sudo \${CMD} >> "\$stdout_log" 2>> "\$stderr_log" &
         echo \$! > "\$pid_file"
         if ! is_running; then
             echo "Unable to start, see \$stdout_log and \$stderr_log"
