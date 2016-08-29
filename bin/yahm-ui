@@ -658,7 +658,7 @@ while true; do
     FUNC=$(whiptail --title "YAHM Installation und Konfiguration (Diagnose - ${LXCNAME})" --menu "Optionen" $WT_HEIGHT $WT_WIDTH $WT_MENU_HEIGHT --cancel-button Zurück --ok-button Auswählen \
       "1 CCU Interfaces" "Interface Datei der CCU anzeigen" \
       "2 CCU RFD" "rfd.conf Datei der CCU anzeigen" \
-      "3 CCU Tweak" "WebGUI Diagnose aktivieren"\
+      "3 CCU Tweak" "WebGUI Diagnose (de)aktivieren"\
       "4 Network" "Raspberry Network" \
       "5 CCU Log" "CCU Log anzeigen" \
       "6 Check" "Auto Check" \
@@ -691,8 +691,15 @@ do_menu_ccu_log() {
 
 do_menu_ccu_tweak() {
   if [ `check_container_installed` -eq 1 ]; then
-    echo "CP_DEVCONFIG=1" > ${LXC_ROOT_FS}/usr/local/etc/config/tweaks
-	whiptail --msgbox "Diagnose wurde aktiviert. Siehe WebGUI Systemsteuerung" 20 60 2
+  tweakfile=${LXC_ROOT_FS}/usr/local/etc/config/tweaks
+    if [ ! -f ${tweakfile} ] || [ $(cat $tweakfile | grep CP_DEVCONFIG=1|wc -l) -eq 0 ]; then
+     #turn it on
+     echo "CP_DEVCONFIG=1" > $tweakfile
+  	 whiptail --msgbox "Diagnose wurde aktiviert. Siehe WebGUI Systemsteuerung" 20 60 2
+    else
+     sed '/CP_DEVCONFIG=1/d' -i $tweakfile
+  	 whiptail --msgbox "Diagnose wurde deaktiviert." 20 60 2
+    fi     
   else 
 	whiptail --msgbox " Keinen YAHM Container ${LXCNAME} gefunden." 20 60 2
   fi
