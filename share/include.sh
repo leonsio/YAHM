@@ -51,14 +51,14 @@ use_colour=0
 progress() 
 {
     [ $use_colour -eq 1 ] && echo -ne "\033[01;32m"
-    echo -e "$@" >&2
+    echo -e "$@" 2>&1
     [ $use_colour -eq 1 ] && echo -ne "\033[00m"
 }
 
 info() 
 {
     [ $use_colour -eq 1 ] && echo -ne "\033[01;34m"
-    echo -e "$@" >&2
+    echo -e "$@" 2>&1
     [ $use_colour -eq 1 ] && echo -ne "\033[00m"
 }
 
