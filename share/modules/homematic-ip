@@ -81,9 +81,9 @@ _module_remove()
 
     installed_version=`get_yahm_version ${LXCNAME}`
 
-    if [ $(ver ${installed_version}) -ge $(ver 2.15.6) ] && [ $(ver ${installed_version}) -le $(ver 2.17.16) ]
+    if [ $(ver ${installed_version}) -ge $(ver 2.15.6) ] && [ $(ver ${installed_version}) -le $(ver 2.25.14) ]
     then
-    	progress "Restoring old HMServer.jar file"
+    	#progress "Restoring old HMServer.jar file"
     	wget $QUIET -O ${LXC_ROOT_FS}/opt/HMServer/HMServer.jar https://raw.githubusercontent.com/eq-3/occu/master/HMserver/opt/HMServer/HMServer.jar
     	#Backup old startup file
     	mv ${LXC_ROOT_FS}/etc/init.d/S62HMServer ${LXC_ROOT_FS}/etc/init.d/_S62HMServer
@@ -111,7 +111,7 @@ start() {
     init
     start-stop-daemon -S -q -p /var/run/HMServer.pid --exec java -- -Xmx32m -Dlog4j.configuration=file:///etc/config/log4j.xml -Dfile.encoding=ISO-8859-1 -jar /opt/HMServer/HMServer.jar &
     eq3configcmd wait-for-file -f /var/status/HMServerStarted -p 5 -t 135
-    echo "OK"
+    echo	 "OK"
 }
 stop() {
     echo -n "Stopping HMServer: "
