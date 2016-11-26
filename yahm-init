@@ -125,7 +125,7 @@ cd /opt
 #####################################
 #### REMOVE --branch IN MASTER !!!!!#
 #####################################
-git clone --recursive https://github.com/leonsio/YAHM.git --branch develop  2>>/var/log/yahm/git.log >>/var/log/yahm/git.log
+git clone --recursive https://github.com/leonsio/YAHM.git  2>>/var/log/yahm/git.log >>/var/log/yahm/git.log
 
 progress "Including YAHM into PATH"
 chmod +x /opt/YAHM/bin/*
