@@ -3,7 +3,7 @@
 # CuxD
 # 
 
-description="CuxD 1.7 for Yahm"
+description="CuxD 1.9 for Yahm"
 
 _module_install()
 {
@@ -15,7 +15,7 @@ _module_install()
   tmpdest="${YAHM_TMP}/cuxd.tar.gz"
   mkdir -p $YAHM_TMP
     
-  cuxdurl="http://homematic-forum.de/forum/download/file.php?id=31361"
+  cuxdurl="https://homematic-forum.de/forum/download/file.php?id=38158"
   wget -q --tries=3 --retry-connrefused  -O $tmpdest $cuxdurl
     if [ ! -f "$tmpdest" ] 
     then
