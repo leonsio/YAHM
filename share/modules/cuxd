@@ -15,7 +15,7 @@ _module_install()
   tmpdest="${YAHM_TMP}/cuxd.tar.gz"
   mkdir -p $YAHM_TMP
     
-  cuxdurl="https://homematic-forum.de/forum/download/file.php?id=38158"
+  cuxdurl="http://homematic-forum.de/forum/download/file.php?id=38158"
   wget -q --tries=3 --retry-connrefused  -O $tmpdest $cuxdurl
     if [ ! -f "$tmpdest" ] 
     then

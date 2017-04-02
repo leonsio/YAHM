@@ -4,6 +4,7 @@
 # 
 
 description="Homematic IP Unterstützung"
+module_version="0.1"
 
 
 _module_install()
@@ -12,11 +13,14 @@ _module_install()
     exit
 
 
-    apt-get install subversion bc gcc-4.9 libncurses5-dev
+    apt-get -y install subversion bc gcc-4.9 libncurses5-dev bc
 
     # aktuelle Kernel Headers runterladen
     #https://raw.githubusercontent.com/notro/rpi-source/master/rpi-source
     /opt/YAHM/share/tools/rpi-source/rpi-source
+
+#CONFIG_SERIAL_AMBA_PL011=y
+#CONFIG_SERIAL_AMBA_PL011_CONSOLE=y
 
     # Ins tmp wechseln
     cd /tmp
@@ -34,8 +38,6 @@ _module_install()
     make
     cp bcm2835_raw_uart.ko /lib/modules/$(uname -r)/kernel/drivers/char/broadcom
 
-    #todo Firmware auf 2.7.0 aktualisieren
-
 
     # Module laden
     depmod -a
@@ -47,7 +49,7 @@ _module_install()
     # todo check /dev/bcm2835-raw-uart
     # echo bcm2835_raw_uart >> /etc/modules
 
-
+    # Geräte an Container übergeben
     lxc-device -n yahm add /dev/bcm2835-raw-uart
     lxc-device -n yahm add /dev/eq3loop
 
