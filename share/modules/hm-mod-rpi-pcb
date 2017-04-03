@@ -6,6 +6,8 @@
 #
 
 description="GPIO Funkmodul für Raspberry Pi2/3"
+module_version="1.0"
+
 # Default Parameter
 file_hm_mod_rpi_pcb='/etc/init.d/hm-mod-rpi-pcb'
 file_cmdline_txt='/boot/cmdline.txt'
