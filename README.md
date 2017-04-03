@@ -31,7 +31,7 @@ Folgende Betrebssysteme werden aktuel unterstützt:
 
 _(Die Einrichtung des HM-MOD-RPI-PCB erfolgt automatisiert ausschließlich auf Rapsberry Pi)_
 
-**Weitere Informationen und Anleitungen können dem [Wiki](https://github.com/leonsio/YAHM/wiki) bzw. dem [Homematic-Forum](http://homematic-forum.de/forum/viewtopic.php?f=18&t=31033) entnommen werden.**
+**Weitere Informationen und Anleitungen können dem [Wiki](https://github.com/leonsio/YAHM/wiki) bzw. dem [Homematic-Forum](https://homematic-forum.de/forum/viewforum.php?f=67) entnommen werden.**
 
 ## Installation:
 
