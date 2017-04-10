@@ -12,7 +12,7 @@ description="RFD Interface Watchdog"
 
 _module_install()
 {
-    mkdir $file_watchdogpath
+    mkdir -p $file_watchdogpath
 	progress "Install TCL File"
     cat > $file_watchdogpath/watchdog.tcl <<EOF
 #!/bin/tclsh

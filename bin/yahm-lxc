@@ -284,7 +284,7 @@ update_lxc_container()
     # Compatibility Check
     if [ `yahm_compatibility $CCU2Version` -eq 1 ] && [ $IS_FORCE -ne 1 ]
     then
-        die "ERROR: We dont have any patches for this version, please call 'yahm-ctl update' and try again"
+        die "ERROR: Can not find any patches for ${CCU2Version}, please call 'yahm-ctl update' and try again"
     fi
 
     [ $IS_FORCE -eq 1 ] && force_switch="-f" || force_switch=""

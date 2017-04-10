@@ -4,6 +4,7 @@
 # 
 
 description="Homematic IP Unterstützung"
+module_version="0.1"
 
 
 _module_install()
@@ -12,56 +13,68 @@ _module_install()
     exit
 
 
-apt-get install subversion bc gcc-4.7
+    apt-get -y install subversion bc gcc-4.9 libncurses5-dev bc
 
-# aktuelle Kernel Headers runterladen
-/opt/YAHM/share/tools/rpi-headers
+    # aktuelle Kernel Headers runterladen
+    #https://raw.githubusercontent.com/notro/rpi-source/master/rpi-source
+    /opt/YAHM/share/tools/rpi-source/rpi-source
 
-# Ordner anlegen
-mkdir /usr/share/eq3/OCCU
-cd /usr/share/eq3/OCCU
+#CONFIG_SERIAL_AMBA_PL011=y
+#CONFIG_SERIAL_AMBA_PL011_CONSOLE=y
 
-# ab git 2.9 koennen wir auch teile auschecken
-#git init
-#git remote add origin https://github.com/eq-3/occu.git
-#git config core.sparsecheckout true
-#echo "KernelDrivers/*" >> .git/info/sparse-checkout
-#git pull --depth=1 origin master
+    # Ins tmp wechseln
+    cd /tmp
 
-# nehmen stattdessen svn :D
-svn export https://github.com/eq-3/occu/trunk/KernelDrivers
+    # benoetigte Dateien bersorgen (Danke an @jens)
+    svn export https://github.com/jens-maus/RaspberryMatic/trunk/buildroot-external/package/homematic/kernel-modules
 
-# Makedatei anlegen
-cat > "/usr/share/eq3/OCCU/KernelDrivers/Makefile" <<EOF
-obj-m	+= eq3_char_loop.c
+    # Loop bauen
+    cd /tmp/kernel-modules/eq3_char_loop
+    make
+    cp eq3_char_loop.ko /lib/modules/$(uname -r)/kernel/drivers/char/
 
- 
-all:
-	make -C /lib/modules/\$(shell uname -r)/build M=\$(PWD) modules
- 
-clean:
-	make -C /lib/modules/\$(shell uname -r)/build M=\$(PWD) clean
-
-EOF
-
-# AKtuelle Konfig vorberieten
-modprobe configs
-# Ins Build verzeichniss wechseln
-cd /lib/modules/$(uname -r)/build
-gzip -dc /proc/config.gz > .config
-# Vorbereitung
-make oldconfig
+    # UART bauen
+    cd /tmp/kernel-modules/bcm2835_raw_uart
+    make
+    cp bcm2835_raw_uart.ko /lib/modules/$(uname -r)/kernel/drivers/char/broadcom
 
 
-# Modul bauen
-cd /usr/share/eq3/OCCU/KernelDrivers/
-make clean
-insmod eq3_char_loop.ko
+    # Module laden
+    depmod -a
+    insmod eq3_char_loop.ko
+    # todo check /dev/eq3loop
+    #echo eq3_char_loop >> /etc/modules
+
+    insmod bcm2835_raw_uart.ko
+    # todo check /dev/bcm2835-raw-uart
+    # echo bcm2835_raw_uart >> /etc/modules
+
+    # Geräte an Container übergeben
+    lxc-device -n yahm add /dev/bcm2835-raw-uart
+    lxc-device -n yahm add /dev/eq3loop
+
+    #todo firmware update
+    svn export https://github.com/eq-3/occu/trunk/arm-gnueabihf/packages-eQ-3/LinuxBasis
+    #todo im host /dev/ttyS0 entfernen und neu anlegen
+
+    #lxc-device -n yahm add /dev/mmd_bidcos
+    #lxc-device -n yahm add /dev/ttyS0
+
+
+    #interfaces List anpassen
+    #    <ipc>
+    #        <name>HmIP-RF</name>
+    #        <url>xmlrpc://127.0.0.1:2010</url>
+    #        <info>HmIP-RF</info>
+    #    </ipc>
+
+    #todo kernel version merken und bei update erneut ausführen
+
 }
 
 _module_remove()
 {
-    check_install_deb "xmlstarlet" 
+    check_install_deb "xmlstarlet"
 
     progress "Removing HmIP-RF Interface"
     if [ ! -f "${LXC_ROOT_FS}/usr/local/etc/config/InterfacesList.xml" ]
@@ -83,12 +96,12 @@ _module_remove()
 
     if [ $(ver ${installed_version}) -ge $(ver 2.15.6) ] && [ $(ver ${installed_version}) -le $(ver 2.25.14) ]
     then
-    	#progress "Restoring old HMServer.jar file"
-    	wget $QUIET -O ${LXC_ROOT_FS}/opt/HMServer/HMServer.jar https://raw.githubusercontent.com/eq-3/occu/master/HMserver/opt/HMServer/HMServer.jar
-    	#Backup old startup file
-    	mv ${LXC_ROOT_FS}/etc/init.d/S62HMServer ${LXC_ROOT_FS}/etc/init.d/_S62HMServer
-    	#Create new startup file
-    	cat > "${LXC_ROOT_FS}/etc/init.d/S61HMServer" <<EOF
+        #progress "Restoring old HMServer.jar file"
+        wget $QUIET -O ${LXC_ROOT_FS}/opt/HMServer/HMServer.jar https://raw.githubusercontent.com/eq-3/occu/master/HMserver/opt/HMServer/HMServer.jar
+        #Backup old startup file
+        mv ${LXC_ROOT_FS}/etc/init.d/S62HMServer ${LXC_ROOT_FS}/etc/init.d/_S62HMServer
+        #Create new startup file
+        cat > "${LXC_ROOT_FS}/etc/init.d/S61HMServer" <<EOF
 #!/bin/sh
 #
 # Starts HMServer.
@@ -140,10 +153,10 @@ esac
 
 exit \$?
 EOF
-    	chmod +x ${LXC_ROOT_FS}/etc/init.d/S61HMServer
+        chmod +x ${LXC_ROOT_FS}/etc/init.d/S61HMServer
     fi
-    
-    
+
+
     info "Homematic-IP interface was removed, please restart CCU-LXC Container"
     exit
 }
