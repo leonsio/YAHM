@@ -1,5 +1,6 @@
 
-Falls Sie dieses Projekt unterstützen möchten, würde ich mich über einen Pull-Request oder eine Spende: <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=9WRZHSCVYL6XL"><img style="padding:0;" width=74 height=21  src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif" alt="Donate!" / border="0"></a> freuen.
+Falls Sie dieses Projekt unterstützen möchten, würde ich mich über einen Pull-Request oder eine Spende: [![Spenden](https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=9WRZHSCVYL6XL) freuen.
+
 
 # YAHM
 **Yet Another Homematic Management** - Skripte zur Einrichtung der Homematic CCU2 Oberfläche in einem LXC Container unter Debian basierten Distribution auf ARM-Basis (x86 experimentell).
@@ -39,13 +40,13 @@ _(Die Einrichtung des HM-MOD-RPI-PCB erfolgt automatisiert ausschließlich auf R
 Es wird automatisch ein aktuelles CCU2 Image installiert und das Netzwerk konfiguriert. Diese Installation ist für wenig erfahrene Benutzer auf einem frischen minimalen Debian/Raspbian empfehlenswert.  Die frisch installierte CCU2 wird eine IP per DHCP abrufen, diese kann durch **sudo yahm-ctl info** nach dem Start des Containers angezeigt werden.
 
 ```
-wget -nv -O- https://raw.githubusercontent.com/leonsio/YAHM/develop/yahm-init | sudo -E  bash -s quickinstall -
+wget -nv -O- https://raw.githubusercontent.com/leonsio/YAHM/release_1.6.1/yahm-init | sudo -E  bash -s quickinstall -
 ```
 
 ### UI Modus:
 
 ```
-wget -nv -O- https://raw.githubusercontent.com/leonsio/YAHM/develop/yahm-init | sudo -E  bash -s ui -
+wget -nv -O- https://raw.githubusercontent.com/leonsio/YAHM/release_1.6.1/yahm-init | sudo -E  bash -s ui -
 ```
 
 ### Angepasst:
@@ -53,7 +54,7 @@ wget -nv -O- https://raw.githubusercontent.com/leonsio/YAHM/develop/yahm-init | 
 Mit dieser Methode wird lediglich die aktuelle YAHM Version runtergeladen und unter **/opt/YAHM/bin** installiert, anschließend muss mit Hilfe von YAHM ein [LXC Container](https://github.com/leonsio/YAHM/wiki/YAHM-LXC) angelegt und das [Netzwerk](https://github.com/leonsio/YAHM/wiki/YAHM-Netzwerk) konfiguriert werden.
 
 ```
-wget -nv -O- https://raw.githubusercontent.com/leonsio/YAHM/develop/yahm-init | sudo -E  bash -
+wget -nv -O- https://raw.githubusercontent.com/leonsio/YAHM/release_1.6.1/yahm-init | sudo -E  bash -
 ```
 
 Folgende Schritte sind mindestens notwendig um ein CCU2 Image innerhalb von YAHM zu installieren:
