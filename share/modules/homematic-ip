@@ -9,67 +9,251 @@ module_version="0.1"
 
 _module_install()
 {
-    echo "noch nicht fertig"
-    exit
+    #@todo ggf check fuer RPi 2/3 einbauen
 
+    if [ ! -e ${LXC_ROOT_MODULES}/hm-mod-rpi-pcb ] && [ $IS_FORCE -ne 1 ]
+    then
+        die "ERROR: hm-mod-rpi-pcb module must be installed first"
+    fi
 
-    apt-get -y install subversion bc gcc-4.9 libncurses5-dev bc
+    if [ -c /dev/mmd_bidcos ] && [ $IS_FORCE -ne 1 ]
+    then
+        die "Homematic-IP module is present, or something is wrong"
+    fi
 
-    # aktuelle Kernel Headers runterladen
-    #https://raw.githubusercontent.com/notro/rpi-source/master/rpi-source
-    /opt/YAHM/share/tools/rpi-source/rpi-source
+    kernel_version=$(uname -r | sed -e 's/-.*//i')
+    shared_status=$(modinfo amba_pl011)
 
-#CONFIG_SERIAL_AMBA_PL011=y
-#CONFIG_SERIAL_AMBA_PL011_CONSOLE=y
+    if [ $? -eq 0 ]
+    then # kernel anpassung nicht notwendig, einfach neues Modul laden
+        shared=1
+        dev_inf="bcm2835-raw-uart"
+        reboot=0
+    else # wir haben noch die alte Version am laufen, müssen erst kernel aktualisieren
+        shared=0
+        dev_inf="ttyAMA0"
+        reboot=1
+    fi
 
-    # Ins tmp wechseln
-    cd /tmp
+    pidof multimacd > /dev/null && lxc-attach -n ${LXCNAME} -- /etc/init.d/S60multimacd stop
+    # Firmware check
+    firmware_version=`lxc-attach -n ${LXCNAME} -- /bin/eq3configcmd update-coprocessor -p /dev/${dev_inf} -c -v 3>&1 1>&2 2>&3  | grep -Po 'Version: \K[^"]*'`
 
-    # benoetigte Dateien bersorgen (Danke an @jens)
-    svn export https://github.com/jens-maus/RaspberryMatic/trunk/buildroot-external/package/homematic/kernel-modules
+    if [ $IS_VERBOSE -eq 1 ]
+    then
+        info "Debug: Firmware Version: ${firmware_version}; Kernel Version: ${kernel_version}; PL011 is shared: ${shared}"
+    fi
 
-    # Loop bauen
-    cd /tmp/kernel-modules/eq3_char_loop
-    make
-    cp eq3_char_loop.ko /lib/modules/$(uname -r)/kernel/drivers/char/
+    progress "Updating raspbian repository"
+    apt-get update
 
-    # UART bauen
-    cd /tmp/kernel-modules/bcm2835_raw_uart
-    make
-    cp bcm2835_raw_uart.ko /lib/modules/$(uname -r)/kernel/drivers/char/broadcom
+    error "Please run 'apt-get upgrade' to upgrade to the latest kernel, do not use rpi-update after you have enabled this module!! To cancel this operation type CTRL+C you have 5 seconds..."
+    countdown
+    progress "... processing"
 
+    progress "Installing dependencies"
+    apt-get -y install subversion bc gcc-4.9 make libncurses5-dev bc
 
-    # Module laden
-    depmod -a
-    insmod eq3_char_loop.ko
-    # todo check /dev/eq3loop
-    #echo eq3_char_loop >> /etc/modules
+    if [ $shared -eq 0 ]
+    then
+        info "Build new kernel without PL011 UART driver"
 
-    insmod bcm2835_raw_uart.ko
-    # todo check /dev/bcm2835-raw-uart
-    # echo bcm2835_raw_uart >> /etc/modules
+        progress "Found kernel $(uname -r) downloading sources..."
+        # aktuelle Kernel Headers runterladen
+        /opt/YAHM/share/tools/rpi-source/rpi-source --nomake  -d /usr/src/
 
-    # Geräte an Container übergeben
-    lxc-device -n yahm add /dev/bcm2835-raw-uart
-    lxc-device -n yahm add /dev/eq3loop
+        progress "Preparing raspberry kernel configuration"
+        # enter src folder
+        cd /usr/src/linux/
+        # prepare kernel config
+        KERNEL=kernel7
+        # create default config
+        make bcm2709_defconfig
+        # remove pl011 console
+        sed -i .config -e "s/CONFIG_SERIAL_AMBA_PL011=y/CONFIG_SERIAL_AMBA_PL011=m/"
+        sed -i .config -e "s/CONFIG_SERIAL_AMBA_PL011_CONSOLE=y/CONFIG_SERIAL_AMBA_PL011_CONSOLE=n/"
+        # write config
 
-    #todo firmware update
-    svn export https://github.com/eq-3/occu/trunk/arm-gnueabihf/packages-eQ-3/LinuxBasis
-    #todo im host /dev/ttyS0 entfernen und neu anlegen
+        progress "Building kernel (can take some time... 1 hour on RPi 3)"
+        make -j4 zImage modules dtbs
 
-    #lxc-device -n yahm add /dev/mmd_bidcos
-    #lxc-device -n yahm add /dev/ttyS0
+        progress "Installing new kernel"
+        make modules_install
+        cp arch/arm/boot/dts/*.dtb /boot/
+        cp arch/arm/boot/dts/overlays/*.dtb* /boot/overlays/
+        cp arch/arm/boot/dts/overlays/README /boot/overlays/
+        cp arch/arm/boot/zImage /boot/$KERNEL.img
+    else
+        info "Kernel module amba_pl011 already shared! Skipping"
+    fi
+###########################################
+    # bereits compiliert?
+    build_status=$(modprobe bcm2835_raw_uart)
+    if [ $? -eq 1 ]
+    then
+        info "Building Homematic-IP modules"
+        # Ins tmp wechseln
+        cd /tmp
+        progress "Download homematic-ip source"
+        # benoetigte Dateien bersorgen (Danke an @jens)
+        svn export https://github.com/jens-maus/RaspberryMatic/trunk/buildroot-external/package/homematic/kernel-modules
 
+        progress "Building eq3_loop kernel module"
+        # Loop bauen
+        cd /tmp/kernel-modules/eq3_char_loop
+        make
+        cp eq3_char_loop.ko /lib/modules/$(uname -r)/kernel/drivers/char/
 
-    #interfaces List anpassen
-    #    <ipc>
-    #        <name>HmIP-RF</name>
-    #        <url>xmlrpc://127.0.0.1:2010</url>
-    #        <info>HmIP-RF</info>
-    #    </ipc>
+        progress "Building new UART kernel module"
+        # fix falls bmc2709 Daten nicht vorhanden sind
+        if [ ! -d /usr/src/linux/arch/arm/mach-bcm2709 ]
+        then
+            info "Downloading needed files form repository"
+            cd /usr/src/linux/arch/arm
+            svn export https://github.com/raspberrypi/linux/branches/rpi-4.7.y/arch/arm/mach-bcm2709
+        fi
+        # fix fuer den 4.9.x kernel
+        if [ $(ver ${kernel_version}) -ge $(ver 4.9.0) ]
+        then
+            cd /tmp/kernel-modules/bcm2835_raw_uart
+            sed -i bcm2835_raw_uart.c -e "s/CLK_IS_ROOT/0/"
+        fi
+        # UART bauen
+        cd /tmp/kernel-modules/bcm2835_raw_uart
+        make
+        cp bcm2835_raw_uart.ko /lib/modules/$(uname -r)/kernel/drivers/char/broadcom
+    else
+        info "Homematic-ip kernel modules are already present! Skipping"
+    fi
 
-    #todo kernel version merken und bei update erneut ausführen
+    if [ $shared -eq 1 ]
+    then
+        progress "Loading new kernel modules"
+        # Module laden
+        depmod -a
+        modprobe eq3_char_loop
+        modprobe bcm2835_raw_uart
 
+        sleep 1
+
+        if [ ! -c /dev/bcm2835-raw-uart ]
+        then
+            die "Something get wrong, can not find bcm2835-raw-uart device"
+        fi
+
+        progress "Enable new modules in YAHM"
+        # Geräte an Container übergeben
+        if [ ! -c $LXC_ROOT_FS/dev/bcm2835-raw-uart ]
+        then
+            lxc-device -n ${LXCNAME} add /dev/bcm2835-raw-uart
+        fi
+        if [ ! -c $LXC_ROOT_FS/dev/eq3loop ]
+        then
+            lxc-device -n ${LXCNAME} add /dev/eq3loop
+        fi
+    fi
+
+    # Treiber beim Booten laden
+    if [ $(cat /etc/modules | grep "^eq3_char_loop" | wc -l) -eq 0 ]
+    then
+        echo eq3_char_loop >> /etc/modules
+    fi
+    if [ $(cat /etc/modules | grep "^bcm2835_raw_uart" | wc -l) -eq 0 ]
+    then
+        echo bcm2835_raw_uart >> /etc/modules
+    fi
+##################################
+    info "Changing YAHM configuration"
+
+    progress "Changing multimacd files"
+    # Init Skript
+    lxc-attach -n ${LXCNAME} -- sed -i /etc/init.d/S60multimacd -e "s/mxs_auart_raw.0/bcm2835-raw-uart/g"
+    # Multimac Config
+    lxc-attach -n ${LXCNAME} -- sed -i /etc/config/multimacd.conf -e "s/mxs_auart_raw.0/bcm2835-raw-uart/g"
+
+    if [ $(cat $LXC_ROOT_FS/usr/local/etc/config/InterfacesList.xml | grep "HmIP-RF" | wc -l ) -eq 0 ]
+    then
+        progress "Enable Homamatic-IP in InterfacesList.xml"
+        # HMIP-RF aktivieren
+        cat > /tmp/xml <<EOF
+        <ipc>
+            <name>HmIP-RF</name>
+            <url>xmlrpc://127.0.0.1:2010</url>
+            <info>HmIP-RF</info>
+        </ipc>
+</interfaces>
+EOF
+        sed -i $LXC_ROOT_FS/usr/local/etc/config/InterfacesList.xml -e "s/<\/interfaces>//"
+        sed -i $LXC_ROOT_FS/etc/config_templates/InterfacesList.xml -e "s/<\/interfaces>//"
+        cat /tmp/xml >> $LXC_ROOT_FS/usr/local/etc/config/InterfacesList.xml
+        cat /tmp/xml >> $LXC_ROOT_FS/etc/config_templates/InterfacesList.xml
+    fi
+
+    if [ -f ${LXC_ROOT_FS}/etc/init.d/_S62HMServer ]
+    then
+        progress "Restoring HMServer"
+        mv ${LXC_ROOT_FS}/etc/init.d/_S62HMServer ${LXC_ROOT_FS}/etc/init.d/S62HMServer
+    fi
+
+    progress "Removing old ttyS0 and mmd_bidcos devices in YAHM"
+    lxc-attach -n ${LXCNAME} -- rm -rf /dev/ttyS0
+    lxc-attach -n ${LXCNAME} -- rm -rf /dev/mmd_bidcos
+
+########################
+    info "Updating firmware for DualCoPro configuration"
+
+    if [ $(ver ${firmware_version}) -lt $(ver 2.8.4) ]
+    then
+        progress "Downloading actual firmware from repository"
+        cd $LXC_ROOT_FS/firmware
+        svn export https://github.com/eq-3/occu/trunk/firmware/HM-MOD-UART
+        # set right firmware version
+        cd HM-MOD-UART
+        # comment out dual firmware
+        sed -i '/dualcopro/s/^#//g' fwmap
+        # comment single firmware
+        sed -i '/coprocessor/s/^/#/g' fwmap
+
+        progress "Flashing firmware"
+        eq3configcmd update-coprocessor -p /dev/${dev_inf} -t HM-MOD-UART -u -c -d /firmware/HM-MOD-UART
+    else
+        info "Firmware already support Homematic IP"
+    fi
+
+    if [ $shared -gt 1 ]
+    then
+        info "Restarting multimacd to get loop devices"
+        lxc-attach -n ${LXCNAME} -- /etc/init.d/S60multimacd restart
+
+        sleep 2
+
+        if [ -c /dev/mmd_bidcos ]
+        then
+            progress "Creating new ttyS0 and mmd_bidcos devices in YAHM"
+            lxc-device -n ${LXCNAME} add /dev/mmd_bidcos
+            lxc-device -n ${LXCNAME} add /dev/ttyS0
+
+            progress "Restarting rfd"
+            lxc-attach -n ${LXCNAME} -- /etc/init.d/S61rfd restart
+        fi
+    else
+        sed -i $LXC_ROOT/config -e "s/lxc.cgroup.devices.allow = c 243:0 rwm/lxc.cgroup.devices.allow = c 243:* rwm/"
+        sed -i $LXC_ROOT/config -e "s/# hmip-rf/# hmip-rf\\nlxc.cgroup.devices.allow = c 242:0 rwm/"
+    fi
+
+    info "Blocking new kernel updates, please do not use rpi-update anymore"
+    echo raspberrypi-kernel hold | dpkg --set-selections
+
+    # Reboot
+    if [ $reboot -gt 0 ]
+    then
+        echo "======================================"
+        echo "Rebooting in 60 seconds to apply settings (to chancel reboot type 'shutdown -c')..."
+        echo "======================================"
+        shutdown -r +1 "Rebooting to replace kernel"
+    else
+        info "Homematic IP module installed successfully"
+    fi
 }
 
 _module_remove()

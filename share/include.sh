@@ -31,7 +31,7 @@ INTERFACE="eth0"
 #######################################
 
 # Default options
-YAHM_VERSION="1.6.1"
+YAHM_VERSION="1.7"
 OPTIND=1
 QUIET="--quiet"
 VERBOSE=""
