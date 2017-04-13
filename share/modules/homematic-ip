@@ -16,6 +16,8 @@ _module_install()
         die "ERROR: hm-mod-rpi-pcb module must be installed first"
     fi
 
+    [ "x$(id -un)" == "xroot" ] || die "Sorry, this script must be run as root. Try sudo ...."
+
     if [ -c /dev/mmd_bidcos ] && [ $IS_FORCE -ne 1 ]
     then
         die "Homematic-IP module is present, or something is wrong"
@@ -35,7 +37,7 @@ _module_install()
         reboot=1
     fi
 
-    pidof multimacd > /dev/null && lxc-attach -n ${LXCNAME} -- /etc/init.d/S60multimacd stop
+    lxc-attach -n ${LXCNAME} -- /etc/init.d/S60multimacd stop
     # Firmware check
     firmware_version=`lxc-attach -n ${LXCNAME} -- /bin/eq3configcmd update-coprocessor -p /dev/${dev_inf} -c -v 3>&1 1>&2 2>&3  | grep -Po 'Version: \K[^"]*'`
 
