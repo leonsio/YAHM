@@ -36,6 +36,8 @@ _module_install()
         die "ERROR: This module is for Raspberry Pi only, use -f flag to overwrite this check"
     fi
 
+    [ "x$(id -un)" == "xroot" ] || die "Sorry, this script must be run as root. Try sudo ...."
+
     info "Found hardware: $BOARD_TYPE $BOARD_VERSION"
 
     if [ "$BOARD_TYPE" = "Raspberry Pi" ] 

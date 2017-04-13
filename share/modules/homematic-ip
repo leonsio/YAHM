@@ -62,11 +62,16 @@ _module_install()
 
         progress "Found kernel $(uname -r) downloading sources..."
         # aktuelle Kernel Headers runterladen
+        chmod +x /opt/YAHM/share/tools/rpi-source/rpi-source
         /opt/YAHM/share/tools/rpi-source/rpi-source --nomake  -d /usr/src/
 
         progress "Preparing raspberry kernel configuration"
         # enter src folder
         cd /usr/src/linux/
+        if [ $? -eq 0 ]
+        then
+            die "Something is wrong, exit"
+        fi
         # prepare kernel config
         KERNEL=kernel7
         # create default config
@@ -78,7 +83,10 @@ _module_install()
 
         progress "Building kernel (can take some time... 1 hour on RPi 3)"
         make -j4 zImage modules dtbs
-
+        if [ $? -eq 0 ]
+        then
+            die "Problem while compiling kernel, exit"
+        fi
         progress "Installing new kernel"
         make modules_install
         cp arch/arm/boot/dts/*.dtb /boot/
@@ -104,6 +112,10 @@ _module_install()
         # Loop bauen
         cd /tmp/kernel-modules/eq3_char_loop
         make
+        if [ $? -eq 0 ]
+        then
+            die "Problem while building eq3_char_loop module, exit"
+        fi
         cp eq3_char_loop.ko /lib/modules/$(uname -r)/kernel/drivers/char/
 
         progress "Building new UART kernel module"
@@ -123,6 +135,10 @@ _module_install()
         # UART bauen
         cd /tmp/kernel-modules/bcm2835_raw_uart
         make
+        if [ $? -eq 0 ]
+        then
+            die "Problem while building bcm2835_raw_uart module, exit"
+        fi
         cp bcm2835_raw_uart.ko /lib/modules/$(uname -r)/kernel/drivers/char/broadcom
     else
         info "Homematic-ip kernel modules are already present! Skipping"
