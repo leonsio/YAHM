@@ -68,7 +68,7 @@ _module_install()
         progress "Preparing raspberry kernel configuration"
         # enter src folder
         cd /usr/src/linux/
-        if [ $? -eq 0 ]
+        if [ $? -eq 1 ]
         then
             die "Something is wrong, exit"
         fi
