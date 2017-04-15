@@ -83,7 +83,7 @@ _module_install()
 
         progress "Building kernel (can take some time... 1 hour on RPi 3)"
         make -j4 zImage modules dtbs
-        if [ $? -eq 0 ]
+        if [ $? -eq 1 ]
         then
             die "Problem while compiling kernel, exit"
         fi
@@ -112,7 +112,7 @@ _module_install()
         # Loop bauen
         cd /tmp/kernel-modules/eq3_char_loop
         make
-        if [ $? -eq 0 ]
+        if [ $? -eq 1 ]
         then
             die "Problem while building eq3_char_loop module, exit"
         fi
@@ -135,7 +135,7 @@ _module_install()
         # UART bauen
         cd /tmp/kernel-modules/bcm2835_raw_uart
         make
-        if [ $? -eq 0 ]
+        if [ $? -eq 1 ]
         then
             die "Problem while building bcm2835_raw_uart module, exit"
         fi
