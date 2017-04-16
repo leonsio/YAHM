@@ -25,17 +25,23 @@ _module_install()
     fi
 
     kernel_version=$(uname -r | sed -e 's/-.*//i')
-    shared_status=$(modinfo amba_pl011  &>/dev/null )
-
-    if [ $? -eq 0 ]
+    # load actual config
+    modprobe configs
+    # check if kernel already compiled without pl011
+    if [ $(zcat /proc/config.gz | grep CONFIG_SERIAL_AMBA_PL011=n | wc -l) -eq 1 ]
     then # kernel anpassung nicht notwendig, einfach neues Modul laden
         shared=1
-        dev_int="bcm2835-raw-uart"
         reboot=0
     else # wir haben noch die alte Version am laufen, müssen erst kernel aktualisieren
         shared=0
-        dev_int="ttyAMA0"
         reboot=1
+    fi
+
+    if [ ! -c /dev/bcm2835-raw-uart ]
+    then
+        dev_int="ttyAMA0"
+    else
+        dev_int="bcm2835-raw-uart"
     fi
 
     if [ $(lxc-info -n ${LXCNAME}|grep STOPPED|wc -l) -eq 1 ]
@@ -83,7 +89,7 @@ _module_install()
         # create default config
         make bcm2709_defconfig
         # remove pl011 console
-        sed -i .config -e "s/CONFIG_SERIAL_AMBA_PL011=y/CONFIG_SERIAL_AMBA_PL011=m/"
+        sed -i .config -e "s/CONFIG_SERIAL_AMBA_PL011=y/CONFIG_SERIAL_AMBA_PL011=n/"
         sed -i .config -e "s/CONFIG_SERIAL_AMBA_PL011_CONSOLE=y/CONFIG_SERIAL_AMBA_PL011_CONSOLE=n/"
         # write config
 
@@ -150,9 +156,10 @@ _module_install()
         info "Homematic-ip kernel modules are already present! Skipping"
     fi
 
-    progress "Removing old ttyS0 and mmd_bidcos devices in YAHM"
+    progress "Removing old ttyS0,mmd_bidcos and ttyAMA0 devices in YAHM"
     lxc-attach -n ${LXCNAME} -- rm -rf /dev/ttyS0
     lxc-attach -n ${LXCNAME} -- rm -rf /dev/mmd_bidcos
+    lxc-attach -n ${LXCNAME} -- rm -rf /dev/ttyAMA0
 
     if [ $shared -eq 1 ]
     then
@@ -182,11 +189,21 @@ _module_install()
     else
         progress "Enable new modules in YAHM"
         depmod -a
-        mknod -m 666 ${LXC_ROOT_FS}/dev/bcm2835-raw-uart c 242 0
-        mknod -m 666 ${LXC_ROOT_FS}/dev/eq3loop c 243 0
 
-        mknod -m 666 ${LXC_ROOT_FS}/dev/ttyS0 c 243 1
-        mknod -m 666 ${LXC_ROOT_FS}/dev/mmd_bidcos c 243 2
+        if [ "$BOARD_TYPE" = "Raspberry Pi" ] && [ "$BOARD_VERSION" = "3" ]
+        then
+            mknod -m 666 ${LXC_ROOT_FS}/dev/bcm2835-raw-uart c 244 0
+            mknod -m 666 ${LXC_ROOT_FS}/dev/eq3loop c 245 0
+
+            mknod -m 666 ${LXC_ROOT_FS}/dev/ttyS0 c 245 1
+            mknod -m 666 ${LXC_ROOT_FS}/dev/mmd_bidcos c 245 2
+        else
+            mknod -m 666 ${LXC_ROOT_FS}/dev/bcm2835-raw-uart c 242 0
+            mknod -m 666 ${LXC_ROOT_FS}/dev/eq3loop c 243 0
+
+            mknod -m 666 ${LXC_ROOT_FS}/dev/ttyS0 c 243 1
+            mknod -m 666 ${LXC_ROOT_FS}/dev/mmd_bidcos c 243 2
+        fi
     fi
 
     # Treiber beim Booten laden
