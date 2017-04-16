@@ -6,6 +6,7 @@
 description="Homematic IP Unterstützung"
 module_version="0.1"
 
+set +e
 
 _module_install()
 {
@@ -24,26 +25,31 @@ _module_install()
     fi
 
     kernel_version=$(uname -r | sed -e 's/-.*//i')
-    shared_status=$(modinfo amba_pl011)
+    shared_status=$(modinfo amba_pl011  &>/dev/null )
 
     if [ $? -eq 0 ]
     then # kernel anpassung nicht notwendig, einfach neues Modul laden
         shared=1
-        dev_inf="bcm2835-raw-uart"
+        dev_int="bcm2835-raw-uart"
         reboot=0
     else # wir haben noch die alte Version am laufen, müssen erst kernel aktualisieren
         shared=0
-        dev_inf="ttyAMA0"
+        dev_int="ttyAMA0"
         reboot=1
+    fi
+
+    if [ $(lxc-info -n ${LXCNAME}|grep STOPPED|wc -l) -eq 1 ]
+    then
+        die "${LXCNAME} container is stopped, please start it first"
     fi
 
     lxc-attach -n ${LXCNAME} -- /etc/init.d/S60multimacd stop
     # Firmware check
-    firmware_version=`lxc-attach -n ${LXCNAME} -- /bin/eq3configcmd update-coprocessor -p /dev/${dev_inf} -c -v 3>&1 1>&2 2>&3  | grep -Po 'Version: \K[^"]*'`
+    firmware_version=`lxc-attach -n ${LXCNAME} -- /bin/eq3configcmd update-coprocessor -p /dev/${dev_int} -c -v 3>&1 1>&2 2>&3  | grep -Po 'Version: \K[^"]*'`
 
     if [ $IS_VERBOSE -eq 1 ]
     then
-        info "Debug: Firmware Version: ${firmware_version}; Kernel Version: ${kernel_version}; PL011 is shared: ${shared}"
+        info "Debug: Firmware Version: ${firmware_version}; Kernel Version: ${kernel_version}; PL011 is shared: ${shared}: Interface used: ${dev_int}"
     fi
 
     progress "Updating raspbian repository"
@@ -99,7 +105,7 @@ _module_install()
 ###########################################
     # bereits compiliert?
     build_status=$(modprobe bcm2835_raw_uart)
-    if [ $? -eq 1 ]
+    if [ $? -ne 0 ]
     then
         info "Building Homematic-IP modules"
         # Ins tmp wechseln
@@ -112,7 +118,7 @@ _module_install()
         # Loop bauen
         cd /tmp/kernel-modules/eq3_char_loop
         make
-        if [ $? -eq 1 ]
+        if [ $? -ne 0 ]
         then
             die "Problem while building eq3_char_loop module, exit"
         fi
@@ -135,7 +141,7 @@ _module_install()
         # UART bauen
         cd /tmp/kernel-modules/bcm2835_raw_uart
         make
-        if [ $? -eq 1 ]
+        if [ $? -ne 0 ]
         then
             die "Problem while building bcm2835_raw_uart module, exit"
         fi
@@ -233,12 +239,12 @@ EOF
         sed -i '/coprocessor/s/^/#/g' fwmap
 
         progress "Flashing firmware"
-        eq3configcmd update-coprocessor -p /dev/${dev_inf} -t HM-MOD-UART -u -c -d /firmware/HM-MOD-UART
+        lxc-attach -n ${LXCNAME} --  eq3configcmd update-coprocessor -p /dev/${dev_int} -t HM-MOD-UART -u -c -d /firmware/HM-MOD-UART
     else
         info "Firmware already support Homematic IP"
     fi
 
-    if [ $shared -gt 1 ]
+    if [ $shared -eq 1 ]
     then
         info "Restarting multimacd to get loop devices"
         lxc-attach -n ${LXCNAME} -- /etc/init.d/S60multimacd restart
@@ -251,12 +257,13 @@ EOF
             lxc-device -n ${LXCNAME} add /dev/mmd_bidcos
             lxc-device -n ${LXCNAME} add /dev/ttyS0
 
-            progress "Restarting rfd"
+            progress "Restarting rfd and hmipserver"
             lxc-attach -n ${LXCNAME} -- /etc/init.d/S61rfd restart
+            lxc-attach -n ${LXCNAME} -- /etc/init.d/S62HMServer restart
         fi
     else
         sed -i $LXC_ROOT/config -e "s/lxc.cgroup.devices.allow = c 243:0 rwm/lxc.cgroup.devices.allow = c 243:* rwm/"
-        sed -i $LXC_ROOT/config -e "s/# hmip-rf/# hmip-rf\\nlxc.cgroup.devices.allow = c 242:0 rwm/"
+    #    sed -i $LXC_ROOT/config -e "s/# hmip-rf/# hmip-rf\\nlxc.cgroup.devices.allow = c 242:0 rwm/"
     fi
 
     info "Blocking new kernel updates, please do not use rpi-update anymore"
