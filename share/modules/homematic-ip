@@ -150,6 +150,10 @@ _module_install()
         info "Homematic-ip kernel modules are already present! Skipping"
     fi
 
+    progress "Removing old ttyS0 and mmd_bidcos devices in YAHM"
+    lxc-attach -n ${LXCNAME} -- rm -rf /dev/ttyS0
+    lxc-attach -n ${LXCNAME} -- rm -rf /dev/mmd_bidcos
+
     if [ $shared -eq 1 ]
     then
         progress "Loading new kernel modules"
@@ -175,6 +179,14 @@ _module_install()
         then
             lxc-device -n ${LXCNAME} add /dev/eq3loop
         fi
+    else
+        progress "Enable new modules in YAHM"
+        depmod -a
+        mknod -m 666 ${LXC_ROOT_FS}/dev/bcm2835-raw-uart c 242 0
+        mknod -m 666 ${LXC_ROOT_FS}/dev/eq3loop c 243 0
+
+        mknod -m 666 ${LXC_ROOT_FS}/dev/ttyS0 c 243 1
+        mknod -m 666 ${LXC_ROOT_FS}/dev/mmd_bidcos c 243 2
     fi
 
     # Treiber beim Booten laden
@@ -218,10 +230,6 @@ EOF
         progress "Restoring HMServer"
         mv ${LXC_ROOT_FS}/etc/init.d/_S62HMServer ${LXC_ROOT_FS}/etc/init.d/S62HMServer
     fi
-
-    progress "Removing old ttyS0 and mmd_bidcos devices in YAHM"
-    lxc-attach -n ${LXCNAME} -- rm -rf /dev/ttyS0
-    lxc-attach -n ${LXCNAME} -- rm -rf /dev/mmd_bidcos
 
 ########################
     info "Updating firmware for DualCoPro configuration"
