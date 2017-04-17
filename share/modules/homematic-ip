@@ -156,10 +156,9 @@ _module_install()
         info "Homematic-ip kernel modules are already present! Skipping"
     fi
 
-    progress "Removing old ttyS0,mmd_bidcos and ttyAMA0 devices in YAHM"
+    progress "Removing old ttyS0 and mmd_bidcos devices in YAHM"
     lxc-attach -n ${LXCNAME} -- rm -rf /dev/ttyS0
     lxc-attach -n ${LXCNAME} -- rm -rf /dev/mmd_bidcos
-    lxc-attach -n ${LXCNAME} -- rm -rf /dev/ttyAMA0
 
     if [ $shared -eq 1 ]
     then
@@ -268,6 +267,9 @@ EOF
     else
         info "Firmware already support Homematic IP"
     fi
+
+    info "Remove ttyAMA0 device"
+    lxc-attach -n ${LXCNAME} -- rm -rf /dev/ttyAMA0
 
     if [ $shared -eq 1 ]
     then
