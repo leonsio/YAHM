@@ -1,10 +1,10 @@
 #!/bin/bash
 #
 # Homematic IP
-# 
+#
 
 description="Homematic IP Unterstützung"
-module_version="0.1"
+module_version="0.2"
 
 set +e
 
@@ -49,16 +49,52 @@ _module_install()
         die "${LXCNAME} container is stopped, please start it first"
     fi
 
+    # Kernel Version cleanup @todo ggf. verfeinern bzw. spliten
+    if [ -f /boot/.firmware_revision ]
+    then
+        deb_firmware_hash=$(zcat  /usr/share/doc/raspberrypi-bootloader/changelog.Debian.gz | grep -m1 -o '[0-9a-fA-F]\{40\}')
+        deb_hash=$(wget $QUIET -qO-  -T 3 -t 1 https://raw.githubusercontent.com/raspberrypi/firmware/${deb_firmware_hash}/extra/git_hash)
+        deb_version=$(wget $QUIET -qO-  -T 3 -t 1 https://raw.githubusercontent.com/raspberrypi/firmware/${deb_firmware_hash}/extra/uname_string7 | cut -d" " -f3 |  sed -e 's/-.*//i' )
+
+        rpi_firmware_hash=$(cat /boot/.firmware_revision)
+        rpi_hash=$(wget $QUIET -qO-  -T 3 -t 1 https://raw.githubusercontent.com/Hexxeh/rpi-firmware/${rpi_firmware_hash}/git_hash)
+        rpi_version=$(wget $QUIET -qO-  -T 3 -t 1 https://raw.githubusercontent.com/Hexxeh/rpi-firmware/${rpi_firmware_hash}/uname_string7 | cut -d" " -f3 |  sed -e 's/-.*//i' )
+
+        if [ $IS_VERBOSE -eq 1 ]
+        then
+            info "DEBUG: DEB Kernel Hash: ${deb_version} (${deb_hash}); Firmware Hash: ${deb_firmware_hash}"
+            info "DEBUG: RPi Kernel Hash: ${rpi_version} (${rpi_hash}); Firmware Hash: ${rpi_firmware_hash}"
+            info "DEBUG: Loaded Kernel:   ${kernel_version} "
+        fi
+
+        if [ $(ver ${kernel_version}) -ne $(ver ${rpi_version}) ]
+        then
+            progress "Actual kernel version is different then last installed rpi-update version, cleaning up"
+            rm -rf  /boot/.firmware_revision
+        fi
+
+        if [ $(ver ${kernel_version}) -gt $(ver ${rpi_version}) ] && [ $(ver ${kernel_version}) -gt $(ver ${deb_version}) ]
+        then
+            die "Something is wrong, loaded kernel is newer then last rpi-update or dpkg installed versions, own kernel buils are not supported"
+        fi
+
+        if [ $(ver ${kernel_version}) -lt $(ver ${rpi_version}) ]
+        then
+            die "Something is wrong, last rpi-update version is ${rpi_version}, loaded kernel version is ${kernel_version}. If you recently updated your kernel with rpi-update, please restart first. Else please remove  '/boot/.firmware_revision' file and start again"
+        fi
+    fi
+
+    exit
+
     lxc-attach -n ${LXCNAME} -- /etc/init.d/S60multimacd stop
     # Firmware check
     firmware_version=`lxc-attach -n ${LXCNAME} -- /bin/eq3configcmd update-coprocessor -p /dev/${dev_int} -c -v 3>&1 1>&2 2>&3  | grep -Po 'Version: \K[^"]*'`
 
     if [ $IS_VERBOSE -eq 1 ]
     then
-        info "Debug: Firmware Version: ${firmware_version}; Kernel Version: ${kernel_version}; PL011 is shared: ${shared}: Interface used: ${dev_int}"
+        info "DEBUG: Firmware Version: ${firmware_version}; Kernel Version: ${kernel_version}; PL011 is disabled: ${shared}: Interface used: ${dev_int}"
     fi
 
-    progress "Updating raspbian repository"
     apt-get update
 
     error "Please run 'apt-get upgrade' to upgrade to the latest kernel, do not use rpi-update after you have enabled this module!! To cancel this operation type CTRL+C you have 5 seconds..."
@@ -108,7 +144,7 @@ _module_install()
     else
         info "Kernel module amba_pl011 already shared! Skipping"
     fi
-###########################################
+    ###########################################
     # bereits compiliert?
     build_status=$(modprobe bcm2835_raw_uart)
     if [ $? -ne 0 ]
@@ -188,6 +224,7 @@ _module_install()
     else
         progress "Enable new modules in YAHM"
         depmod -a
+        # depmod -b "${ROOT_PATH}" -a "4.9.22+"
 
         if [ "$BOARD_TYPE" = "Raspberry Pi" ] && [ "$BOARD_VERSION" = "3" ]
         then
@@ -214,7 +251,7 @@ _module_install()
     then
         echo bcm2835_raw_uart >> /etc/modules
     fi
-##################################
+    ##################################
     info "Changing YAHM configuration"
 
     progress "Changing multimacd files"
@@ -247,7 +284,7 @@ EOF
         mv ${LXC_ROOT_FS}/etc/init.d/_S62HMServer ${LXC_ROOT_FS}/etc/init.d/S62HMServer
     fi
 
-########################
+    ########################
     info "Updating firmware for DualCoPro configuration"
 
     if [ $(ver ${firmware_version}) -lt $(ver 2.8.4) ]
