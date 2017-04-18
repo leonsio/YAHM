@@ -84,8 +84,6 @@ _module_install()
         fi
     fi
 
-    exit
-
     lxc-attach -n ${LXCNAME} -- /etc/init.d/S60multimacd stop
     # Firmware check
     firmware_version=`lxc-attach -n ${LXCNAME} -- /bin/eq3configcmd update-coprocessor -p /dev/${dev_int} -c -v 3>&1 1>&2 2>&3  | grep -Po 'Version: \K[^"]*'`
@@ -222,24 +220,34 @@ _module_install()
             lxc-device -n ${LXCNAME} add /dev/eq3loop
         fi
     else
-        progress "Enable new modules in YAHM"
+        progress "Enable new modules in YAHM with next reboot"
         depmod -a
         # depmod -b "${ROOT_PATH}" -a "4.9.22+"
 
-        if [ "$BOARD_TYPE" = "Raspberry Pi" ] && [ "$BOARD_VERSION" = "3" ]
-        then
-            mknod -m 666 ${LXC_ROOT_FS}/dev/bcm2835-raw-uart c 244 0
-            mknod -m 666 ${LXC_ROOT_FS}/dev/eq3loop c 245 0
+        cat > /var/lib/yahm/homematic-ip <<EOF
+#!/bin/sh -e
 
-            mknod -m 666 ${LXC_ROOT_FS}/dev/ttyS0 c 245 1
-            mknod -m 666 ${LXC_ROOT_FS}/dev/mmd_bidcos c 245 2
-        else
-            mknod -m 666 ${LXC_ROOT_FS}/dev/bcm2835-raw-uart c 242 0
-            mknod -m 666 ${LXC_ROOT_FS}/dev/eq3loop c 243 0
+sleep 20
 
-            mknod -m 666 ${LXC_ROOT_FS}/dev/ttyS0 c 243 1
-            mknod -m 666 ${LXC_ROOT_FS}/dev/mmd_bidcos c 243 2
-        fi
+if [ -c /dev/bcm2835-raw-uart ]
+then
+    lxc-device -n ${LXCNAME} add /dev/bcm2835-raw-uart
+fi
+if [ -c /dev/eq3loop ]
+then
+    lxc-device -n ${LXCNAME} add /dev/eq3loop
+    # get device ID
+    loopdev=\$(ls -al /dev/eq3loop | grep -o '24[0-9]')
+    mknod -m 666 ${LXC_ROOT_FS}/dev/ttyS0 c \$loopdev 1
+    mknod -m 666 ${LXC_ROOT_FS}/dev/mmd_bidcos c \$loopdev 2
+fi
+
+#self destroy
+rm -rf /var/lib/yahm/homematic-ip
+sed -i /etc/rc.local -e "s/\/var\/lib\/yahm\/homematic-ip//"
+EOF
+        chmod +x /var/lib/yahm/homematic-ip
+        sed -i /etc/rc.local -e "s/exit 0/\/var\/lib\/yahm\/homematic-ip\\nexit 0/"
     fi
 
     # Treiber beim Booten laden
