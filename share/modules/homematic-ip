@@ -4,13 +4,16 @@
 #
 
 description="Homematic IP Unterstützung"
-module_version="0.2"
+module_version="0.3"
 
 set +e
 
 _module_install()
 {
-    #@todo ggf check fuer RPi 2/3 einbauen
+    # hilfsvariable
+    deb_kernel=0
+    # Aktuelle Kernel Version
+    kernel_version=$(uname -r | sed -e 's/-.*//i')
 
     if [ ! -e ${LXC_ROOT_MODULES}/hm-mod-rpi-pcb ] && [ $IS_FORCE -ne 1 ]
     then
@@ -19,17 +22,21 @@ _module_install()
 
     [ "x$(id -un)" == "xroot" ] || die "Sorry, this script must be run as root. Try sudo ...."
 
+    # falls mmd_bidcos vorhanden ist, wurde homematic-ip bereits installiert
     if [ -c /dev/mmd_bidcos ] && [ $IS_FORCE -ne 1 ]
     then
         die "Homematic-IP module is present, or something is wrong"
     fi
 
-    kernel_version=$(uname -r | sed -e 's/-.*//i')
+    #################################################
+    #   Vorgehen im Zuge des Durchlaufs (Vorbereitsungsarbeiten)
+    #################################################
+
     # load actual config
     modprobe configs
     # check if kernel already compiled without pl011
     if [ $(zcat /proc/config.gz | grep CONFIG_SERIAL_AMBA_PL011=n | wc -l) -eq 1 ]
-    then # kernel anpassung nicht notwendig, einfach neues Modul laden
+    then # kernel Anpassung nicht notwendig, einfach neues Modul laden
         shared=1
         reboot=0
     else # wir haben noch die alte Version am laufen, müssen erst kernel aktualisieren
@@ -37,6 +44,7 @@ _module_install()
         reboot=1
     fi
 
+    # Bestimmen ob das RAW Device bereits installiert wurde
     if [ ! -c /dev/bcm2835-raw-uart ]
     then
         dev_int="ttyAMA0"
@@ -44,63 +52,100 @@ _module_install()
         dev_int="bcm2835-raw-uart"
     fi
 
+    # Container muss laufen
     if [ $(lxc-info -n ${LXCNAME}|grep STOPPED|wc -l) -eq 1 ]
     then
         die "${LXCNAME} container is stopped, please start it first"
     fi
 
-    # Kernel Version cleanup @todo ggf. verfeinern bzw. spliten
-    if [ -f /boot/.firmware_revision ]
+    # Kernel Version cleanup/check
+    if [ $IS_VERBOSE -eq 1 ]
+    then
+        info "DEBUG: Loaded Kernel:   ${kernel_version} "
+    fi
+
+    # Prüfung der Kernel Version von dem DEB Paket (apt-get Weg)
+    if [ -f /usr/share/doc/raspberrypi-bootloader/changelog.Debian.gz ]
     then
         deb_firmware_hash=$(zcat  /usr/share/doc/raspberrypi-bootloader/changelog.Debian.gz | grep -m1 -o '[0-9a-fA-F]\{40\}')
-        deb_hash=$(wget $QUIET -qO-  -T 3 -t 1 https://raw.githubusercontent.com/raspberrypi/firmware/${deb_firmware_hash}/extra/git_hash)
-        deb_version=$(wget $QUIET -qO-  -T 3 -t 1 https://raw.githubusercontent.com/raspberrypi/firmware/${deb_firmware_hash}/extra/uname_string7 | cut -d" " -f3 |  sed -e 's/-.*//i' )
-
-        rpi_firmware_hash=$(cat /boot/.firmware_revision)
-        rpi_hash=$(wget $QUIET -qO-  -T 3 -t 1 https://raw.githubusercontent.com/Hexxeh/rpi-firmware/${rpi_firmware_hash}/git_hash)
-        rpi_version=$(wget $QUIET -qO-  -T 3 -t 1 https://raw.githubusercontent.com/Hexxeh/rpi-firmware/${rpi_firmware_hash}/uname_string7 | cut -d" " -f3 |  sed -e 's/-.*//i' )
+        deb_hash=$(wget $QUIET -O-  -T 3 -t 1 https://raw.githubusercontent.com/raspberrypi/firmware/${deb_firmware_hash}/extra/git_hash)
+        deb_version=$(wget $QUIET -O-  -T 3 -t 1 https://raw.githubusercontent.com/raspberrypi/firmware/${deb_firmware_hash}/extra/uname_string7 | cut -d" " -f3 |  sed -e 's/-.*//i' )
 
         if [ $IS_VERBOSE -eq 1 ]
         then
             info "DEBUG: DEB Kernel Hash: ${deb_version} (${deb_hash}); Firmware Hash: ${deb_firmware_hash}"
+        fi
+
+        deb_kernel=1
+    fi
+
+    # Prüfung der Kernel Version rpi-update weg
+    if [ -f /boot/.firmware_revision ]
+    then
+        rpi_firmware_hash=$(cat /boot/.firmware_revision)
+        rpi_hash=$(wget $QUIET -O-  -T 3 -t 1 https://raw.githubusercontent.com/Hexxeh/rpi-firmware/${rpi_firmware_hash}/git_hash)
+        rpi_version=$(wget $QUIET -O-  -T 3 -t 1 https://raw.githubusercontent.com/Hexxeh/rpi-firmware/${rpi_firmware_hash}/uname_string7 | cut -d" " -f3 |  sed -e 's/-.*//i' )
+
+        if [ $IS_VERBOSE -eq 1 ]
+        then
             info "DEBUG: RPi Kernel Hash: ${rpi_version} (${rpi_hash}); Firmware Hash: ${rpi_firmware_hash}"
-            info "DEBUG: Loaded Kernel:   ${kernel_version} "
         fi
 
-        if [ $(ver ${kernel_version}) -ne $(ver ${rpi_version}) ]
+        # kernel is newer, deb kernel installed, rpi-update hash old -> new kernel installed via dpkg
+        if [ $(ver ${kernel_version}) -gt $(ver ${rpi_version}) ] && [ $deb_kernel -eq 1 ]
         then
-            progress "Actual kernel version is different then last installed rpi-update version, cleaning up"
+            info "Actual kernel version is different/newer then last installed rpi-update version, cleaning up"
             rm -rf  /boot/.firmware_revision
-        fi
 
-        if [ $(ver ${kernel_version}) -gt $(ver ${rpi_version}) ] && [ $(ver ${kernel_version}) -gt $(ver ${deb_version}) ]
+        # Kernel is older then rpi-version
+        elif [ $(ver ${kernel_version}) -lt $(ver ${rpi_version}) ]
         then
-            die "Something is wrong, loaded kernel is newer then last rpi-update or dpkg installed versions, own kernel buils are not supported"
-        fi
+            die "Something is wrong, last rpi-update version is ${rpi_version}, loaded kernel version is ${kernel_version}. If you recently updated your kernel with rpi-update, please restart first. Else please remove '/boot/.firmware_revision' file and start again"
 
-        if [ $(ver ${kernel_version}) -lt $(ver ${rpi_version}) ]
+        # deb is not installed, kernel is newer then rpi-update version
+        elif [ $(ver ${kernel_version}) -gt $(ver ${rpi_version}) ]  && [ $deb_kernel -eq 0 ] && [ $(ver ${kernel_version}) -gt $(ver ${deb_version}) ]
         then
-            die "Something is wrong, last rpi-update version is ${rpi_version}, loaded kernel version is ${kernel_version}. If you recently updated your kernel with rpi-update, please restart first. Else please remove  '/boot/.firmware_revision' file and start again"
+            die "Something is wrong, loaded kernel ${kernel_version} is newer then last rpi-update (${rpi_version}) or dpkg (${deb_version}) installed versions, own kernel buils are not supported"
         fi
     fi
 
-    lxc-attach -n ${LXCNAME} -- /etc/init.d/S60multimacd stop
+    # kernel is newer then rpi-update AND deb version
+    if  [ $(ver ${kernel_version}) -gt $(ver ${rpi_version}) ] && [ $(ver ${kernel_version}) -gt $(ver ${deb_version}) ]
+    then
+        die "Something is wrong, loaded kernel ${kernel_version} is newer then last rpi-update (${rpi_version}) or dpkg (${deb_version}) installed versions, own kernel buils are not supported"
+    fi
+
+    # Stoppen des Multimac-Daemons ist notwendig, damit man das Modul über UART ansprechen kann, sonst funktioniert die Versionsbestimmung nicht
+    progress "Stopping rfd and multimac services, to detect module firmware"
+    lxc-attach -n ${LXCNAME}  -- /etc/init.d/S60multimacd stop
+    lxc-attach -n ${LXCNAME}  -- /etc/init.d/S61rfd stop
+
     # Firmware check
     firmware_version=`lxc-attach -n ${LXCNAME} -- /bin/eq3configcmd update-coprocessor -p /dev/${dev_int} -c -v 3>&1 1>&2 2>&3  | grep -Po 'Version: \K[^"]*'`
 
     if [ $IS_VERBOSE -eq 1 ]
     then
-        info "DEBUG: Firmware Version: ${firmware_version}; Kernel Version: ${kernel_version}; PL011 is disabled: ${shared}: Interface used: ${dev_int}"
+        info "DEBUG: Firmware Version: ${firmware_version}; PL011 is disabled: ${shared}: Module Interface: ${dev_int}"
     fi
 
-    apt-get update
+    if [ $IS_VERBOSE -eq 1 ]
+    then
+        APT_OUTPUT=""
+    else
+        APT_OUTPUT="-qq"
+    fi
 
-    error "Please run 'apt-get upgrade' to upgrade to the latest kernel, do not use rpi-update after you have enabled this module!! To cancel this operation type CTRL+C you have 5 seconds..."
-    countdown
-    progress "... processing"
+    # Alle Pakete auf den aktuellen Stand brin gen
+    progress "Updating sources"
+    apt-get ${APT_OUTPUT} update
 
+    # Abhängigkeiten installieren
     progress "Installing dependencies"
-    apt-get -y install subversion bc gcc-4.9 make libncurses5-dev bc
+    apt-get ${APT_OUTPUT} -y install subversion bc gcc-4.9 make libncurses5-dev bc
+
+    #################################################
+    #   Neues Kernel bauen (falls UART treiber einkompiliert wurde)
+    #################################################
 
     if [ $shared -eq 0 ]
     then
@@ -116,7 +161,7 @@ _module_install()
         cd /usr/src/linux/
         if [ $? -eq 1 ]
         then
-            die "Something is wrong, exit"
+            die "Something is wrong, exit" # SRC Ordner fehlt
         fi
         # prepare kernel config
         KERNEL=kernel7
@@ -131,10 +176,12 @@ _module_install()
         make -j4 zImage modules dtbs
         if [ $? -eq 1 ]
         then
-            die "Problem while compiling kernel, exit"
+            die "Problem while compiling kernel, exit" # Make hat fehler geworfen
         fi
         progress "Installing new kernel"
+        # Module/Treiber installieren
         make modules_install
+        # Kernel installieren
         cp arch/arm/boot/dts/*.dtb /boot/
         cp arch/arm/boot/dts/overlays/*.dtb* /boot/overlays/
         cp arch/arm/boot/dts/overlays/README /boot/overlays/
@@ -142,15 +189,18 @@ _module_install()
     else
         info "Kernel module amba_pl011 already shared! Skipping"
     fi
-    ###########################################
-    # bereits compiliert?
-    build_status=$(modprobe bcm2835_raw_uart)
+
+    #################################################
+    #   eq3 Kernel Module bauen
+    #################################################
+
+    build_status=$(modprobe bcm2835_raw_uart &> /dev/null)
     if [ $? -ne 0 ]
     then
         info "Building Homematic-IP modules"
         # Ins tmp wechseln
         cd /tmp
-        progress "Download homematic-ip source"
+        progress "Download Homematic-IP source"
         # benoetigte Dateien bersorgen (Danke an @jens)
         svn export https://github.com/jens-maus/RaspberryMatic/trunk/buildroot-external/package/homematic/kernel-modules
 
@@ -188,12 +238,33 @@ _module_install()
         cp bcm2835_raw_uart.ko /lib/modules/$(uname -r)/kernel/drivers/char/broadcom
     else
         info "Homematic-ip kernel modules are already present! Skipping"
+        if [ $IS_VERBOSE -eq 1 ]
+        then
+            info "INFO: eq3 modules"
+            modinfo bcm2835_raw_uart eq3_char_loop
+        fi
     fi
 
-    progress "Removing old ttyS0 and mmd_bidcos devices in YAHM"
-    lxc-attach -n ${LXCNAME} -- rm -rf /dev/ttyS0
-    lxc-attach -n ${LXCNAME} -- rm -rf /dev/mmd_bidcos
+    #################################################
+    #   Module Nachbehandlung im Host und LXC Container
+    #################################################
 
+    info "Changing Host and LXC configuration and installing modules"
+    # ttyS0 entfernen, falls major char ID unter 200
+    if [ $((16#$(stat -c %t ${LXC_ROOT_FS}/dev/ttyS0))) -lt 200 ]
+    then
+        progress "Removing old ttyS0 device in YAHM"
+        lxc-attach -n ${LXCNAME} -- rm -rf /dev/ttyS0
+    fi
+
+    # mmd_bidcos entfernen, falls es ein Symlink ist
+    if [ -L $LXC_ROOT_FS/dev/mmd_bidcos ]
+    then
+        progress "Removing mmd_bidcos symlink in YAHM"
+        lxc-attach -n ${LXCNAME} -- rm -rf /dev/mmd_bidcos
+    fi
+
+    # Kernel Module laden
     if [ $shared -eq 1 ]
     then
         progress "Loading new kernel modules"
@@ -220,15 +291,13 @@ _module_install()
             lxc-device -n ${LXCNAME} add /dev/eq3loop
         fi
     else
-        progress "Enable new modules in YAHM with next reboot"
+        progress "Generate modules.dep and map files"
         depmod -a
         # depmod -b "${ROOT_PATH}" -a "4.9.22+"
 
         cat > /var/lib/yahm/homematic-ip <<EOF
 #!/bin/sh -e
-
 sleep 20
-
 if [ -c /dev/bcm2835-raw-uart ]
 then
     lxc-device -n ${LXCNAME} add /dev/bcm2835-raw-uart
@@ -241,13 +310,14 @@ then
     mknod -m 666 ${LXC_ROOT_FS}/dev/ttyS0 c \$loopdev 1
     mknod -m 666 ${LXC_ROOT_FS}/dev/mmd_bidcos c \$loopdev 2
 fi
-
 #self destroy
 rm -rf /var/lib/yahm/homematic-ip
 sed -i /etc/rc.local -e "s/\/var\/lib\/yahm\/homematic-ip//"
 EOF
-        chmod +x /var/lib/yahm/homematic-ip
-        sed -i /etc/rc.local -e "s/exit 0/\/var\/lib\/yahm\/homematic-ip\\nexit 0/"
+
+    chmod +x /var/lib/yahm/homematic-ip
+    sed -i /etc/rc.local -e "s/^exit 0/\/var\/lib\/yahm\/homematic-ip\\nexit 0/"
+
     fi
 
     # Treiber beim Booten laden
@@ -259,7 +329,11 @@ EOF
     then
         echo bcm2835_raw_uart >> /etc/modules
     fi
-    ##################################
+
+    #################################################
+    #   Anpassung YAHM Konfiguration
+    #################################################
+
     info "Changing YAHM configuration"
 
     progress "Changing multimacd files"
@@ -292,7 +366,16 @@ EOF
         mv ${LXC_ROOT_FS}/etc/init.d/_S62HMServer ${LXC_ROOT_FS}/etc/init.d/S62HMServer
     fi
 
-    ########################
+    if [ -f ${LXC_ROOT_FS}/etc/config_templates/hmip_networkkey.conf ]
+    then
+        wget $QUIET -O ${LXC_ROOT_FS}/etc/config_templates/hmip_networkkey.conf https://raw.githubusercontent.com/eq-3/occu/master/arm-gnueabihf/packages-eQ-3/RFD/etc/config_templates/hmip_networkkey.conf
+        error "Please change the network.key!!!!"
+    fi
+
+    #################################################
+    #   Aktualisierung der Firmware für Homematic-IP Unterstützung
+    #################################################
+
     info "Updating firmware for DualCoPro configuration"
 
     if [ $(ver ${firmware_version}) -lt $(ver 2.8.4) ]
@@ -313,8 +396,12 @@ EOF
         info "Firmware already support Homematic IP"
     fi
 
-    info "Remove ttyAMA0 device"
-    lxc-attach -n ${LXCNAME} -- rm -rf /dev/ttyAMA0
+    #info "Remove ttyAMA0 device"
+    #lxc-attach -n ${LXCNAME} -- rm -rf /dev/ttyAMA0
+
+    #################################################
+    #   Starten der Dienste und Übergabe der Geräte an LXC
+    #################################################
 
     if [ $shared -eq 1 ]
     then
@@ -344,9 +431,10 @@ EOF
     # Reboot
     if [ $reboot -gt 0 ]
     then
-        echo "======================================"
-        echo "Rebooting in 60 seconds to apply settings (to chancel reboot type 'shutdown -c')..."
-        echo "======================================"
+        info "======================================"
+        info "Rebooting in 60 seconds to apply settings (to chancel reboot type 'shutdown -c')..."
+#        progress "Please restart the installation with 'yahm-module -m homematic-ip -f enable' after reboot"
+        info "======================================"
         shutdown -r +1 "Rebooting to replace kernel"
     else
         info "Homematic IP module installed successfully"
