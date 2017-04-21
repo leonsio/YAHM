@@ -23,7 +23,7 @@ _module_install()
     [ "x$(id -un)" == "xroot" ] || die "Sorry, this script must be run as root. Try sudo ...."
 
     # falls mmd_bidcos vorhanden ist, wurde homematic-ip bereits installiert
-    if [ -c /dev/mmd_bidcos ] && [ $IS_FORCE -ne 1 ]
+    if [ -c ${LXC_ROOT_FS}/dev/mmd_bidcos ] && [ $IS_FORCE -ne 1 ]
     then
         die "Homematic-IP module is present, or something is wrong"
     fi
@@ -35,7 +35,7 @@ _module_install()
     # load actual config
     modprobe configs
     # check if kernel already compiled without pl011
-    if [ $(zcat /proc/config.gz | grep CONFIG_SERIAL_AMBA_PL011=n | wc -l) -eq 1 ]
+    if [ $(zcat /proc/config.gz | grep CONFIG_SERIAL_AMBA_PL011=y | wc -l) -eq 0 ]
     then # kernel Anpassung nicht notwendig, einfach neues Modul laden
         shared=1
         reboot=0
@@ -204,6 +204,11 @@ _module_install()
         # benoetigte Dateien bersorgen (Danke an @jens)
         svn export https://github.com/jens-maus/RaspberryMatic/trunk/buildroot-external/package/homematic/kernel-modules
 
+        if [ -d /lib/modules/$(uname -r)/kernel/drivers/char/broadcom ]
+        then
+            mkdir -p /lib/modules/$(uname -r)/kernel/drivers/char/broadcom
+        fi
+
         progress "Building eq3_loop kernel module"
         # Loop bauen
         cd /tmp/kernel-modules/eq3_char_loop
@@ -297,7 +302,13 @@ _module_install()
 
         cat > /var/lib/yahm/homematic-ip <<EOF
 #!/bin/sh -e
+#self destroy
+#rm -rf /var/lib/yahm/homematic-ip
+# cleanup rc.local
+sed -i /etc/rc.local -e "s/\/var\/lib\/yahm\/homematic-ip/#homematic-ip: done/"
+
 sleep 20
+
 if [ -c /dev/bcm2835-raw-uart ]
 then
     lxc-device -n ${LXCNAME} add /dev/bcm2835-raw-uart
@@ -310,14 +321,11 @@ then
     mknod -m 666 ${LXC_ROOT_FS}/dev/ttyS0 c \$loopdev 1
     mknod -m 666 ${LXC_ROOT_FS}/dev/mmd_bidcos c \$loopdev 2
 fi
-#self destroy
-rm -rf /var/lib/yahm/homematic-ip
-sed -i /etc/rc.local -e "s/\/var\/lib\/yahm\/homematic-ip//"
+/opt/YAHM/bin/yahm-ctl restart
 EOF
 
-    chmod +x /var/lib/yahm/homematic-ip
-    sed -i /etc/rc.local -e "s/^exit 0/\/var\/lib\/yahm\/homematic-ip\\nexit 0/"
-
+        chmod +x /var/lib/yahm/homematic-ip
+        sed -i /etc/rc.local -e "s/^exit 0/\/var\/lib\/yahm\/homematic-ip\\nexit 0/"
     fi
 
     # Treiber beim Booten laden
@@ -525,7 +533,60 @@ EOF
         chmod +x ${LXC_ROOT_FS}/etc/init.d/S61HMServer
     fi
 
+    # Bestimmen ob das RAW Device bereits installiert wurde
+    if [ ! -c /dev/bcm2835-raw-uart ]
+    then
+        dev_int="ttyAMA0"
+    else
+        dev_int="bcm2835-raw-uart"
+    fi
 
-    info "Homematic-IP interface was removed, please restart CCU-LXC Container"
-    exit
+    progress "Stopping rfd and multimac services, to detect module firmware"
+    lxc-attach -n ${LXCNAME}  -- /etc/init.d/S60multimacd stop
+    lxc-attach -n ${LXCNAME}  -- /etc/init.d/S61rfd stop
+
+    # Firmware check
+    firmware_version=`lxc-attach -n ${LXCNAME} -- /bin/eq3configcmd update-coprocessor -p /dev/${dev_int} -c -v 3>&1 1>&2 2>&3  | grep -Po 'Version: \K[^"]*'`
+
+    info "Downgrade firmware if needed"
+
+    if [ $(ver ${firmware_version}) -gt $(ver 2.0.0) ]
+    then
+        progress "Downloading actual firmware from repository"
+        cd $LXC_ROOT_FS/firmware
+        svn export https://github.com/eq-3/occu/trunk/firmware/HM-MOD-UART
+        # set right firmware version
+        cd HM-MOD-UART
+
+        progress "Flashing firmware"
+        lxc-attach -n ${LXCNAME} --  eq3configcmd update-coprocessor -p /dev/${dev_int} -t HM-MOD-UART -u -f -c -d /firmware/HM-MOD-UART
+    else
+        info "Firmware already downgraded"
+    fi
+
+    if [ -c ${LXC_ROOT_FS}/dev/mmd_bidcos ]
+    then
+        rm -rf ${LXC_ROOT_FS}/dev/mmd_bidcos
+        cd ${LXC_ROOT_FS}/dev
+        ln -sf ttyAMA0 mmd_bidcos
+    fi
+
+    # Treiber beim Booten nicht laden
+    if [ $(cat /etc/modules | grep "^eq3_char_loop" | wc -l) -eq 1 ]
+    then
+        echo eq3_char_loop >> /etc/modules
+        sed -i '/eq3_char_loop/s/^/#/g' /etc/modules
+    fi
+    if [ $(cat /etc/modules | grep "^bcm2835_raw_uart" | wc -l) -eq 1 ]
+    then
+        echo bcm2835_raw_uart >> /etc/modules
+        sed -i '/bcm2835_raw_uart/s/^/#/g' /etc/modules
+    fi
+
+    # Kernel updates zulassen
+    echo raspberrypi-kernel install | dpkg --set-selections
+
+    lxc-attach -n ${LXCNAME} -- /etc/init.d/S61rfd restart
+
+    info "Homematic-IP interface was removed, please restart CCU2-LXC Container"
 }

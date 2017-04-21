@@ -69,6 +69,20 @@ _module_install()
         fi
     fi
 
+    if [ -e ${LXC_ROOT_MODULES}/hm-mod-rpi-pcb ]
+    then
+        error "WARNING: homematic-ip module was installed, HM-MOD-RPI-PCB device name can be changed"
+    fi
+
+
+    # Bestimmen ob das RAW Device bereits installiert wurde
+    if [ ! -c /dev/bcm2835-raw-uart ]
+    then
+        dev_int="ttyAMA0"
+    else
+        dev_int="bcm2835-raw-uart"
+    fi
+
     # Disable serial    
     progress "Trying to disable serial console"
     if [ ! -f $file_cmdline_txt ] && [ $IS_FORCE -ne 1 ]
@@ -107,7 +121,7 @@ case "\$1" in
     log_daemon_msg "Starting HM-LAN-GW Service"
     printf "Starting HM-LAN-GW Service"
     cd /opt/YAHM/share/tools/hmgw
-    /opt/YAHM/share/tools/hmgw/hmlangw -n auto  > /var/log/hmlangw.log 2>&1 &
+    /opt/YAHM/share/tools/hmgw/hmlangw -n auto  -s /dev/${dev_int} > /var/log/hmlangw.log 2>&1 &
     log_end_msg 0
     ;;
   stop)
