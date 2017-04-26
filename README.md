@@ -79,7 +79,7 @@ yahm-module -m hm-mod-rpi-pcb enable
 
 # Homematic-IP 
 Die aktuelle CCU2 Firmware (ab 2.15.x) beinhaltet standardmäßig die Unterstützung für Homematic-IP. Die Unterstützung in YAHM wird ab der YAHM Version 1.7 durch das [Homematic-IP Modul](https://github.com/leonsio/YAHM/wiki/YAHM-Module:-Homematic-IP) realisiert. <br/>
-Die Aktivierung der Unterstützung kann je nach Bedarf erfolgen, wird die Unterstützung für Homematic-IP nicht benötigt **sollte* die CCU Homematic-IP Funktionalität deaktiviert werden.
+Die Aktivierung der Unterstützung kann je nach Bedarf erfolgen, wird die Unterstützung für Homematic-IP nicht benötigt **sollte** die CCU Homematic-IP Funktionalität deaktiviert werden.
 
 **Hinweis:** Im Zuge der automatisierten Installation wird Homematic-IP automatisch deaktiviert, die Durchführung unten genannter Schritte ist nicht notwendig. Die Schritte sind lediglich bei der GUI bzw. manuellen Installation notwendig.
 
