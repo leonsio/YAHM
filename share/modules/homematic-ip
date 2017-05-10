@@ -198,12 +198,6 @@ _module_install()
     if [ $? -ne 0 ]
     then
         info "Building Homematic-IP modules"
-        # Ins tmp wechseln
-        cd /tmp
-        progress "Download Homematic-IP source"
-        # benoetigte Dateien bersorgen (Danke an @jens)
-        svn export https://github.com/jens-maus/RaspberryMatic/trunk/buildroot-external/package/homematic/kernel-modules
-
         if [ -d /lib/modules/$(uname -r)/kernel/drivers/char/broadcom ]
         then
             mkdir -p /lib/modules/$(uname -r)/kernel/drivers/char/broadcom
@@ -211,7 +205,7 @@ _module_install()
 
         progress "Building eq3_loop kernel module"
         # Loop bauen
-        cd /tmp/kernel-modules/eq3_char_loop
+        cd "${YAHM_DIR}/share/tools/kernel-modules/eq3_char_loop"
         make
         if [ $? -ne 0 ]
         then
@@ -223,18 +217,13 @@ _module_install()
         # fix falls bmc2709 Daten nicht vorhanden sind
         if [ ! -d /usr/src/linux/arch/arm/mach-bcm2709 ]
         then
-            info "Downloading needed files form repository"
-            cd /usr/src/linux/arch/arm
-            svn export https://github.com/raspberrypi/linux/branches/rpi-4.7.y/arch/arm/mach-bcm2709
-        fi
-        # fix fuer den 4.9.x kernel
-        if [ $(ver ${kernel_version}) -ge $(ver 4.9.0) ]
-        then
-            cd /tmp/kernel-modules/bcm2835_raw_uart
-            sed -i bcm2835_raw_uart.c -e "s/CLK_IS_ROOT/0/"
+            cp -rf "${YAHM_DIR}/share/tools/mach-bcm2709" /usr/src/linux/arch/arm
+            #info "Downloading needed files form repository"
+            #cd /usr/src/linux/arch/arm
+            #svn export https://github.com/raspberrypi/linux/branches/rpi-4.7.y/arch/arm/mach-bcm2709
         fi
         # UART bauen
-        cd /tmp/kernel-modules/bcm2835_raw_uart
+        cd "${YAHM_DIR}/share/tools/kernel-modules/bcm2835_raw_uart"
         make
         if [ $? -ne 0 ]
         then
@@ -374,10 +363,10 @@ EOF
         mv ${LXC_ROOT_FS}/etc/init.d/_S62HMServer ${LXC_ROOT_FS}/etc/init.d/S62HMServer
     fi
 
-    if [ -f ${LXC_ROOT_FS}/etc/config_templates/hmip_networkkey.conf ]
+    if [ ! -f ${LXC_ROOT_FS}/etc/config/hmip_networkkey.conf ]
     then
-        wget $QUIET -O ${LXC_ROOT_FS}/etc/config_templates/hmip_networkkey.conf https://raw.githubusercontent.com/eq-3/occu/master/arm-gnueabihf/packages-eQ-3/RFD/etc/config_templates/hmip_networkkey.conf
-        error "Please change the network.key!!!!"
+        NEW_KEY=$(cat /dev/urandom | tr -dc 'A-F0-9' | fold -w 32 | head -n 1)
+        echo "Network.Key=${NEW_KEY}" > ${LXC_ROOT_FS}/etc/config/hmip_networkkey.conf
     fi
 
     #################################################
