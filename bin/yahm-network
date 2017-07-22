@@ -376,6 +376,10 @@ create_bridge()
             then
                 ip addr flush dev ${INTERFACE}
             fi
+        else
+            # Bridge anlegen
+            info "Creating new bridge ${BRIDGE}"
+            brctl addbr ${BRIDGE}
         fi
         
     else
