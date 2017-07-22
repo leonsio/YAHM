@@ -290,12 +290,13 @@ update_lxc_container()
 
     [ $IS_FORCE -eq 1 ] && force_switch="-f" || force_switch=""
 
-    progress "Trying to create a backup from installed version ${installed_version}, calling: 'yahm-backup data_backup' script"
-    if [ $IS_VERBOSE -eq 1 ] ; then
+    progress "Trying to create a config-backup from installed version ${installed_version}, calling: 'yahm-backup data_backup' script"
+    if [ $IS_DEBUG -eq 1 ] ; then
         info "Calling: /opt/YAHM/bin/yahm-backup ${VERBOSE} ${force_switch} -n ${LXCNAME} data_backup"
     fi
     /opt/YAHM/bin/yahm-backup ${VERBOSE} ${force_switch} -n ${LXCNAME} data_backup
 
+    rm -rf ${YAHM_TMP}_update/${LXCNAME}/
     mkdir -p ${YAHM_TMP}_update/${LXCNAME}/
     mv ${YAHM_TMP}/*.sbk ${YAHM_TMP}_update/${LXCNAME}/
 
@@ -306,30 +307,57 @@ update_lxc_container()
     
     backup_file=$(ls ${YAHM_TMP}_update/${LXCNAME}/*.sbk)
 
-    progress "Delete YAHM Container version: $installed_version"
+    progress "Creating full backup from installed version ${installed_version}, calling: 'yahm-backup full_backup' script"
+    if [ $IS_DEBUG -eq 1 ] ; then
+        info "Calling: /opt/YAHM/bin/yahm-backup ${VERBOSE} ${force_switch} -n ${LXCNAME} full_backup"
+    fi
+    /opt/YAHM/bin/yahm-backup ${VERBOSE} ${force_switch} -n ${LXCNAME} full_backup
+
+    progress "Delete old YAHM Container version: $installed_version"
+    if [ $IS_DEBUG -eq 1 ] ; then
+        info "Calling: remove_lxc_container"
+    fi
     remove_lxc_container
 
     progress "Create new YAHM Container version: $CCU2Version"
+    if [ $IS_DEBUG -eq 1 ] ; then
+        info "Calling: create_lxc_container"
+    fi
     create_lxc_container
 
     progress "Restoring old LXC config"
     cp ${YAHM_TMP}_update/${LXCNAME}/conf* ${LXC_ROOT}/
 
     progress "Trying to restore old CCU2 backup, calling 'yahm-backup data_restore'"
-    if [ $IS_VERBOSE -eq 1 ] ; then
+    if [ $IS_DEBUG -eq 1 ] ; then
         info "Calling: yahm-backup ${VERBOSE} ${force_switch} -n ${LXCNAME} -d ${backup_file} data_restore" 
     fi
     /opt/YAHM/bin/yahm-backup ${VERBOSE} ${force_switch} -n ${LXCNAME} -d ${backup_file} data_restore
 
-    progress "Restoring old installed modules" 
+    if [ $IS_DEBUG -eq 1 ] ; then
+        info "Calling: yahm-ctl -n ${LXCNAME} start"
+    fi
+    yahm-ctl -n ${LXCNAME} start
+
+    progress "Restoring old installed modules"
     files=`ls ${YAHM_TMP}_update/${LXCNAME}/.modules`
+
+    if [ ! -f ${YAHM_TMP}_update/${LXCNAME}/.modules/homematic-ip ] ; then
+        if [ $IS_DEBUG -eq 1 ] ; then
+            info "Calling: /opt/YAHM/bin/yahm-module -n ${LXCNAME} -f -m homematic-ip disable"
+        fi
+        /opt/YAHM/bin/yahm-module -n ${LXCNAME} -f -m homematic-ip disable
+    fi
+
     for file in $files
     do
         info "Restoring ${file} Module"
-        /opt/YAHM/bin/yahm-module -n ${LXCNAME} ${VERBOSE} ${force_switch} -m $file enable
-    done     
-    /opt/YAHM/bin/yahm-module -n ${LXCNAME} -f -m homematic-ip disable
-    
+        if [ $IS_DEBUG -eq 1 ] ; then
+            info "Calling: /opt/YAHM/bin/yahm-module -n ${LXCNAME} ${VERBOSE} -f -m $file enable"
+        fi
+        /opt/YAHM/bin/yahm-module -n ${LXCNAME} ${VERBOSE} -f -m $file enable
+    done
+
     rm -rf ${YAHM_TMP}_update/
     info "STATUS: Update was successfully new version is: ${CCU2Version}"
 }

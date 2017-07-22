@@ -215,22 +215,6 @@ diff -wrupN root/opt/HMServer/pages/StorageSettingsDialog.ftl newroot/opt/HMServ
  						<td align="center" class="CLASS21112" colspan="2" >
  							<div class="popupControls CLASS21107">
  								<table>
-diff -wrupN root/opt/mh/startup.sh newroot/opt/mh/startup.sh
---- root/opt/mh/startup.sh	2016-04-27 17:50:39.356904955 +0200
-+++ newroot/opt/mh/startup.sh	2016-04-27 17:24:27.786517394 +0200
-@@ -19,9 +19,9 @@ if [ ! -e $USER_DIR ] ; then
-
- fi
-
--mkdir -p /dev/net
--mknod /dev/net/tun c 10 200
--insmod $BASE_DIR/tun.ko
-+#mkdir -p /dev/net
-+#mknod /dev/net/tun c 10 200
-+#insmod $BASE_DIR/tun.ko
-
-
- l1=`ifconfig | grep 'eth0' | tr -s ' ' | cut -d ' ' -f5 | tr ':' '-'`
 diff -wrupN root/www/config/cp_security.cgi newroot/www/config/cp_security.cgi
 --- root/www/config/cp_security.cgi	2016-04-27 18:07:02.500878557 +0200
 +++ newroot/www/config/cp_security.cgi	2016-04-27 18:06:35.941041361 +0200
