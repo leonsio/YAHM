@@ -364,19 +364,19 @@ create_bridge()
         then
             service networking restart
             ip addr flush dev ${INTERFACE}
-        fi
-    
-	if [ $is_static -eq 0 ]
-	then
-		sleep 5
-		my_bridge_ip=$(ip -4 addr show ${BRIDGE} | grep -oP "(?<=inet).*(?=/)")
-		info "IP address bridge: ${BRIDGE} : ${my_bridge_ip}"
-	fi
 
-    if [ $is_static -eq 1 ]
-    then
-        ip addr flush dev ${INTERFACE}
-    fi
+            if [ $is_static -eq 0 ]
+            then
+                sleep 5
+                my_bridge_ip=$(ip -4 addr show ${BRIDGE} | grep -oP "(?<=inet).*(?=/)")
+                info "IP address bridge: ${BRIDGE} : ${my_bridge_ip}"
+            fi
+
+            if [ $is_static -eq 1 ]
+            then
+                ip addr flush dev ${INTERFACE}
+            fi
+        fi
         
     else
         info "Your system is not changed, if thesse changes appearing correctly please run this script with -w flag"
