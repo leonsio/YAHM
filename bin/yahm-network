@@ -363,9 +363,9 @@ create_bridge()
         if [ $RESTART -eq 1 ]
         then
             service networking restart
+            ip addr flush dev ${INTERFACE}
         fi
-	ip addr flush dev ${INTERFACE}
-
+    
 	if [ $is_static -eq 0 ]
 	then
 		sleep 5
