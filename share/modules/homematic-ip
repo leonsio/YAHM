@@ -23,7 +23,7 @@ _module_install()
     [ "x$(id -un)" == "xroot" ] || die "Sorry, this script must be run as root. Try sudo ...."
 
     # falls mmd_bidcos vorhanden ist, wurde homematic-ip bereits installiert
-    if [ -c ${LXC_ROOT_FS}/dev/mmd_bidcos ] && [ $IS_FORCE -ne 1 ]
+    if [ ! -L $LXC_ROOT_FS/dev/mmd_bidcos ] && [ $IS_FORCE -ne 1 ]
     then
         die "Homematic-IP module is present, or something is wrong"
     fi
