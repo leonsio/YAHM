@@ -1305,3 +1305,4 @@ MODULE_DESCRIPTION( "eQ-3 raw BCM2835 uart driver" );
 MODULE_LICENSE( "GPL" );
 MODULE_AUTHOR( "eQ-3 Entwicklung GmbH" );
 MODULE_VERSION( "1.9" );
+
