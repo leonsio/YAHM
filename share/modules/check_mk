@@ -1,0 +1,53 @@
+#!/bin/bash
+#
+# (Inoffical) check_mk agent
+# 
+
+description="(Inoffical) check_mk agent 1.2 for Yahm"
+
+_module_install()
+{
+  mkdir -p $YAHM_TMP
+
+  tmpdest="${YAHM_TMP}/check_mk_agent.tgz"
+  tmppath="${YAHM_TMP}/check_mk"
+
+  progress "Download..."
+  mkdir -p $YAHM_TMP
+  wget -q --tries=3 --retry-connrefused -O $tmpdest https://github.com/alexreinert/homematic_check_mk/releases/download/1.2/check_mk_agent-1.2.tgz
+  if [ ! -f "$tmpdest" ] 
+  then
+    die "ERROR: Addon konnte nicht geladen werden. Funktioniert die Internet Verbindung?"
+  fi
+
+  progress "Kopiere Dateien"
+  mkdir $tmppath
+  tar -xzf $tmpdest -C $tmppath
+
+  mkdir -p $LXC_ROOT_FS/usr/local/addons/check_mk_agent
+  mkdir -p $LXC_ROOT_FS/usr/local/etc/config/rc.d
+
+  mkdir -p $LXC_ROOT_FS/usr/local/addons/check_mk_agent/plugins
+
+  cp $tmppath/addon/* $LXC_ROOT_FS/usr/local/addons/check_mk_agent
+  cp $tmppath/rc.d/* $LXC_ROOT_FS/usr/local/etc/config/rc.d
+
+  progress "Aufräumen"
+  rm -R $tmppath
+  rm $tmpdest
+
+  progress "Starte Agent"
+  lxc-attach -n ${LXCNAME} -- /usr/local/etc/config/rc.d/check_mk_agent start >/dev/null
+
+  return 0
+}
+
+_module_remove()
+{
+  progress "Stoppe Agent"
+  lxc-attach -n ${LXCNAME} -- /usr/local/etc/config/rc.d/check_mk_agent stop >/dev/null
+
+  progress "Lösche Addon"
+  rm -rf $LXC_ROOT_FS/usr/local/addons/check_mk_agent
+  rm -f $LXC_ROOT_FS/usr/local/etc/config/rc.d/check_mk_agent
+}
