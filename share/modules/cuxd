@@ -3,7 +3,7 @@
 # CuxD
 # 
 
-description="CuxD 1.9 for Yahm"
+description="CuxD 1.11 for Yahm"
 
 _module_install()
 {
@@ -15,7 +15,7 @@ _module_install()
   tmpdest="${YAHM_TMP}/cuxd.tar.gz"
   mkdir -p $YAHM_TMP
     
-  cuxdurl="http://homematic-forum.de/forum/download/file.php?id=38158"
+  cuxdurl="https://homematic-forum.de/forum/download/file.php?id=42004"
   wget -q --tries=3 --retry-connrefused  -O $tmpdest $cuxdurl
     if [ ! -f "$tmpdest" ] 
     then
@@ -36,18 +36,18 @@ _module_install()
   lxc-attach -n ${LXCNAME} -- /sbin/reboot >/dev/null
   progress "waiting for shutdown ..."
 
-  wait_until_process_isgone ReGaHss
+  wait_until_rega_process_isgone ReGaHss
   
   progress "Rega is death Jim !"
 
   progress "waiting until Rega is back alive .... (cuxd needs 2 boots)"
 
-  wait_for_process ReGaHss
+  wait_for_rega_process ReGaHss
   
   progress "Rega is back ... reboot"
   lxc-attach -n ${LXCNAME} -- /sbin/reboot 
 
-  wait_until_process_isgone ReGaHss
+  wait_until_rega_process_isgone ReGaHss
 
   progress "aaand we are done ..."
   
@@ -58,9 +58,9 @@ _module_install()
   fi
 }
 
-wait_until_process_isgone() {
+wait_until_rega_process_isgone() {
 
-  pids=$(pidof $1)
+  pids=$(pidof ReGaHss || pidof ReGaHss.normal || pidof ReGaHss.community)
   while kill -0 "$pids" 2>/dev/null
   do
       echo -n "."
@@ -68,8 +68,8 @@ wait_until_process_isgone() {
   done
 }
 
-wait_for_process() {
-  until pids=$(pidof $1)
+wait_for_rega_process() {
+  until pids=$(pidof ReGaHss || pidof ReGaHss.normal || pidof ReGaHss.community)
   do   
    sleep 1
   done
