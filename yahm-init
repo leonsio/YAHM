@@ -95,8 +95,10 @@ DIST=""
 # Check the distribution is in the supported list
 case "$DIST_ID:$CODENAME" in
 Raspbian:jessie) DIST="debian";;
-Debian:jessie)	DIST="debian";;
-Ubuntu:xenial)  DIST="ubuntu";; 
+Raspbian:stretch) DIST="debian";;
+Debian:jessie)  DIST="debian";;
+Debian:stretch) DIST="debian";;
+Ubuntu:xenial)  DIST="ubuntu";;
 *)		die "Sorry, this script does not support your distribution/release ($DIST_ID $CODENAME)." ;;
 esac
 
