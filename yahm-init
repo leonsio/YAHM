@@ -90,6 +90,7 @@ esac
 
 DIST_ID="$($LSB_RELEASE -is)"
 CODENAME="$($LSB_RELEASE -cs)"
+INTERFACE="eth0"
 DIST=""
 
 # Check the distribution is in the supported list
@@ -101,14 +102,6 @@ Debian:stretch) DIST="debian";;
 Ubuntu:xenial)  DIST="ubuntu";;
 *)		die "Sorry, this script does not support your distribution/release ($DIST_ID $CODENAME)." ;;
 esac
-
-if [ "$DIST_ID" = "Raspbian" ] ;
-then
-  info "Disable new dhcpcd on Raspbian Jessie"
-  systemctl disable dhcpcd.service 
-  systemctl stop dhcpcd.service
-  sed -i /etc/network/interfaces -e "s/iface eth0 inet manual/auto eth0\niface eth0 inet dhcp/"
-fi
 
 progress "Updating sources (can take some time)"
 apt-get -q=2 update
@@ -127,7 +120,7 @@ cd /opt
 #####################################
 #### REMOVE --branch IN MASTER !!!!!#
 #####################################
-git clone --recursive https://github.com/leonsio/YAHM.git  2>>/var/log/yahm/git.log >>/var/log/yahm/git.log
+git clone --recursive https://github.com/leonsio/YAHM.git  --branch develop 2>>/var/log/yahm/git.log >>/var/log/yahm/git.log
 
 progress "Including YAHM into PATH"
 chmod +x /opt/YAHM/bin/*
@@ -148,12 +141,41 @@ if [ "$1" = "quickinstall" ] && [ "$DIST" != "ubuntu" ]
 then
     info "\n\tEnter quick install mode\n"
 
+  if [ "$DIST_ID" = "Raspbian" ] ;
+  then
+    if [ $(cat /etc/dhcpcd.conf | grep -v "^#" | grep "interface " | wc -l) -gt 0 ] ;
+      then
+        die "Custom network configuration is not supported"
+    fi	  
+    info "Disable new dhcpcd on Raspbian Jessie"
+    systemctl disable dhcpcd.service 
+    systemctl stop dhcpcd.service
+
+    if [ "$CODENAME" = "jessie" ] ;
+      then
+	sed -i /etc/network/interfaces -e "s/iface eth0 inet manual/auto eth0\niface eth0 inet dhcp/"
+      fi
+
+    if [ "$CODENAME" = "stretch" ] ;
+    then
+      INTERFACE=`ls /sys/class/net | grep enx`
+      cat >> "/etc/network/interfaces" <<EOF
+auto lo
+iface lo inet loopback
+
+auto ${INTERFACE}
+iface ${INTERFACE} inet dhcp
+
+EOF
+  fi
+fi
+
     progress "\tInstalling LXC container"
     /opt/YAHM/bin/yahm-lxc install  2>>/var/log/yahm/lxc.log >>/var/log/yahm/lxc.log
     info "\tYAHM LXC container was installed successfully\n"
 
     progress "\tCreating Bridge for networking"
-    /opt/YAHM/bin/yahm-network -r 0 -w create_bridge  2>>/var/log/yahm/network_create.log >>/var/log/yahm/network_create.log
+    /opt/YAHM/bin/yahm-network -i ${INTERFACE} -r 0 -w create_bridge  2>>/var/log/yahm/network_create.log >>/var/log/yahm/network_create.log
     info "\tBridge yahmbr0 with interface eth0 was created\n"
 
     progress "\tAttaching network configuration to LXC container"
