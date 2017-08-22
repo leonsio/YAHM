@@ -43,6 +43,8 @@ IS_DEBUG=0
 IS_VERBOSE=0
 DRY_RUN=0
 RESTART=1
+DIST_ID="$($LSB_RELEASE -is)"
+CODENAME="$($LSB_RELEASE -cs)"
 
 # Check if we can use colours in our output
 use_colour=0

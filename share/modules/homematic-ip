@@ -141,7 +141,10 @@ _module_install()
 
     # Abhängigkeiten installieren
     progress "Installing dependencies"
-    apt-get ${APT_OUTPUT} -y install subversion bc gcc-4.9 make libncurses5-dev bc
+    apt-get ${APT_OUTPUT} -y install subversion bc gcc-6 make libncurses5-dev bc 
+
+    progress "Set right gcc version"
+    ln -sf /usr/bin/gcc-4.9 /usr/bin/gcc
 
     #################################################
     #   Neues Kernel bauen (falls UART treiber einkompiliert wurde)
