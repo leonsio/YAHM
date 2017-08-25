@@ -461,13 +461,6 @@ _module_remove()
     mv InterfacesList.xml InterfacesList.xml.bak
     mv InterfacesList.xml.new InterfacesList.xml
 
-    progress "Downloading jre-7u10"
-    curl -sS -o /tmp/ejre-7u10.tgz $VERBOSE -O -L -b oraclelicense=accept-securebackup-cookie http://download.oracle.com/otn-pub/java/ejre/7u10-b18/ejre-7u10-fcs-b18-linux-arm-vfp-client_headless-28_nov_2012.tar.gz
-    progress "Extracting jre-7u10"
-    tar $VERBOSE -xzf /tmp/ejre-7u10.tgz -C tar ${LXC_ROOT_FS}/opt/
-    progress "Downloading old HMServer.jar"
-    curl -sS -o ${LXC_ROOT_FS}/opt/HMServer/ -O -L https://github.com/eq-3/occu/raw/ff030ca119f2597d16a90b01b61dddb2147b6841/HMserver/opt/HMServer/HMServer.jar
-
     installed_version=`get_yahm_version ${LXCNAME}`
 
     if [ $(ver ${installed_version}) -ge $(ver 2.15.6) ]
