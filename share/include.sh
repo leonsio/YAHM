@@ -43,6 +43,7 @@ IS_DEBUG=0
 IS_VERBOSE=0
 DRY_RUN=0
 RESTART=1
+LSB_RELEASE="/usr/bin/lsb_release"
 DIST_ID="$($LSB_RELEASE -is)"
 CODENAME="$($LSB_RELEASE -cs)"
 
