@@ -117,7 +117,7 @@ for key in "$@"; do
             shift
             break;
         ;;  
-        info)
+        info|status)
             info "YAHM Version: ${YAHM_VERSION}"
             echo ""
             info "LXC container information"

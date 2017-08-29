@@ -141,7 +141,13 @@ esac
 EOF
 
         chmod +x $file_hm_mod_rpi_pcb
-        insserv $file_hm_mod_rpi_pcb
+	if [ "$CODENAME" = "stretch" ] ;
+	then
+	    systemctl daemon-reload
+	    systemctl enable hm-mod-rpi-pcb
+	else
+            insserv $file_hm_mod_rpi_pcb
+	fi
         info "Installing reset gpio as service is done."
     fi 
 
@@ -283,7 +289,12 @@ _module_remove()
     
     info "Uninstall gpio reset service..."
     if [ -e $file_hm_mod_rpi_pcb ];then
-        insserv -r $file_hm_mod_rpi_pcb
+	if [ "$CODENAME" = "stretch" ] ;
+	then
+            systemctl disable hm-mod-rpi-pcb	
+	else
+            insserv -r $file_hm_mod_rpi_pcb
+	fi
         rm $file_hm_mod_rpi_pcb
         progress "Remove $file_hm_mod_rpi_pcb."
     fi
