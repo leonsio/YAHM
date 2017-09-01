@@ -364,6 +364,7 @@ EOF
     then
         progress "Restoring HMServer"
         mv ${LXC_ROOT_FS}/etc/init.d/_S62HMServer ${LXC_ROOT_FS}/etc/init.d/S62HMServer
+	rm -rf ${LXC_ROOT_FS}/etc/init.d/S61HMServer
     fi
 
     if [ ! -f ${LXC_ROOT_FS}/etc/config/hmip_networkkey.conf ]
@@ -470,7 +471,7 @@ _module_remove()
 	progress "Extracting jre-7u10"
 	tar $VERBOSE -xzf /tmp/ejre-7u10.tgz -C tar ${LXC_ROOT_FS}/opt/
 	progress "Downloading old HMServer.jar"
-        curl -sS -o ${LXC_ROOT_FS}/opt/HMServer/ -O -L https://github.com/eq-3/occu/raw/ff030ca119f2597d16a90b01b61dddb2147b6841/HMserver/opt/HMServer/HMServer.jar
+        curl -sS -o ${LXC_ROOT_FS}/opt/HMServer/HMServer.jar -O -L https://github.com/eq-3/occu/raw/ff030ca119f2597d16a90b01b61dddb2147b6841/HMserver/opt/HMServer/HMServer.jar
         #progress "Restoring old HMServer.jar file"
         #wget $QUIET -O ${LXC_ROOT_FS}/opt/HMServer/HMServer.jar https://raw.githubusercontent.com/eq-3/occu/master/HMserver/opt/HMServer/HMServer.jar
         #Backup old startup file
@@ -585,6 +586,7 @@ EOF
     echo raspberrypi-kernel install | dpkg --set-selections
 
     lxc-attach -n ${LXCNAME} -- /etc/init.d/S61rfd restart
+    lxc-attach -n ${LXCNAME} -- /etc/init.d/S61HMServer start
 
     info "Homematic-IP interface was removed, please restart CCU2-LXC Container"
 }
