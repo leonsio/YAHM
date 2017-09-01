@@ -469,7 +469,7 @@ _module_remove()
    	progress "Downloading jre-7u10"
         curl -sS -o /tmp/ejre-7u10.tgz $VERBOSE -O -L -b oraclelicense=accept-securebackup-cookie http://download.oracle.com/otn-pub/java/ejre/7u10-b18/ejre-7u10-fcs-b18-linux-arm-vfp-client_headless-28_nov_2012.tar.gz
 	progress "Extracting jre-7u10"
-	tar $VERBOSE -xzf /tmp/ejre-7u10.tgz -C tar ${LXC_ROOT_FS}/opt/
+	tar $VERBOSE -xzf /tmp/ejre-7u10.tgz -C ${LXC_ROOT_FS}/opt/
 	progress "Downloading old HMServer.jar"
         curl -sS -o ${LXC_ROOT_FS}/opt/HMServer/HMServer.jar -O -L https://github.com/eq-3/occu/raw/ff030ca119f2597d16a90b01b61dddb2147b6841/HMserver/opt/HMServer/HMServer.jar
         #progress "Restoring old HMServer.jar file"
