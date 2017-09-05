@@ -99,7 +99,7 @@ _module_install()
     
 
     # Create service for enabling gpio pin for reset
-    if [ $(insserv -s|grep hm-mod-rpi|wc -l) -eq 0 ]; then 
+    if [ ! -f $file_hm_mod_rpi_pcb ]; then 
         progress "Create service for enabling gpio pin for reset line of hm-mod-rpi-pcb on every reboot"
         cat > $file_hm_mod_rpi_pcb <<EOF
 #!/bin/sh
