@@ -155,10 +155,10 @@ for key in "$@"; do
                     info "New YAHM version ${YAHM_NEW_VERSION} found, updating"
 
                     # Für das nächste Release müsste ich mir was besseres einfallen lassen
-                    if [ -f ${YAHM_DIR}/share/patches/YAHM/${YAHM_OLD_VERSION}_${YAHM_NEW_VERSION}.sh ]
+                    if [ -f ${YAHM_DIR}/share/firmware/patches/YAHM/${YAHM_OLD_VERSION}_${YAHM_NEW_VERSION}.sh ]
                     then
                         progress "Update File ${YAHM_OLD_VERSION}_${YAHM_NEW_VERSION}.sh found, executing"
-                        ${YAHM_DIR}/share/patches/YAHM/${YAHM_OLD_VERSION}_${YAHM_NEW_VERSION}.sh ${YAHM_DIR}
+                        ${YAHM_DIR}/share/firmware/patches/YAHM/${YAHM_OLD_VERSION}_${YAHM_NEW_VERSION}.sh ${YAHM_DIR}
                     fi
                 fi
             fi

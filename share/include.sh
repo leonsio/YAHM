@@ -331,12 +331,12 @@ get_yahm_version()
 yahm_compatibility()
 {
     local ccufw_version=$1
-    if [ ! -f "${YAHM_DIR}/share/patches/${ccufw_version}.patch" ] ; then
+    if [ ! -f "${YAHM_DIR}/share/firmware/patches/${ccufw_version}.patch" ] ; then
         echo 1 
         return 1 
     fi
 
-    if [ ! -f "${YAHM_DIR}/share/scripts/${ccufw_version}.sh" ] ; then
+    if [ ! -f "${YAHM_DIR}/share/firmware/scripts/${ccufw_version}.sh" ] ; then
         echo 1 
         return 1
     fi 
