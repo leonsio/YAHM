@@ -7,3 +7,9 @@
 [submodule "share/tools/rpi-source"]
 	path = share/tools/rpi-source
 	url = https://github.com/notro/rpi-source
+[submodule "share/modules"]
+	path = share/modules
+	url = git@github.com:leonsio/YAHM-Module.git
+[submodule "share/firmware"]
+	path = share/firmware
+	url = git@github.com:leonsio/YAHM-Firmware.git
