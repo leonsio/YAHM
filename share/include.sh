@@ -22,7 +22,7 @@ YAHM_LIB=/var/lib/yahm
 
 # Default names/variables (Raspberry/YAHM)
 LXCNAME="yahm"
-CCU2Version="2.29.18"
+CCU2Version="2.29.22"
 BRIDGE="yahmbr0"
 INTERFACE="eth0"
 
@@ -98,7 +98,7 @@ case $ARCH in
     armhf|armv6l|armv7l|arm64|aarch64)
         ARCH="ARM"
         ;;
-    i386|amd64|x86_64)
+    i386|amd64|x86_64|i686)
         ARCH="X86"
         ;;
     *)

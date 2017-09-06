@@ -79,7 +79,7 @@ case `dpkg --print-architecture` in
     armhf|arm64)
         info "Found ARM based distribution"
         ;;
-    i386|amd64)
+    i386|amd64|i686|x86_64)
         info "X86 CPU found, need to install QEMU"
         check_install_deb "qemu-user-static binfmt-support"
         ;;

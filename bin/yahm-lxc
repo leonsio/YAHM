@@ -92,6 +92,9 @@ create_lxc_container()
         progress "ATTENTION: FORCE-Switch is used, actual instance will be overwritten"
     fi
 
+    # last known configuration
+    LastCCU2Version=$CCU2Version
+
     if [ "${BUILD}" == "" ] 
     then
         CCU2Version=`get_ccu2_actual_version`
@@ -103,6 +106,12 @@ create_lxc_container()
     if [ `yahm_compatibility $CCU2Version` -eq 1 ] && [ $IS_FORCE -ne 1 ]
     then
         die "ERROR: We dont have any patches for this version, please call 'yahm-ctl update' and try again"
+    fi
+
+    # try last known configuration
+    if [ `yahm_compatibility $CCU2Version` -eq 1 ] && [ $IS_FORCE -eq 1 ]
+    then
+        CCU2Version=$LastCCU2Version
     fi
 
     info "Creating new lxc container name: $LXCNAME, version $CCU2Version"
@@ -142,7 +151,7 @@ create_lxc_container()
         info "Manually CCU2 image was selected, trying to detect installed version"
         CCU2Version=`get_yahm_version ${LXCNAME}`
         
-        if [ ! -f ${YAHM_DIR}/share/patches/${CCU2Version}.patch ] && [ $IS_FORCE -ne 1 ]
+        if [ ! -f ${YAHM_DIR}/share/firmware/patches/${CCU2Version}.patch ] && [ $IS_FORCE -ne 1 ]
         then
             die "ERROR: Detected Version: ${CCU2Version}, can not find patch file for this version use -f for patching with version 2.17.16"
         else
@@ -160,11 +169,11 @@ create_lxc_container()
 
     progress "Applying patch"
     cd $LXC_ROOT_FS
-    patch --no-backup-if-mismatch $QUIET -l --input "${YAHM_DIR}/share/patches/${CCU2Version}.patch" -p1
+    patch --no-backup-if-mismatch $QUIET -l --input "${YAHM_DIR}/share/firmware/patches/${CCU2Version}.patch" -p1
 
     progress "Applying scripts"
     cd $LXC_ROOT_FS
-    sh "${YAHM_DIR}/share/scripts/${CCU2Version}.sh"
+    sh "${YAHM_DIR}/share/firmware/scripts/${CCU2Version}.sh"
 
     progress "Creating SD card"
     mkdir -p ${LXC_ROOT}/sd-mmcblk0
