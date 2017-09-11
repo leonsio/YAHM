@@ -158,7 +158,7 @@ then
 
     if [ "$CODENAME" = "stretch" ] ;
     then
-      INTERFACE=`ls /sys/class/net | grep enx`
+#      INTERFACE=`ls /sys/class/net | grep enx`
       cat >> "/etc/network/interfaces" <<EOF
 auto lo
 iface lo inet loopback
