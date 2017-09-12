@@ -203,7 +203,7 @@ fi
 
 #    info "ATTENTION: To disable VirtualDevices error message, you must activate homematic-ip module 'sudo yahm-module -m homematic-ip enable'"
     info "WARNING: You may became new IP-address after reboot"
-    info "ATTENTION: Please verify your network configuration (/etc/network/interfaces)
+    info "ATTENTION: Please verify your network configuration (/etc/network/interfaces)"
     # Disable Error handling
     ERROR=0
 else
