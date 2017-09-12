@@ -121,6 +121,8 @@ cd /opt
 #### REMOVE --branch IN MASTER !!!!!#
 #####################################
 git clone --recursive https://github.com/leonsio/YAHM.git  --branch develop 2>>/var/log/yahm/git.log >>/var/log/yahm/git.log
+cd /opt/YAHM
+git submodule foreach git pull origin master 2>>/var/log/yahm/git.log >>/var/log/yahm/git.log
 
 progress "Including YAHM into PATH"
 chmod +x /opt/YAHM/bin/*
@@ -147,7 +149,7 @@ then
       then
         die "Custom network configuration is not supported"
     fi	  
-    info "Disable new dhcpcd on Raspbian Jessie"
+    info "Disable new dhcpcd on Raspbian"
     systemctl disable dhcpcd.service 
     systemctl stop dhcpcd.service
 
@@ -169,9 +171,9 @@ iface ${INTERFACE} inet dhcp
 EOF
   fi
 fi
-
-    progress "\tInstalling LXC container"
-    /opt/YAHM/bin/yahm-lxc install  2>>/var/log/yahm/lxc.log >>/var/log/yahm/lxc.log
+    info "ATTENTION: For log files see /var/log/yahm"
+    progress "\tInstalling LXC container (can take some time)"
+    /opt/YAHM/bin/yahm-lxc install  2>>/var/log/yahm/lxc_install.log >>/var/log/yahm/lxc_install.log
     info "\tYAHM LXC container was installed successfully\n"
 
     progress "\tCreating Bridge for networking"
@@ -183,7 +185,7 @@ fi
     info "\tyahmbr0 was attached to YAHM LXC container\n"
 
     progress "\tStarting LXC container"
-    lxc-start -n yahm -d 2>>/var/log/yahm/start.log >>/var/log/yahm/start.log
+    lxc-start -n yahm -d 2>>/var/log/yahm/ccu_start.log >>/var/log/yahm/ccu_start.log
     sleep 5
     info "\tYAHM started\n"
 
@@ -199,8 +201,9 @@ fi
     
     info "YAHM was successfully installed, please restart your system, to activate new networking configuration"
 
-    info "ATTENTION: To disable VirtualDevices error message, you must activate homematic-ip module 'sudo yahm-module -m homematic-ip enable'"
-    info "ATTENTION: You may became new IP-address after reboot"
+#    info "ATTENTION: To disable VirtualDevices error message, you must activate homematic-ip module 'sudo yahm-module -m homematic-ip enable'"
+    info "WARNING: You may became new IP-address after reboot"
+    info "ATTENTION: Please verify your network configuration (/etc/network/interfaces)
     # Disable Error handling
     ERROR=0
 else

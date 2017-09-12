@@ -19,7 +19,7 @@ Folgende Betrebssysteme werden aktuell unterstützt:
 * Experimentell: Armbian
 * Experimentell: Ubuntu 16.04
 
-_(* Die Einrichtung des HM-MOD-RPI-PCB erfolgt automatisiert ausschließlich auf Rapsberry Pi)_
+_(* Die Einrichtung des HM-MOD-RPI-PCB erfolgt ausschließlich auf Rapsberry Pi)_
 
 _(* Die Unterstützung von Homematic-IP setzt Raspberry Pi System voraus)_
 
@@ -103,6 +103,14 @@ sudo yahm-module -m homematic-ip enable
 ```
 
 # Hinweise
+
+## Mehrfaches Ausführen eines Befehls
+Alle Skripte sind so ausgelegt, dass nur fehlende Operationen durchgeführt werden. So wird z.B. das erneute Aktivieren des Homematic-IP Moduls keine Kompilierung des Kernels durchführen, falls die Module bereits vorhanden sind.
+
+Da es jedoch passieren kann, dass bei der Durchführung einiger Operationen Fehler aufkommen, ist es im ersten Selbsthilfe-Schritt möglich die Skripte ggf mit **-f** Switch auszuführen. Oft sind damit alle Probleme bereits behoben.
+
+## Migration von RaspberryMatic> 2.15 zu YAHM
+RaspberryMatic aktualisiert automatisch die FW des Funkmoduls auf die Version 2.x inkl. Homematic-IP Support. Damit dieser Funkmodul unter YAHM funktioniert, muss zwingenderweise die Homematic-IP Unterstützung aktiviert werden.
 
 ## Migration CCU2/LXCCU zu YAHM
 Für die Migration von CCU2 bzw. LXCCU zu YAHM bitte folgenden [Wiki-Eintrag](https://github.com/leonsio/YAHM/wiki/Migration-von-CCU-zu-YAHM) beachten. Es müssen keine Geräte neu angelernt werden. Sollten LAN-Gateways im Betrieb sein, muss einmalig unter **EINSTELLUNGEN - SYSTEMSTEUERUNG - LAN GATEWAY** die Zuordnung überprüft/angepasst werden

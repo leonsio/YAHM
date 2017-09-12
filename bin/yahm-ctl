@@ -131,7 +131,7 @@ for key in "$@"; do
             git pull
             progress "Updating all YAHM modules"
             git submodule foreach git pull origin master
-	    git submodule update --init --recursive
+	        git submodule update --init --recursive
             progress "Updating CCU2-FW archive"
             cd ${YAHM_LIB}
             wget $QUIET -N https://raw.githubusercontent.com/leonsio/CCU2-FW/master/fw.list

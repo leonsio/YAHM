@@ -256,7 +256,12 @@ lxc.cgroup.devices.allow = c 10:200 rwm
 
 # includes
 lxc.include = ${LXC_ROOT}/config.network
+
 EOF
+    if [ "$CODENAME" = "stretch" ] ;
+    then
+        echo "lxc.autodev = 0" >> ${LXC_ROOT}/config
+    fi
 
     # blank config file
     touch ${LXC_ROOT}/config.network
