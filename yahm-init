@@ -120,8 +120,9 @@ cd /opt
 #####################################
 #### REMOVE --branch IN MASTER !!!!!#
 #####################################
-git clone --recursive https://github.com/leonsio/YAHM.git  --branch develop 2>>/var/log/yahm/git.log >>/var/log/yahm/git.log
+git clone --recursive https://github.com/leonsio/YAHM.git  2>>/var/log/yahm/git.log >>/var/log/yahm/git.log
 cd /opt/YAHM
+sleep 1
 git submodule foreach git pull origin master 2>>/var/log/yahm/git.log >>/var/log/yahm/git.log
 
 progress "Including YAHM into PATH"
