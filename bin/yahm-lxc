@@ -372,7 +372,7 @@ update_lxc_container()
         /opt/YAHM/bin/yahm-module -n ${LXCNAME} ${VERBOSE} -f -m $file enable
     done
 
-    rm -rf ${YAHM_TMP}_update/
+    #rm -rf ${YAHM_TMP}_update/
     info "STATUS: Update was successfully new version is: ${CCU2Version}"
 }
 
