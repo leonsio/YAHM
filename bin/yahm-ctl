@@ -130,8 +130,8 @@ for key in "$@"; do
             progress "Updating YAHM installation, for updatate CCU2 please use 'yahm-lxc update'"
             git pull
             progress "Updating all YAHM modules"
-            git submodule foreach git pull origin master
 	        git submodule update --init --recursive
+            git submodule foreach git pull origin master
             progress "Updating CCU2-FW archive"
             cd ${YAHM_LIB}
             wget $QUIET -N https://raw.githubusercontent.com/leonsio/CCU2-FW/master/fw.list
