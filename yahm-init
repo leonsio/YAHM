@@ -187,7 +187,7 @@ fi
 
     progress "\tStarting LXC container"
     lxc-start -n yahm -d 2>>/var/log/yahm/ccu_start.log >>/var/log/yahm/ccu_start.log
-    sleep 5
+    sleep 20
     info "\tYAHM started\n"
 
     progress "\tDisable Homematic-IP\n"
