@@ -176,8 +176,8 @@ create_lxc_container()
     sh "${YAHM_DIR}/share/firmware/scripts/${CCU2Version}.sh"
 
     progress "Creating SD card"
-    mkdir -p ${LXC_ROOT}/sd-mmcblk0
-    touch ${LXC_ROOT}/sd-mmcblk0/.initialised
+    mkdir -p ${YAHM_LIB}/SDcard/${LXCNAME}/sd-mmcblk0
+    touch ${YAHM_LIB}/SDcard/${LXCNAME}/sd-mmcblk0/.initialised
 
     # clean up download sources
     progress "Clean Up"
@@ -209,7 +209,7 @@ lxc.mount.entry = proc proc proc nodev,noexec,nosuid 0 0
 lxc.mount.entry = sysfs sys sysfs rw  0 0
 lxc.mount.entry = varfs var tmpfs defaults,size=196M 0 0
 lxc.mount.entry = devpts dev/pts devpts defaults,newinstance 0 0
-lxc.mount.entry = ${LXC_ROOT}/sd-mmcblk0  media/sd-mmcblk0/ none defaults,bind 0 0
+lxc.mount.entry = /var/lib/yahm/SDcard/${LXCNAME}/sd-mmcblk0  media/sd-mmcblk0/ none defaults,bind 0 0
 
 lxc.utsname = ${LXCNAME}
 lxc.rootfs = ${LXC_ROOT_FS}
@@ -237,13 +237,13 @@ lxc.cgroup.devices.allow = c 4:1 rwm
 lxc.cgroup.devices.allow = c 204:64 rwm
 
 # hmip-rf
-lxc.cgroup.devices.allow = c 242:0 rwm
+lxc.cgroup.devices.allow = c 241:* rwm
+lxc.cgroup.devices.allow = c 242:* rwm
 lxc.cgroup.devices.allow = c 243:* rwm
-lxc.cgroup.devices.allow = c 244:0 rwm
-lxc.cgroup.devices.allow = c 245:0 rwm
-lxc.cgroup.devices.allow = c 246:0 rwm
-lxc.cgroup.devices.allow = c 245:1 rwm
-lxc.cgroup.devices.allow = c 245:2 rwm
+lxc.cgroup.devices.allow = c 244:* rwm
+lxc.cgroup.devices.allow = c 245:* rwm
+lxc.cgroup.devices.allow = c 246:* rwm
+lxc.cgroup.devices.allow = c 247:* rwm
 
 # /dev/{,u}random
 lxc.cgroup.devices.allow = c 1:9 rwm

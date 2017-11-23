@@ -22,7 +22,7 @@ YAHM_LIB=/var/lib/yahm
 
 # Default names/variables (Raspberry/YAHM)
 LXCNAME="yahm"
-CCU2Version="2.29.22"
+CCU2Version="2.29.23"
 BRIDGE="yahmbr0"
 INTERFACE="eth0"
 
@@ -31,7 +31,7 @@ INTERFACE="eth0"
 #######################################
 
 # Default options
-YAHM_VERSION="1.8"
+YAHM_VERSION="1.9"
 OPTIND=1
 QUIET="--quiet"
 VERBOSE=""

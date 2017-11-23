@@ -120,6 +120,15 @@ for key in "$@"; do
         info|status)
             info "YAHM Version: ${YAHM_VERSION}"
             echo ""
+	        if [ -e ${LXC_ROOT_MODULES}/pivccu ]
+            then
+                info "Module information"
+                module_serial=$(cat /sys/module/plat_eq3ccu2/parameters/board_serial)
+                module_firmware=$(cat /sys/module/plat_eq3ccu2/parameters/board_firmware)
+                echo "Module Serial: ${module_serial}"
+                echo "Module Firmware: ${module_firmware}"
+                echo ""
+            fi
             info "LXC container information"
             lxc-info -n ${LXCNAME}
             shift
