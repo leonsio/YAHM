@@ -142,26 +142,26 @@ fi
 if [ "$1" = "quickinstall" ] && [ "$DIST" != "ubuntu" ] 
 then
     info "\n\tEnter quick install mode\n"
-
-  if [ "$DIST_ID" = "Raspbian" ] ;
-  then
-    if [ $(cat /etc/dhcpcd.conf | grep -v "^#" | grep "interface " | wc -l) -gt 0 ] ;
-      then
-        die "Custom network configuration is not supported"
-    fi	  
-    info "Disable new dhcpcd on Raspbian"
-    systemctl disable dhcpcd.service 
-    systemctl stop dhcpcd.service
-
-    if [ "$CODENAME" = "jessie" ] ;
-      then
-	sed -i /etc/network/interfaces -e "s/iface eth0 inet manual/auto eth0\niface eth0 inet dhcp/"
-      fi
-
-    if [ "$CODENAME" = "stretch" ] ;
+    source /opt/YAHM/share/tools/arm-board-detect/armhwinfo.sh
+    if [ "$DIST_ID" = "Raspbian" ] ;
     then
-#      INTERFACE=`ls /sys/class/net | grep enx`
-      cat >> "/etc/network/interfaces" <<EOF
+        if [ $(cat /etc/dhcpcd.conf | grep -v "^#" | grep "interface " | wc -l) -gt 0 ] ;
+          then
+            die "Custom network configuration is not supported"
+        fi
+        info "Disable new dhcpcd on Raspbian"
+        systemctl disable dhcpcd.service
+        systemctl stop dhcpcd.service
+
+        if [ "$CODENAME" = "jessie" ] ;
+          then
+        sed -i /etc/network/interfaces -e "s/iface eth0 inet manual/auto eth0\niface eth0 inet dhcp/"
+          fi
+
+        if [ "$CODENAME" = "stretch" ] ;
+        then
+        #      INTERFACE=`ls /sys/class/net | grep enx`
+          cat >> "/etc/network/interfaces" <<EOF
 auto lo
 iface lo inet loopback
 
@@ -169,8 +169,8 @@ auto ${INTERFACE}
 iface ${INTERFACE} inet dhcp
 
 EOF
-  fi
-fi
+        fi
+    fi
     info "ATTENTION: For log files see /var/log/yahm"
     progress "\tInstalling LXC container (can take some time)"
     /opt/YAHM/bin/yahm-lxc install  2>>/var/log/yahm/lxc_install.log >>/var/log/yahm/lxc_install.log
@@ -184,24 +184,21 @@ fi
     /opt/YAHM/bin/yahm-network attach_bridge  2>>/var/log/yahm/network_attach.log >>/var/log/yahm/network_attach.log
     info "\tyahmbr0 was attached to YAHM LXC container\n"
 
-    progress "\tStarting LXC container"
+    progress "\tStarting LXC container (timeout 20 seconds )"
     lxc-start -n yahm -d 2>>/var/log/yahm/ccu_start.log >>/var/log/yahm/ccu_start.log
-    sleep 5
+    sleep 20
     info "\tYAHM started\n"
 
-    progress "\tDisable Homematic-IP\n"
-    /opt/YAHM/bin/yahm-module -f -m homematic-ip disable 2>>/var/log/yahm/module.log >>/var/log/yahm/module.log
-    info "\tHomematic-IP was disabled successfully\n"
-
-#    progress "\tRestarting LXC container"
-#    lxc-stop -k -n yahm 2>>/var/log/yahm/stop.log >>/var/log/yahm/stop.log
-#    sleep 5
-#    lxc-start -n yahm -d 2>>/var/log/yahm/start.log >>/var/log/yahm/start.log
-#    info "\tYAHM successfully restarted\n"
+    if [ "$BOARD_TYPE" = "Raspberry Pi" ]
+    then
+        info "Found Raspberry Pi hardware, installing pivccu-driver"
+        /opt/YAHM/bin/yahm-module -f -m pivccu-driver enable
+    else
+        info "Automatic module installation is only supported on raspberry pi"
+        info "To disable homematic-ip warnings, please run 'yahm-module -f -m homematic-ip disable'"
+    fi
     
     info "YAHM was successfully installed, please restart your system, to activate new networking configuration"
-
-#    info "ATTENTION: To disable VirtualDevices error message, you must activate homematic-ip module 'sudo yahm-module -m homematic-ip enable'"
     info "WARNING: You may became new IP-address after reboot"
     info "ATTENTION: Please verify your network configuration (/etc/network/interfaces)"
     # Disable Error handling

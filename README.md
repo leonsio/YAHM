@@ -19,9 +19,9 @@ Folgende Betrebssysteme werden aktuell unterstützt:
 * Experimentell: Armbian
 * Experimentell: Ubuntu 16.04
 
-_(* Die Einrichtung des HM-MOD-RPI-PCB erfolgt ausschließlich auf Rapsberry Pi)_
+_(* Die Einrichtung des HM-MOD-RPI-PCB erfolgt ->aktuell<- ausschließlich auf Rapsberry Pi)_
 
-_(* Die Unterstützung von Homematic-IP setzt Raspberry Pi System voraus)_
+_(* Die Unterstützung von Homematic-IP setzt ->aktuell<- Raspberry Pi System voraus)_
 
 **Weitere Informationen und Anleitungen können dem [Wiki](https://github.com/leonsio/YAHM/wiki) bzw. dem [Homematic-Forum](https://homematic-forum.de/forum/viewforum.php?f=67) entnommen werden.**
 
@@ -34,7 +34,7 @@ Es wird automatisch ein aktuelles CCU2 Image installiert und das Netzwerk konfig
 wget -nv -O- https://raw.githubusercontent.com/leonsio/YAHM/develop/yahm-init | sudo -E  bash -s quickinstall -
 ```
 
-**Hinweis:** Im Zuge der automatisierten Installation wird die Unterstützung für Homematic-IP automatisch deaktiviert. Sollte Bedarf an der Funktionalität bestehen, siehe nachfolgende [Schritte](#homematic-ip).
+**Hinweis:** Für die Unterstützung von Homematic-IP ist Funkmodul FW-Version ab 2.0.0 notwendig. Falls die Unterstützung nicht gebraucht wird, besteht die Möglichkeit Homematic-IP zu deaktivieren. Eine automatisierte Aktualisierung der Modul Firmware erfolgt nicht.
 
 
 ## UI Modus:
@@ -70,28 +70,37 @@ Mit **sudo yahm-ctl update** kann YAHM Installation (nicht CCU2 Firmware) jederz
 Nach der erfolgreichen Installation von YAHM kann das Funkmodul aktiviert werden, für weitere Informationen siehe [YAHM-Module](https://github.com/leonsio/YAHM/wiki/YAHM-Module)
 
 ```
-yahm-module -m hm-mod-rpi-pcb enable
+yahm-module -m pivccu-driver enable
 ```
 
 **Achtung:** Im Zuge der Installation wird ein Reboot benötigt
 
-**Hinweis:** Die Konfiguration des Funkmoduls durch das hm-mod-rpi-pcb Modul, erfolgt ausschließlich auf einem Raspberry Pi. Für die Installation auf einer anderen Hardware sind die Installationsschritte im [Wiki](https://github.com/leonsio/YAHM/wiki/YAHM-Module:-HM-MOD-RPI-PCB) hinterlegt
+**Hinweis:** Die Konfiguration des Funkmoduls durch das pivccu-driver Modul, erfolgt ->aktuell<- ausschließlich auf einem Raspberry Pi. Für die Installation auf einer anderen Hardware sind die Installationsschritte im [Wiki](https://github.com/leonsio/YAHM/wiki/YAHM-Module:-HM-MOD-RPI-PCB) hinterlegt. In Zukunft ist eine Unterstützung für weitere Hardware durch pivccu-driver vorgesehen.
 
 # Homematic-IP 
-Die aktuelle CCU2 Firmware (ab 2.15.x) beinhaltet standardmäßig die Unterstützung für Homematic-IP. Die Unterstützung in YAHM wird ab der YAHM Version 1.7 durch das [Homematic-IP Modul](https://github.com/leonsio/YAHM/wiki/YAHM-Module:-Homematic-IP) realisiert. <br/>
-Die Aktivierung der Unterstützung kann je nach Bedarf erfolgen, wird die Unterstützung für Homematic-IP nicht benötigt **sollte** die CCU Homematic-IP Funktionalität deaktiviert werden.
-
-**Hinweis:** Im Zuge der automatisierten Installation wird Homematic-IP automatisch deaktiviert, die Durchführung unten genannter Schritte ist nicht notwendig. Die Schritte sind lediglich bei der GUI bzw. manuellen Installation notwendig.
-
+Die aktuelle CCU2 Firmware (ab 2.15.x) beinhaltet standardmäßig die Unterstützung für Homematic-IP. Die Unterstützung in YAHM wird ab der YAHM Version 1.7 durch das [Homematic-IP Modul](https://github.com/leonsio/YAHM/wiki/YAHM-Module:-Homematic-IP) und ab 1.9 durch das pivccu-driver realisiert. <br/>
+Die Aktivierung der Unterstützung kann je nach Bedarf erfolgen, wird die Unterstützung für Homematic-IP nicht benötigt **kann** die CCU Homematic-IP Funktionalität deaktiviert werden.
 
 ## Deaktivierung von Homematic-IP
-Damit in der CCU2 Oberfläche keine Fehlermeldungen hinsichtlich **HMIP-RF** bzw. **VirtualDevices** auftauchen und kein Bedarf an der Homematic-IP Unterstützung bestehen, wird empfohlen die Unterstützung von Homematic-IP durch YAHM zu deaktivieren.
+Damit in der CCU2 Oberfläche keine Fehlermeldungen hinsichtlich **HMIP-RF** bzw. **VirtualDevices** auftauchen und kein Bedarf an der Homematic-IP Unterstützung bestehen, wird empfohlen die Unterstützung von Homematic-IP durch YAHM zu deaktivieren. Alternativ kann die Modul-Firmware auf die Version 2.0.0 und höher aktualisiert werden.
 
 ```
 sudo yahm-module -f -m homematic-ip disable
 ```
 
-## Aktivierung von Homematic-IP
+## Aktivierung von Homematic-IP (homematic-ip Modul)
+Es existieren aktuell zwei Treiber, die eine Unterstütztung für Homematic-IP ermöglichen.
+
+### pivccu-driver Modul
+Mit pivccu-driver wird ein generischer Treiber für verschiedene Plattformen installiert, der die Homematic-IP Unterstützung mitbringt, es wird hierbei kein neuer Kernel benötigt, die Installationsdauer beträgt etwa 5-10 Minuten
+
+**Achtung:** Im Zuge der Installation wird ein Reboot benötigt
+
+```
+sudo yahm-module -m pivccu-driver enable
+```
+
+### homematic-ip Modul (deprecated)
 Für die Unterstützung der Homematic-IP muss das Raspberry Pi Kernel neu kompiliert werden, sowie müssen einige Kernel Module eingebunden werden. Alle Schritte werden durch das Homematic-IP Modul automatisch durchgeführt. Eine Interaktion seitens des Benutzers ist nicht notwendig. 
 
 **Achtung:** Die Installation kann zwischen 1 und 4 Stunden dauern
@@ -124,6 +133,8 @@ Für erfahrene Benutzer mit mehreren hundert Geräten/Programmen reicht die Leis
 
 ## Credits
 Die Arbeit/Idee basiert auf der Arbeit von [bullshit](https://github.com/bullshit/lxccu) bzw. des [LXCCU](http://www.lxccu.com) Projektes.
+
+Overlay und generischer UART Treiber by [PIVCCU](https://github.com/alexreinert/piVCCU)
 
 **Wesentliche Unterschiede zu LXCCU:**
 + Unterstützung von Debian/Raspbian Jessie
