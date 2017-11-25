@@ -27,12 +27,13 @@ Flags:
 -v          - Verbose output 
 
 Commands:
-start       - Starting LXC container
-stop        - Stopping LXC container
-restart     - Restarting LXC container
-info        - Show LXC information (IP)
-join        - Enter LXC console
-update      - Update YAHM installation
+start           - Starting LXC container
+stop            - Stopping LXC container
+restart         - Restarting LXC container
+info            - Show LXC information (IP)
+join            - Enter LXC console
+update          - Update YAHM installation
+fw_update       - Update HM-MOD-RPI-PCB Firmware
 EOF
 exit 1
 }
@@ -133,6 +134,58 @@ for key in "$@"; do
             lxc-info -n ${LXCNAME}
             shift
             break;
+        ;;
+        fw_update)
+            # Container muss laufen
+            if [ $(lxc-info -n ${LXCNAME}|grep STOPPED|wc -l) -eq 1 ]
+            then
+                die "ERROR: ${LXCNAME} container is stopped, please start it first"
+            fi
+
+            progress "Detecting actual firmware version"
+            if [ -c ${LXC_ROOT_FS}/dev/bcm2835-raw-uart ]
+            then
+                dev_int="bcm2835-raw-uart"
+            elif [ -c ${LXC_ROOT_FS}/dev/mxs_auart_raw.0 ]
+            then
+                dev_int="mxs_auart_raw.0"
+            else
+                dev_int="ttyAMA0"
+            fi
+
+            lxc-attach -n ${LXCNAME}  -- /etc/init.d/S60multimacd stop 3>&1 1>&2 2>&3 > /dev/null
+            lxc-attach -n ${LXCNAME}  -- /etc/init.d/S61rfd stop 3>&1 1>&2 2>&3 > /dev/null
+
+            # Firmware check
+            firmware_version=`lxc-attach -n ${LXCNAME} -- /bin/eq3configcmd update-coprocessor -p /dev/${dev_int} -c -v 3>&1 1>&2 2>&3  | grep -Po 'Version: \K[^"]*'`
+            info "Existing firmware version: ${firmware_version}"
+
+            progress "Downloading firmware files"
+            mkdir -p ${LXC_ROOT_FS}/firmware/HM-MOD-UART
+            wget $QUIET -O ${LXC_ROOT_FS}/firmware/HM-MOD-UART/fwmap https://raw.githubusercontent.com/eq-3/occu/master/firmware/HM-MOD-UART/fwmap
+            wget $QUIET -O ${LXC_ROOT_FS}/firmware/HM-MOD-UART/dualcopro_si1002_update_blhm.eq3 https://github.com/eq-3/occu/raw/master/firmware/HM-MOD-UART/dualcopro_si1002_update_blhm.eq3
+            cd ${LXC_ROOT_FS}/firmware/HM-MOD-UART
+            # comment out dual firmware
+            sed -i '/dualcopro/s/^#//g' fwmap
+            # comment single firmware
+            sed -i '/coprocessor/s/^/#/g' fwmap
+
+            new_firmware=$(cat fwmap | grep -v "^#" | grep CCU | awk '$1=$1' | cut -d' ' -f 3)
+            info "Newest firmware version: ${new_firmware}"
+
+            if [ $(ver ${firmware_version}) -ge $(ver ${new_firmware}) ] && [ $IS_FORCE -ne 1 ]
+            then
+                die "ERROR: No newer firmware version found, exiting"
+            fi
+
+            error "WARNING: Trying to update the module firmware to the newest version including homematic-ip support. To cancel this operation type CTRL+C you have 5 seconds..."
+            countdown
+            info "... too late ;)"
+
+            progress "Updating firmware this cat take some time, please dont turn off your device"
+            lxc-attach -n ${LXCNAME} --  eq3configcmd update-coprocessor -p /dev/${dev_int} -t HM-MOD-UART -u -c -d /firmware/HM-MOD-UART
+            sleep 5
+            do_stop_container
         ;;
         update)
             cd ${YAHM_DIR}

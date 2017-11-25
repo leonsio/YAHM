@@ -106,7 +106,7 @@ esac
 progress "Updating sources (can take some time)"
 apt-get -q=2 update
 
-check_install_deb "sendmail bash-completion wget dos2unix python git lxc liblzo2-dev bridge-utils python-lzo patch gzip openssl"
+check_install_deb "bash-completion wget dos2unix python git lxc liblzo2-dev bridge-utils python-lzo patch gzip openssl"
 
 progress "Clean up YAHM directory (removing old versions)"
 rm -rf /opt/YAHM
