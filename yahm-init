@@ -92,6 +92,7 @@ DIST_ID="$($LSB_RELEASE -is)"
 CODENAME="$($LSB_RELEASE -cs)"
 INTERFACE="eth0"
 DIST=""
+IS_VERBOSE=0
 
 # Check the distribution is in the supported list
 case "$DIST_ID:$CODENAME" in
@@ -172,11 +173,11 @@ EOF
         fi
     fi
     info "ATTENTION: For log files see /var/log/yahm"
-    progress "\n\tInstalling LXC container (can take some time)\n"
-    /opt/YAHM/bin/yahm-lxc install  2>>/var/log/yahm/lxc_install.log >>/var/log/yahm/lxc_install.log
-    info "YAHM LXC container was installed successfully\n"
+    progress "\n\tInstalling LXC container (can take some time)"
+    /opt/YAHM/bin/yahm-lxc install
+    info "\tYAHM LXC container was installed successfully\n"
 
-    progress "\tCreating Bridge for networking\n"
+    progress "\tCreating Bridge for networking"
     /opt/YAHM/bin/yahm-network -i ${INTERFACE} -r 0 -w create_bridge  2>>/var/log/yahm/network_create.log >>/var/log/yahm/network_create.log
     info "\tBridge yahmbr0 with interface eth0 was created\n"
 
@@ -191,7 +192,7 @@ EOF
 
     if [ "$BOARD_TYPE" = "Raspberry Pi" ]
     then
-        info "Found Raspberry Pi hardware, installing pivccu-driver"
+        info "\tFound Raspberry Pi hardware, installing pivccu-driver\n"
         /opt/YAHM/bin/yahm-module -m pivccu-driver enable
     else
         info "Automatic module installation is only supported on raspberry pi"
