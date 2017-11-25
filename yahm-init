@@ -172,11 +172,11 @@ EOF
         fi
     fi
     info "ATTENTION: For log files see /var/log/yahm"
-    progress "\tInstalling LXC container (can take some time)"
+    progress "\n\tInstalling LXC container (can take some time)\n"
     /opt/YAHM/bin/yahm-lxc install  2>>/var/log/yahm/lxc_install.log >>/var/log/yahm/lxc_install.log
-    info "\tYAHM LXC container was installed successfully\n"
+    info "YAHM LXC container was installed successfully\n"
 
-    progress "\tCreating Bridge for networking"
+    progress "\tCreating Bridge for networking\n"
     /opt/YAHM/bin/yahm-network -i ${INTERFACE} -r 0 -w create_bridge  2>>/var/log/yahm/network_create.log >>/var/log/yahm/network_create.log
     info "\tBridge yahmbr0 with interface eth0 was created\n"
 
@@ -184,15 +184,15 @@ EOF
     /opt/YAHM/bin/yahm-network attach_bridge  2>>/var/log/yahm/network_attach.log >>/var/log/yahm/network_attach.log
     info "\tyahmbr0 was attached to YAHM LXC container\n"
 
-    progress "\tStarting LXC container (timeout 20 seconds )"
-    lxc-start -n yahm -d 2>>/var/log/yahm/ccu_start.log >>/var/log/yahm/ccu_start.log
-    sleep 20
-    info "\tYAHM started\n"
+    #progress "\n\tStarting LXC container (timeout 20 seconds )\n"
+    #lxc-start -n yahm -d 2>>/var/log/yahm/ccu_start.log >>/var/log/yahm/ccu_start.log
+    #sleep 20
+    #info "\tYAHM started\n"
 
     if [ "$BOARD_TYPE" = "Raspberry Pi" ]
     then
         info "Found Raspberry Pi hardware, installing pivccu-driver"
-        /opt/YAHM/bin/yahm-module -f -m pivccu-driver enable
+        /opt/YAHM/bin/yahm-module -m pivccu-driver enable
     else
         info "Automatic module installation is only supported on raspberry pi"
         info "To disable homematic-ip warnings, please run 'yahm-module -f -m homematic-ip disable'"
