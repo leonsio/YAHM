@@ -121,7 +121,7 @@ for key in "$@"; do
         info|status)
             info "YAHM Version: ${YAHM_VERSION}"
             echo ""
-	        if [ -e ${LXC_ROOT_MODULES}/pivccu ]
+	        if [ -e ${LXC_ROOT_MODULES}/pivccu-driver ]
             then
                 info "Module information"
                 module_serial=$(cat /sys/module/plat_eq3ccu2/parameters/board_serial)
