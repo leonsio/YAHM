@@ -128,7 +128,7 @@ for key in "$@"; do
                 progress "New CCU2 Firmware (${CCU2new}) available, update with 'yahm-lxc update' possible"
             fi
             echo ""
-	        if [ -e ${LXC_ROOT_MODULES}/pivccu-driver ]
+	        if [ -e ${LXC_ROOT_MODULES}/pivccu-driver ] && [ $(lxc-info -n ${LXCNAME}|grep RUNNING |wc -l) -eq 1 ]
             then
                 info "Module information"
                 module_serial=$(cat /sys/module/plat_eq3ccu2/parameters/board_serial)
