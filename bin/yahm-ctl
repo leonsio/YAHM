@@ -182,6 +182,8 @@ for key in "$@"; do
 
             if [ $(ver ${firmware_version}) -ge $(ver ${new_firmware}) ] && [ $IS_FORCE -ne 1 ]
             then
+                lxc-attach -n ${LXCNAME}  -- /etc/init.d/S60multimacd start 3>&1 1>&2 2>&3 > /dev/null
+                lxc-attach -n ${LXCNAME}  -- /etc/init.d/S61rfd start 3>&1 1>&2 2>&3 > /dev/null
                 die "ERROR: No newer firmware version found, exiting"
             fi
 

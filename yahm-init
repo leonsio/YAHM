@@ -146,10 +146,12 @@ then
     source /opt/YAHM/share/tools/arm-board-detect/armhwinfo.sh
     if [ "$DIST_ID" = "Raspbian" ] ;
     then
+
         if [ $(cat /etc/dhcpcd.conf | grep -v "^#" | grep "interface " | wc -l) -gt 0 ] ;
           then
-            die "Custom network configuration is not supported"
+            die "Custom network configuration is not supported, please use manual installation"
         fi
+
         info "Disable new dhcpcd on Raspbian"
         systemctl disable dhcpcd.service
         systemctl stop dhcpcd.service
@@ -199,9 +201,9 @@ EOF
         info "To disable homematic-ip warnings, please run 'yahm-module -f -m homematic-ip disable'"
     fi
     
-    info "YAHM was successfully installed, please restart your system, to activate new networking configuration"
-    info "WARNING: You may became new IP-address after reboot"
     info "ATTENTION: Please verify your network configuration (/etc/network/interfaces)"
+    info "WARNING: You may became new IP-address after reboot"
+    info "YAHM was successfully installed, please restart your system, to activate new networking configuration"
     # Disable Error handling
     ERROR=0
 else

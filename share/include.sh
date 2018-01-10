@@ -22,7 +22,7 @@ YAHM_LIB=/var/lib/yahm
 
 # Default names/variables (Raspberry/YAHM)
 LXCNAME="yahm"
-CCU2Version="2.29.23"
+LastCCU2Version="2.29.23"
 BRIDGE="yahmbr0"
 INTERFACE="eth0"
 
@@ -240,6 +240,7 @@ download_ccu2_fw()
     EQ3_FW="${YAHM_TMP}/HM-CCU2-${BUILD}.tar.gz"
 
     wget $QUIET --tries=3 --retry-connrefused  -O "$EQ3_FW" "$curFWdl" || info "Can not download file"
+
     if [ ! -f "$EQ3_FW" ] && [ $IS_FORCE -ne 1 ]
     then
         die "ERROR: Can not download firmware. Are you connected to the internet? Try to download the file manually and use -d flag"
