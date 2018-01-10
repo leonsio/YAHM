@@ -120,6 +120,13 @@ for key in "$@"; do
         ;;  
         info|status)
             info "YAHM Version: ${YAHM_VERSION}"
+            CCU2new=`get_ccu2_actual_version`
+            CCU2current=`get_yahm_version ${LXCNAME}`
+            info "CCU2 Current: ${CCU2current}"
+            if [ $(ver $CCU2new) -gt $(ver $CCU2current) ]
+            then
+                progress "New CCU2 Firmware (${CCU2new}) available, update with 'yahm-lxc update' possible"
+            fi
             echo ""
 	        if [ -e ${LXC_ROOT_MODULES}/pivccu-driver ]
             then
