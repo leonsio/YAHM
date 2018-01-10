@@ -85,7 +85,7 @@ Die Aktivierung der Unterstützung kann je nach Bedarf erfolgen, wird die Unters
 ## Aktivierung von Homematic-IP
 * Es existieren aktuell zwei Treiber, die eine Unterstütztung für Homematic-IP ermöglichen. Hinsichtlich des Funktionsumfang unterscheiden sich die Treiber nicht, nur durch die Art der Installation. 
 * Bei dem alten "homematic-ip" Modul wird das im Raspbian Kernel einkopilierte PL011 UART Treiber durch eine gesharte Version ersetzt, hierzu ist es notwendig den Kernel neu zu kompilieren. Anschließend werden die für den Raspberry Pi bzw. Broadcom Chipsatz erstellte Homematic-IP Module installiert.  Dieses Modul unterstützt ausschließlich Raspberry Pi Systeme (Broadcom Chipsatz), somit wird dieser Ansatz nicht länger verfolgt.
-* Bei dem neuen "pivccu-driver" wird das bestehende Kernel nicht angefasst, sondern mit Hilfe des Device-Trees das vorhandene PL011 UART Treiber überschrieben. Auf diese Weise ist es nicht länger notwendig das vorhandene Kernel neu zu kompilieren. Auf diese Weise verkürzt sich die Installation von 3-4 Stunden auf 5-10 Minuten. Durch einen generichten Treiber können weitere SoC unterstützt werden, für eine Liste unterstützter Geräte siehe das [PIVCCU](https://github.com/alexreinert/piVCCU) Projekt
+* Bei dem neuen "pivccu-driver" wird das bestehende Kernel nicht angefasst, sondern mit Hilfe des Device-Trees das vorhandene PL011 UART Treiber überschrieben. Auf diese Weise ist es nicht länger notwendig das vorhandene Kernel neu zu kompilieren. Auf diese Weise verkürzt sich die Installation von 3-4 Stunden auf 5-10 Minuten. Durch einen generichten Treiber können weitere SoC unterstützt werden, für eine Liste unterstützter Geräte siehe das [piVCCU](https://github.com/alexreinert/piVCCU) Projekt
 
 ### pivccu-driver Modul
 Mit pivccu-driver wird ein generischer Treiber für verschiedene Plattformen installiert, der die Homematic-IP Unterstützung mitbringt, es wird hierbei kein neuer Kernel benötigt, die Installationsdauer beträgt etwa 5-10 Minuten. Es werden jedoch Kernel-Souren benötigt, damit die Treiber gebaut werden können.
@@ -135,9 +135,9 @@ Für erfahrene Benutzer mit mehreren hundert Geräten/Programmen reicht die Leis
 
 ## Credits
 Die Arbeit/Idee basiert auf der Arbeit von [bullshit](https://github.com/bullshit/lxccu) bzw. des [LXCCU](http://www.lxccu.com) Projektes, welches nicht länger aktiv ist.<br >
-Overlay und generischer UART Treiber by [PIVCCU](https://github.com/alexreinert/piVCCU)
+Overlay und generischer UART Treiber by [piVCCU](https://github.com/alexreinert/piVCCU)
 
-**Wesentliche Unterschiede zu PiVCCU:**
+**Wesentliche Unterschiede zu piVCCU:**
 - [x] Unterstützung aktueller/älterer CCU2 Firmware ([Liste unterstützer CCU2-Versionen](https://github.com/leonsio/CCU2-FW))
 - [x] Die Installation kann manuell gesteuert werden und wird nicht durch DEB-Installer vorgenommen
 - [x] Modulare Bauweise, es können beliebige Module und weitere Anwendungen durch vorhandene und von Community beigesteuerte Module eingebunden werden
@@ -146,4 +146,6 @@ Overlay und generischer UART Treiber by [PIVCCU](https://github.com/alexreinert/
 - [x] Installationsroutine für Einsteiger
   - [x]  Ein-Klick-Installation (frisches Raspbian vorausgesetzt)
   - [x]  Skriptgesteuerte Netzwerkkonfiguration
-- [ ] Aktuell nur out-of-the-box Unterstützung für Raspberry Pi
+- [ ] Aktuell nur out-of-the-box Homematic-IP Unterstützung für Raspberry Pi
+- [ ] Aktuell Unterstützung des HM-MOD-RPI-PCB (ohne IP) nur für Raspberry Pi
+- [ ] Keine fertigen SD Images
