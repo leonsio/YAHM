@@ -9,6 +9,7 @@
 
 Zur Zeit wurde dieses Skript auf folgender Hardware erfolgreich getestet:
 * Rapsberry Pi 2/3
+* ASUS Tinker Board
 * Odroid XU4 (ohne Homematic-IP)
 * Orange PI Plus 2 (ohne Homematic-IP)
 * Experimentell: x86 
@@ -16,10 +17,10 @@ Zur Zeit wurde dieses Skript auf folgender Hardware erfolgreich getestet:
 Folgende Betrebssysteme werden aktuell unterstützt:
 * Debian Jessie/Stretch (ARM/x86)
 * Raspbian Jessie/Stretch
-* Experimentell: Armbian
+* Armbian (Debian) Stretch
 * Experimentell: Ubuntu 16.04
 
-_(* Die automatische Einrichtung des HM-MOD-RPI-PCB erfolgt ->aktuell<- ausschließlich auf Rapsberry Pi 2/3)_
+_(* Die automatische Einrichtung des HM-MOD-RPI-PCB erfolgt ->aktuell<- ausschließlich auf Rapsberry Pi 2/3 und ASUS Tinker Board)_
 
 **Weitere Informationen und Anleitungen können dem [Wiki](https://github.com/leonsio/YAHM/wiki) bzw. dem [Homematic-Forum](https://homematic-forum.de/forum/viewforum.php?f=67) entnommen werden.**
 
@@ -76,7 +77,7 @@ yahm-module -m pivccu-driver enable
 
 **Achtung:** Im Zuge der Installation wird ein Reboot benötigt
 
-**Hinweis:** Die automatische Konfiguration des Funkmoduls durch das pivccu-driver Modul, erfolgt ->aktuell<- ausschließlich auf einem Raspberry Pi. Für die Installation auf einer anderen Hardware sind die Installationsschritte im [Wiki](https://github.com/leonsio/YAHM/wiki/YAHM-Module:-HM-MOD-RPI-PCB) hinterlegt. In Zukunft ist eine Unterstützung für weitere Hardware durch pivccu-driver vorgesehen.
+**Hinweis:** Die automatische Konfiguration des Funkmoduls durch das pivccu-driver Modul, erfolgt ->aktuell<- ausschließlich auf einem Raspberry Pi und ASUS Tinker Board. Für die Installation auf einer anderen Hardware sind die Installationsschritte im [Wiki](https://github.com/leonsio/YAHM/wiki/YAHM-Module:-HM-MOD-RPI-PCB) hinterlegt. In Zukunft ist eine Unterstützung für weitere Hardware durch pivccu-driver vorgesehen.
 
 # Homematic-IP 
 Die aktuelle CCU2 Firmware (ab 2.15.x) beinhaltet standardmäßig die Unterstützung für Homematic-IP. Die Unterstützung in YAHM wird ab der YAHM Version 1.7 durch das [Homematic-IP Modul](https://github.com/leonsio/YAHM/wiki/YAHM-Module:-Homematic-IP) und ab der Version 1.9 durch das [pivccu-driver](https://github.com/leonsio/YAHM/wiki/YAHM-Module:-PIVCCU-Driver) realisiert. <br/>
@@ -142,6 +143,7 @@ Overlay und generischer UART Treiber by [piVCCU](https://github.com/alexreinert/
 - [x] Die Installation kann manuell gesteuert werden und wird nicht durch DEB-Installer vorgenommen
 - [x] Modulare Bauweise, es können beliebige Module und weitere Anwendungen durch vorhandene und von Community beigesteuerte Module eingebunden werden
 - [x] Skript und GUI-Basierte Installation/Konfiuration
+- [x] Unterstützung für jeden Raspbian Kernel (per deb oder rpi-update)
 - [x] Eingebaute Backup und Restore Funktionen
 - [x] Installationsroutine für Einsteiger
   - [x]  Ein-Klick-Installation (frisches Raspbian vorausgesetzt)

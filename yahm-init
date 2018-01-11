@@ -47,7 +47,7 @@ fi
 
 check_install_deb()
 {
-    progress "Installing dependencies"
+    progress "Installing dependencies.."
     packages=$1
     for P in $packages
     do
@@ -57,6 +57,7 @@ check_install_deb()
             install_package "$P"
         }
     done
+    info "\t..done"
 }
 
 install_package() {
@@ -104,17 +105,18 @@ Ubuntu:xenial)  DIST="ubuntu";;
 *)		die "Sorry, this script does not support your distribution/release ($DIST_ID $CODENAME)." ;;
 esac
 
-progress "Updating sources (can take some time)"
+progress "Updating sources (can take some time).."
 apt-get -q=2 update
+info "\t..done"
 
 check_install_deb "bash-completion wget dos2unix python git lxc liblzo2-dev bridge-utils python-lzo patch gzip openssl"
 
-progress "Clean up YAHM directory (removing old versions)"
+progress "Clean up YAHM directory (removing old versions).."
 rm -rf /opt/YAHM
-info "done"
+info "\t...done"
 
 # checkout all files
-progress "Downloading actual version from git repository"
+progress "Downloading actual version from git repository.."
 mkdir -p /opt
 cd /opt
 
@@ -124,14 +126,16 @@ cd /opt
 git clone --recursive https://github.com/leonsio/YAHM.git  --branch develop 2>>/var/log/yahm/git.log >>/var/log/yahm/git.log
 cd /opt/YAHM
 git submodule foreach git pull origin master 2>>/var/log/yahm/git.log >>/var/log/yahm/git.log
+info "\t..done"
 
-progress "Including YAHM into PATH"
+progress "Including YAHM into PATH.."
 chmod +x /opt/YAHM/bin/*
 ln -sf /opt/YAHM/bin/* /usr/sbin/
+info "\t..done"
 
-progress "Installing bash command completion"
+progress "Installing bash command completion.."
 ln -sf /opt/YAHM/share/yahm_completion /etc/bash_completion.d/yahm_completion 
-info "Done"
+info "\tdone"
 
 if [ "$1" = "ui" ] && [ "$DIST" != "ubuntu" ] 
 then
@@ -192,12 +196,12 @@ EOF
     #sleep 20
     #info "\tYAHM started\n"
 
-    if [ "$BOARD_TYPE" = "Raspberry Pi" ]
+    if [ "$BOARD_TYPE" = "Raspberry Pi" ] || [ "$BOARD_TYPE" = "ASUS" ]
     then
-        info "\tFound Raspberry Pi hardware, installing pivccu-driver\n"
+        info "\tFound ${$BOARD_TYPE} hardware, installing pivccu-driver\n"
         /opt/YAHM/bin/yahm-module -m pivccu-driver enable
     else
-        info "Automatic module installation is only supported on raspberry pi"
+        info "Automatic module installation currently only supported on raspberry pi or asus tinker board"
         info "To disable homematic-ip warnings, please run 'yahm-module -f -m homematic-ip disable'"
     fi
     
