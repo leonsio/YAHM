@@ -132,7 +132,7 @@ for key in "$@"; do
             then
                 info "Module information"
                 module_serial=$(cat /sys/module/plat_eq3ccu2/parameters/board_serial)
-                module_firmware=$(cat /sys/module/plat_eq3ccu2/parameters/board_firmware)
+                module_firmware=$(cat /sys/module/plat_eq3ccu2/parameters/board_extended_info)
                 echo "Module Serial: ${module_serial}"
                 echo "Module Firmware: ${module_firmware}"
                 echo ""
