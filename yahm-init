@@ -125,7 +125,10 @@ cd /opt
 #####################################
 git clone --recursive https://github.com/leonsio/YAHM.git  --branch develop 2>>/var/log/yahm/git.log >>/var/log/yahm/git.log
 cd /opt/YAHM
+# update modules
 git submodule foreach git pull origin master 2>>/var/log/yahm/git.log >>/var/log/yahm/git.log
+# update second level submodule
+git submodule foreach git submodule update --init --recursive 2>>/var/log/yahm/git.log >>/var/log/yahm/git.log
 info "\t..done"
 
 progress "Including YAHM into PATH.."

@@ -148,6 +148,5 @@ Overlay und generischer UART Treiber by [piVCCU](https://github.com/alexreinert/
 - [x] Installationsroutine für Einsteiger
   - [x]  Ein-Klick-Installation (frisches Raspbian vorausgesetzt)
   - [x]  Skriptgesteuerte Netzwerkkonfiguration
-- [ ] Aktuell nur out-of-the-box Homematic-IP Unterstützung für Raspberry Pi
 - [ ] Aktuell Unterstützung des HM-MOD-RPI-PCB (ohne IP) nur für Raspberry Pi
 - [ ] Keine fertigen SD Images
