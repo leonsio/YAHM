@@ -150,7 +150,7 @@ fi
 if [ "$1" = "quickinstall" ] && [ "$DIST" != "ubuntu" ] 
 then
     info "\n\tEnter quick install mode\n"
-    source /opt/YAHM/share/tools/arm-board-detect/armhwinfo.sh
+
     if [ "$DIST_ID" = "Raspbian" ] ;
     then
 
@@ -199,9 +199,11 @@ EOF
     #sleep 20
     #info "\tYAHM started\n"
 
+    source /opt/YAHM/share/tools/arm-board-detect/armhwinfo.sh
+
     if [ "$BOARD_TYPE" = "Raspberry Pi" ] || [ "$BOARD_TYPE" = "ASUS" ]
     then
-        info "\tFound ${$BOARD_TYPE} hardware, installing pivccu-driver\n"
+        info "\tFound ${BOARD_TYPE} hardware, installing pivccu-driver\n"
         /opt/YAHM/bin/yahm-module -m pivccu-driver enable
     else
         info "Automatic module installation currently only supported on raspberry pi or asus tinker board"

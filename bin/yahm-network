@@ -388,6 +388,10 @@ create_bridge()
 
     info "Clean up"
     rm -rf /tmp/yahm_interfaces
+
+    # set default bridge
+    sed -i /etc/default/yahm -e "s/BRIDGE=.*$/BRIDGE='${BRIDGE}'/"
+    sed -i /etc/default/yahm -e "s/INTERFACE=.*$/INTERFACE='${INTERFACE}'/"
     
 }
 

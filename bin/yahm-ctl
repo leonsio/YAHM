@@ -120,13 +120,15 @@ for key in "$@"; do
         ;;  
         info|status)
             info "YAHM Version: ${YAHM_VERSION}"
-            CCU2new=`get_ccu2_actual_version`
-            CCU2current=`get_yahm_version ${LXCNAME}`
-            info "CCU2 Current: ${CCU2current}"
-            if [ $(ver $CCU2new) -gt $(ver $CCU2current) ]
+
+            if [ `check_yahm_name $LXCNAME` -eq 0 ] && [ $IS_FORCE -ne 1 ]
             then
-                progress "New CCU2 Firmware (${CCU2new}) available, update with 'yahm-lxc update' possible"
+                die "ERROR: Can not find $LXCNAME container"
             fi
+
+            CCU2current=`get_yahm_version ${LXCNAME}`
+            info "CCU2 Version: ${CCU2current}"
+
             echo ""
 	        if [ -e ${LXC_ROOT_MODULES}/pivccu-driver ] && [ $(lxc-info -n ${LXCNAME}|grep RUNNING |wc -l) -eq 1 ]
             then
@@ -213,24 +215,20 @@ for key in "$@"; do
                 if [ ! -f $YAHM_DIR/VERSION ]
                 then
                     info "YAHM version 1.0 (or below) found"
-                    YAHM_OLD_VERSION="1.0"
+                    YAHM_VERSION="1.0"
                 else
-                    # wir fangen Update mit der alten Version an
-                    YAHM_OLD_VERSION=$YAHM_VERSION
-                    info "YAHM version ${YAHM_OLD_VERSION} found"
+                    info "YAHM version ${YAHM_VERSION} found"
                 fi
-                # Aktuelle Version bestimmen, kommt aus dem GIT
-                YAHM_NEW_VERSION=$(cat $YAHM_DIR/VERSION)
 
-                if [ $(ver ${YAHM_NEW_VERSION}) -gt $(ver ${YAHM_OLD_VERSION}) ]
+                if [ $(ver ${NEW_YAHM_VERSION}) -gt $(ver ${YAHM_VERSION}) ]
                 then
-                    info "New YAHM version ${YAHM_NEW_VERSION} found, updating"
+                    info "New YAHM version ${NEW_YAHM_VERSION} found, updating"
 
                     # Für das nächste Release müsste ich mir was besseres einfallen lassen
-                    if [ -f ${YAHM_DIR}/share/firmware/patches/YAHM/${YAHM_OLD_VERSION}_${YAHM_NEW_VERSION}.sh ]
+                    if [ -f ${YAHM_DIR}/share/firmware/patches/YAHM/${YAHM_OLD_VERSION}_${NEW_YAHM_VERSION}.sh ]
                     then
-                        progress "Update File ${YAHM_OLD_VERSION}_${YAHM_NEW_VERSION}.sh found, executing"
-                        ${YAHM_DIR}/share/firmware/patches/YAHM/${YAHM_OLD_VERSION}_${YAHM_NEW_VERSION}.sh ${YAHM_DIR}
+                        progress "Update File ${YAHM_OLD_VERSION}_${NEW_YAHM_VERSION}.sh found, executing"
+                        ${YAHM_DIR}/share/firmware/patches/YAHM/${YAHM_VERSION}_${NEW_YAHM_VERSION}.sh ${YAHM_DIR}
                     fi
                 fi
             fi
