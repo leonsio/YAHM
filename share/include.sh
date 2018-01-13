@@ -49,9 +49,10 @@ SHOW_YAHM_UPDATES=1
 
 EOF
 
-else
-    source /etc/default/yahm
 fi
+
+source /etc/default/yahm
+
 
 
 #######################################

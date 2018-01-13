@@ -132,12 +132,17 @@ for key in "$@"; do
             echo ""
 	        if [ -e ${LXC_ROOT_MODULES}/pivccu-driver ] && [ $(lxc-info -n ${LXCNAME}|grep RUNNING |wc -l) -eq 1 ]
             then
-                info "Module information"
-                module_serial=$(cat /sys/module/plat_eq3ccu2/parameters/board_serial)
-                module_firmware=$(cat /sys/module/plat_eq3ccu2/parameters/board_extended_info)
-                echo "Module Serial: ${module_serial}"
-                echo "Module Firmware: ${module_firmware}"
-                echo ""
+                if [ -f /sys/module/plat_eq3ccu2/parameters/board_extended_info ]
+                then
+                    info "Module information"
+                    module_serial=$(cat /sys/module/plat_eq3ccu2/parameters/board_serial)
+                    module_firmware=$(cat /sys/module/plat_eq3ccu2/parameters/board_extended_info)
+                    echo "Module Serial: ${module_serial}"
+                    echo "Module Firmware: ${module_firmware}"
+                    echo ""
+                else
+                    error "Can not read pivccu-driver module information"
+                fi
             fi
             info "LXC container information"
             lxc-info -n ${LXCNAME}
