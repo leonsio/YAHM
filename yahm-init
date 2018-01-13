@@ -47,7 +47,7 @@ fi
 
 check_install_deb()
 {
-    progress "Installing dependencies"
+    progress "Installing dependencies.."
     packages=$1
     for P in $packages
     do
@@ -57,6 +57,7 @@ check_install_deb()
             install_package "$P"
         }
     done
+    info "\t..done"
 }
 
 install_package() {
@@ -92,6 +93,7 @@ DIST_ID="$($LSB_RELEASE -is)"
 CODENAME="$($LSB_RELEASE -cs)"
 INTERFACE="eth0"
 DIST=""
+IS_VERBOSE=0
 
 # Check the distribution is in the supported list
 case "$DIST_ID:$CODENAME" in
@@ -103,35 +105,40 @@ Ubuntu:xenial)  DIST="ubuntu";;
 *)		die "Sorry, this script does not support your distribution/release ($DIST_ID $CODENAME)." ;;
 esac
 
-progress "Updating sources (can take some time)"
+progress "Updating sources (can take some time).."
 apt-get -q=2 update
+info "\t..done"
 
-check_install_deb "sendmail bash-completion wget dos2unix python git lxc liblzo2-dev bridge-utils python-lzo patch gzip openssl"
+check_install_deb "bash-completion wget dos2unix python git lxc liblzo2-dev bridge-utils python-lzo patch gzip openssl"
 
-progress "Clean up YAHM directory (removing old versions)"
+progress "Clean up YAHM directory (removing old versions).."
 rm -rf /opt/YAHM
-info "done"
+info "\t...done"
 
 # checkout all files
-progress "Downloading actual version from git repository"
+progress "Downloading actual version from git repository.."
 mkdir -p /opt
 cd /opt
 
 #####################################
 #### REMOVE --branch IN MASTER !!!!!#
 #####################################
-git clone --recursive https://github.com/leonsio/YAHM.git  2>>/var/log/yahm/git.log >>/var/log/yahm/git.log
+git clone --recursive https://github.com/leonsio/YAHM.git  --branch develop 2>>/var/log/yahm/git.log >>/var/log/yahm/git.log
 cd /opt/YAHM
-sleep 1
+# update modules
 git submodule foreach git pull origin master 2>>/var/log/yahm/git.log >>/var/log/yahm/git.log
+# update second level submodule
+git submodule foreach git submodule update --init --recursive 2>>/var/log/yahm/git.log >>/var/log/yahm/git.log
+info "\t..done"
 
-progress "Including YAHM into PATH"
+progress "Including YAHM into PATH.."
 chmod +x /opt/YAHM/bin/*
 ln -sf /opt/YAHM/bin/* /usr/sbin/
+info "\t..done"
 
-progress "Installing bash command completion"
+progress "Installing bash command completion.."
 ln -sf /opt/YAHM/share/yahm_completion /etc/bash_completion.d/yahm_completion 
-info "Done"
+info "\tdone"
 
 if [ "$1" = "ui" ] && [ "$DIST" != "ubuntu" ] 
 then
@@ -144,25 +151,27 @@ if [ "$1" = "quickinstall" ] && [ "$DIST" != "ubuntu" ]
 then
     info "\n\tEnter quick install mode\n"
 
-  if [ "$DIST_ID" = "Raspbian" ] ;
-  then
-    if [ $(cat /etc/dhcpcd.conf | grep -v "^#" | grep "interface " | wc -l) -gt 0 ] ;
-      then
-        die "Custom network configuration is not supported"
-    fi	  
-    info "Disable new dhcpcd on Raspbian"
-    systemctl disable dhcpcd.service 
-    systemctl stop dhcpcd.service
-
-    if [ "$CODENAME" = "jessie" ] ;
-      then
-	sed -i /etc/network/interfaces -e "s/iface eth0 inet manual/auto eth0\niface eth0 inet dhcp/"
-      fi
-
-    if [ "$CODENAME" = "stretch" ] ;
+    if [ "$DIST_ID" = "Raspbian" ] ;
     then
-#      INTERFACE=`ls /sys/class/net | grep enx`
-      cat >> "/etc/network/interfaces" <<EOF
+
+        if [ $(cat /etc/dhcpcd.conf | grep -v "^#" | grep "interface " | wc -l) -gt 0 ] ;
+          then
+            die "Custom network configuration is not supported, please use manual installation"
+        fi
+
+        info "Disable new dhcpcd on Raspbian"
+        systemctl disable dhcpcd.service
+        systemctl stop dhcpcd.service
+
+        if [ "$CODENAME" = "jessie" ] ;
+          then
+        sed -i /etc/network/interfaces -e "s/iface eth0 inet manual/auto eth0\niface eth0 inet dhcp/"
+          fi
+
+        if [ "$CODENAME" = "stretch" ] ;
+        then
+        #      INTERFACE=`ls /sys/class/net | grep enx`
+          cat >> "/etc/network/interfaces" <<EOF
 auto lo
 iface lo inet loopback
 
@@ -170,11 +179,11 @@ auto ${INTERFACE}
 iface ${INTERFACE} inet dhcp
 
 EOF
-  fi
-fi
+        fi
+    fi
     info "ATTENTION: For log files see /var/log/yahm"
-    progress "\tInstalling LXC container (can take some time)"
-    /opt/YAHM/bin/yahm-lxc install  2>>/var/log/yahm/lxc_install.log >>/var/log/yahm/lxc_install.log
+    progress "\n\tInstalling LXC container (can take some time)"
+    /opt/YAHM/bin/yahm-lxc install
     info "\tYAHM LXC container was installed successfully\n"
 
     progress "\tCreating Bridge for networking"
@@ -185,26 +194,25 @@ fi
     /opt/YAHM/bin/yahm-network attach_bridge  2>>/var/log/yahm/network_attach.log >>/var/log/yahm/network_attach.log
     info "\tyahmbr0 was attached to YAHM LXC container\n"
 
-    progress "\tStarting LXC container"
-    lxc-start -n yahm -d 2>>/var/log/yahm/ccu_start.log >>/var/log/yahm/ccu_start.log
-    sleep 20
-    info "\tYAHM started\n"
+    #progress "\n\tStarting LXC container (timeout 20 seconds )\n"
+    #lxc-start -n yahm -d 2>>/var/log/yahm/ccu_start.log >>/var/log/yahm/ccu_start.log
+    #sleep 20
+    #info "\tYAHM started\n"
 
-    progress "\tDisable Homematic-IP\n"
-    /opt/YAHM/bin/yahm-module -f -m homematic-ip disable 2>>/var/log/yahm/module.log >>/var/log/yahm/module.log
-    info "\tHomematic-IP was disabled successfully\n"
+    source /opt/YAHM/share/tools/arm-board-detect/armhwinfo.sh
 
-#    progress "\tRestarting LXC container"
-#    lxc-stop -k -n yahm 2>>/var/log/yahm/stop.log >>/var/log/yahm/stop.log
-#    sleep 5
-#    lxc-start -n yahm -d 2>>/var/log/yahm/start.log >>/var/log/yahm/start.log
-#    info "\tYAHM successfully restarted\n"
+    if [ "$BOARD_TYPE" = "Raspberry Pi" ] || [ "$BOARD_TYPE" = "ASUS" ]
+    then
+        info "\tFound ${BOARD_TYPE} hardware, installing pivccu-driver\n"
+        /opt/YAHM/bin/yahm-module -m pivccu-driver enable
+    else
+        info "Automatic module installation currently only supported on raspberry pi or asus tinker board"
+        info "To disable homematic-ip warnings, please run 'yahm-module -f -m homematic-ip disable'"
+    fi
     
-    info "YAHM was successfully installed, please restart your system, to activate new networking configuration"
-
-#    info "ATTENTION: To disable VirtualDevices error message, you must activate homematic-ip module 'sudo yahm-module -m homematic-ip enable'"
-    info "WARNING: You may became new IP-address after reboot"
     info "ATTENTION: Please verify your network configuration (/etc/network/interfaces)"
+    info "WARNING: You may became new IP-address after reboot"
+    info "YAHM was successfully installed, please restart your system, to activate new networking configuration"
     # Disable Error handling
     ERROR=0
 else

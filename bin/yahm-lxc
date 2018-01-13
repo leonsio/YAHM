@@ -92,9 +92,6 @@ create_lxc_container()
         progress "ATTENTION: FORCE-Switch is used, actual instance will be overwritten"
     fi
 
-    # last known configuration
-    LastCCU2Version=$CCU2Version
-
     if [ "${BUILD}" == "" ] 
     then
         CCU2Version=`get_ccu2_actual_version`
@@ -106,12 +103,6 @@ create_lxc_container()
     if [ `yahm_compatibility $CCU2Version` -eq 1 ] && [ $IS_FORCE -ne 1 ]
     then
         die "ERROR: We dont have any patches for this version, please call 'yahm-ctl update' and try again"
-    fi
-
-    # try last known configuration
-    if [ `yahm_compatibility $CCU2Version` -eq 1 ] && [ $IS_FORCE -eq 1 ]
-    then
-        CCU2Version=$LastCCU2Version
     fi
 
     info "Creating new lxc container name: $LXCNAME, version $CCU2Version"
@@ -140,6 +131,11 @@ create_lxc_container()
     progress "Extracting firmware"
     tar $VERBOSE -xzf $EQ3_FW -C $YAHM_TMP
 
+    if [ $? -eq 1 ]
+    then
+        die "Something is wrong with downloaded archive, exit" # SRC Ordner fehlt
+    fi
+
     progress "Extract ubi image"
     $YAHM_DIR/share/tools/ubi_reader/ubi_extract_files.py $QUIET -k -o $LXC_ROOT "${YAHM_TMP}/rootfs.ubi"
 
@@ -153,10 +149,17 @@ create_lxc_container()
         
         if [ ! -f ${YAHM_DIR}/share/firmware/patches/${CCU2Version}.patch ] && [ $IS_FORCE -ne 1 ]
         then
-            die "ERROR: Detected Version: ${CCU2Version}, can not find patch file for this version use -f for patching with version 2.17.16"
+            die "ERROR: Detected Version: ${CCU2Version}, can not find patch file for this version use -f for patching with version ${$LastCCU2Version}"
         else
-            CCU2Version="2.17.16"
+            CCU2Version=$LastCCU2Version
         fi
+    fi
+
+    # try last known configuration
+    if [ `yahm_compatibility $CCU2Version` -eq 1 ] && [ $IS_FORCE -eq 1 ]
+    then
+        info "INFO: No patches for version ${CCU2Version} found, trying to use old patches from ${LastCCU2Version}"
+        CCU2Version=$LastCCU2Version
     fi
 
     if [ $(ver ${CCU2Version}) -ge $(ver "2.17.15") ]
@@ -176,8 +179,8 @@ create_lxc_container()
     sh "${YAHM_DIR}/share/firmware/scripts/${CCU2Version}.sh"
 
     progress "Creating SD card"
-    mkdir -p ${LXC_ROOT}/sd-mmcblk0
-    touch ${LXC_ROOT}/sd-mmcblk0/.initialised
+    mkdir -p ${YAHM_LIB}/SDcard/${LXCNAME}/sd-mmcblk0
+    touch ${YAHM_LIB}/SDcard/${LXCNAME}/sd-mmcblk0/.initialised
 
     # clean up download sources
     progress "Clean Up"
@@ -193,11 +196,14 @@ create_lxc_container()
         echo "lxc.arch = armhf" >> ${LXC_ROOT}/config
     fi
 
-    info "Container is created, please use 'yahm-ctl -n ${LXCNAME} start' to start and 'yahm-ctl -n ${LXCNAME} join' for console access"
+    CCU2current=`get_yahm_version ${LXCNAME}`
+    info "Container version ${CCU2current} is created, please use 'yahm-ctl -n ${LXCNAME} start' to start and 'yahm-ctl -n ${LXCNAME} join' for console access"
     info "For network configuration see yahm-network script"
 
     echo $LXCNAME > ${YAHM_LIB}/container_name
     touch ${YAHM_LIB}/is_installed
+    # set right name under defaults
+    sed -i /etc/default/yahm -e "s/LXCNAME=.*$/LXCNAME='${LXCNAME}'/"
 }
 
 create_lxc_config()
@@ -209,7 +215,7 @@ lxc.mount.entry = proc proc proc nodev,noexec,nosuid 0 0
 lxc.mount.entry = sysfs sys sysfs rw  0 0
 lxc.mount.entry = varfs var tmpfs defaults,size=196M 0 0
 lxc.mount.entry = devpts dev/pts devpts defaults,newinstance 0 0
-lxc.mount.entry = ${LXC_ROOT}/sd-mmcblk0  media/sd-mmcblk0/ none defaults,bind 0 0
+lxc.mount.entry = /var/lib/yahm/SDcard/${LXCNAME}/sd-mmcblk0  media/sd-mmcblk0/ none defaults,bind 0 0
 
 lxc.utsname = ${LXCNAME}
 lxc.rootfs = ${LXC_ROOT_FS}
@@ -237,13 +243,13 @@ lxc.cgroup.devices.allow = c 4:1 rwm
 lxc.cgroup.devices.allow = c 204:64 rwm
 
 # hmip-rf
-lxc.cgroup.devices.allow = c 242:0 rwm
+lxc.cgroup.devices.allow = c 241:* rwm
+lxc.cgroup.devices.allow = c 242:* rwm
 lxc.cgroup.devices.allow = c 243:* rwm
-lxc.cgroup.devices.allow = c 244:0 rwm
-lxc.cgroup.devices.allow = c 245:0 rwm
-lxc.cgroup.devices.allow = c 246:0 rwm
-lxc.cgroup.devices.allow = c 245:1 rwm
-lxc.cgroup.devices.allow = c 245:2 rwm
+lxc.cgroup.devices.allow = c 244:* rwm
+lxc.cgroup.devices.allow = c 245:* rwm
+lxc.cgroup.devices.allow = c 246:* rwm
+lxc.cgroup.devices.allow = c 247:* rwm
 
 # /dev/{,u}random
 lxc.cgroup.devices.allow = c 1:9 rwm
@@ -278,6 +284,11 @@ update_lxc_container()
     if [ `check_yahm_name $LXCNAME` -eq 0 ] && [ $IS_FORCE -ne 1 ]
     then
         die "ERROR: Can not find $LXCNAME container"
+    fi
+
+    if [ $(lxc-info -n ${LXCNAME}|grep RUNNING |wc -l) -eq 0 ]
+    then
+        die "${LXCNAME} container is not running (needed for data backup)."
     fi
 
     if [ "${BUILD}" == "" ]
@@ -319,13 +330,18 @@ update_lxc_container()
     progress "Backup installed modules"
     cp -rf ${LXC_ROOT}/.modules  ${YAHM_TMP}_update/${LXCNAME}/
     
-    backup_file=$(ls ${YAHM_TMP}_update/${LXCNAME}/*.sbk)
+    data_backup_file=$(ls ${YAHM_TMP}_update/${LXCNAME}/*.sbk)
+    info "INFO: Config backup file location: ${data_backup_file}"
 
     progress "Creating full backup from installed version ${installed_version}, calling: 'yahm-backup full_backup' script"
     if [ $IS_DEBUG -eq 1 ] ; then
         info "Calling: /opt/YAHM/bin/yahm-backup ${VERBOSE} ${force_switch} -n ${LXCNAME} full_backup"
     fi
     /opt/YAHM/bin/yahm-backup ${VERBOSE} ${force_switch} -n ${LXCNAME} full_backup
+
+    mv ${YAHM_TMP}/yahm_backup-${installed_version}.tgz ${YAHM_TMP}_update/${LXCNAME}/yahm_backup-${installed_version}_$(date +%Y%m%d).tgz
+    full_backup_file=$(ls ${YAHM_TMP}_update/${LXCNAME}/yahm_backup-*.tgz)
+    info "INFO: Full backup file location: ${full_backup_file}"
 
     progress "Delete old YAHM Container version: $installed_version"
     if [ $IS_DEBUG -eq 1 ] ; then
@@ -344,9 +360,9 @@ update_lxc_container()
 
     progress "Trying to restore old CCU2 backup, calling 'yahm-backup data_restore'"
     if [ $IS_DEBUG -eq 1 ] ; then
-        info "Calling: yahm-backup ${VERBOSE} ${force_switch} -n ${LXCNAME} -d ${backup_file} data_restore" 
+        info "Calling: yahm-backup ${VERBOSE} ${force_switch} -n ${LXCNAME} -d ${data_backup_file} data_restore"
     fi
-    /opt/YAHM/bin/yahm-backup ${VERBOSE} ${force_switch} -n ${LXCNAME} -d ${backup_file} data_restore
+    /opt/YAHM/bin/yahm-backup ${VERBOSE} ${force_switch} -n ${LXCNAME} -d ${data_backup_file} data_restore
 
     if [ $IS_DEBUG -eq 1 ] ; then
         info "Calling: yahm-ctl -n ${LXCNAME} start"
@@ -355,13 +371,6 @@ update_lxc_container()
 
     progress "Restoring old installed modules"
     files=`ls ${YAHM_TMP}_update/${LXCNAME}/.modules`
-
-    if [ ! -f ${YAHM_TMP}_update/${LXCNAME}/.modules/homematic-ip ] ; then
-        if [ $IS_DEBUG -eq 1 ] ; then
-            info "Calling: /opt/YAHM/bin/yahm-module -n ${LXCNAME} -f -m homematic-ip disable"
-        fi
-        /opt/YAHM/bin/yahm-module -n ${LXCNAME} -f -m homematic-ip disable
-    fi
 
     for file in $files
     do
@@ -372,8 +381,11 @@ update_lxc_container()
         /opt/YAHM/bin/yahm-module -n ${LXCNAME} ${VERBOSE} -f -m $file enable
     done
 
-    rm -rf ${YAHM_TMP}_update/
-    info "STATUS: Update was successfully new version is: ${CCU2Version}"
+    #rm -rf ${YAHM_TMP}_update/
+    CCU2current=`get_yahm_version ${LXCNAME}`
+    info "STATUS: Update was successfully new version is: ${CCU2current}"
+    info "STATUS: Old config backup file: ${data_backup_file}"
+    info "STATUS: Old full lxc backup file: ${full_backup_file}"
 }
 
 if [[ $# != 1 ]]; then

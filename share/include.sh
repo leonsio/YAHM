@@ -14,33 +14,58 @@ fi
 #echo ${0##*/}
 #exit;
 
+
+if [ ! -f /etc/default/yahm ]
+then
+    cat > /etc/default/yahm <<EOF
 # Default path
 YAHM_DIR=/opt/YAHM
-YAHM_TOOLS=/opt/YAHM/share/tools
+# temp folder
 YAHM_TMP=/tmp/YAHM
+# shared/cached files like systeminfo
 YAHM_LIB=/var/lib/yahm
-
-# Default names/variables (Raspberry/YAHM)
+# tools and other yahm internal modules
+YAHM_TOOLS=/opt/YAHM/share/tools
+# Default/actual lxc name
 LXCNAME="yahm"
-CCU2Version="2.29.22"
+# Last known good firmware version with pathes
+LastCCU2Version="2.29.23"
+# Default/actual bridge name
 BRIDGE="yahmbr0"
+# Default interface to bridge
 INTERFACE="eth0"
+
+#
+# Default behavior YAHM
+#
+# always show debug output -> 1
+IS_DEBUG=0
+# always froce operations -> 1
+IS_FORCE=0
+# always show verbose output -> 1
+IS_VERBOSE=0
+# show update warning -> 1
+SHOW_YAHM_UPDATES=1
+
+EOF
+
+else
+    source /etc/default/yahm
+fi
+
 
 #######################################
 ## DO NOT CHANGE THE FOLLOWING LINES ##
 #######################################
 
 # Default options
-YAHM_VERSION="1.8"
+YAHM_VERSION=$(cat $YAHM_DIR/VERSION)
 OPTIND=1
 QUIET="--quiet"
 VERBOSE=""
 ARCH=""
 
 # Default behavior YAHM
-IS_FORCE=0
-IS_DEBUG=0
-IS_VERBOSE=0
 DRY_RUN=0
 RESTART=1
 LSB_RELEASE="/usr/bin/lsb_release"
@@ -240,6 +265,7 @@ download_ccu2_fw()
     EQ3_FW="${YAHM_TMP}/HM-CCU2-${BUILD}.tar.gz"
 
     wget $QUIET --tries=3 --retry-connrefused  -O "$EQ3_FW" "$curFWdl" || info "Can not download file"
+
     if [ ! -f "$EQ3_FW" ] && [ $IS_FORCE -ne 1 ]
     then
         die "ERROR: Can not download firmware. Are you connected to the internet? Try to download the file manually and use -d flag"
@@ -436,3 +462,39 @@ check_git_update()
     	echo 1
 	fi
 }
+
+# Check if we have new YAHM or CCU version and inform use
+if [ -f ${YAHM_LIB}/version_status ]
+then
+    CREATED_TIME=$(stat -c %Y ${YAHM_LIB}/version_status)
+    source ${YAHM_LIB}/version_status
+else
+    echo -e "NEW_CCU2_VERSION=\nNEW_YAHM_VERSION=" > ${YAHM_LIB}/version_status
+    CREATED_TIME=123456789
+fi
+
+RUNNING_TIME=$(date +%s)
+
+if [ $((RUNNING_TIME-CREATED_TIME)) -gt 86400 ]
+then
+    # get newest CCU version
+    NEW_CCU2_VERSION=`get_ccu2_actual_version`
+    sed -i ${YAHM_LIB}/version_status -e "s/NEW_CCU2_VERSION=.*$/NEW_CCU2_VERSION=${NEW_CCU2_VERSION}/"
+    # get newest YAHM version
+    NEW_YAHM_VERSION=$(wget $QUIET -O-  -T 3 -t 1 https://raw.githubusercontent.com/leonsio/YAHM/master/VERSION)
+    sed -i ${YAHM_LIB}/version_status -e "s/NEW_YAHM_VERSION=.*$/NEW_YAHM_VERSION=${NEW_YAHM_VERSION}/"
+fi
+
+if [ `check_yahm_installed` -eq 1 ]
+then
+    CCU2current=`get_yahm_version ${LXCNAME}`
+    if [ $(ver $NEW_CCU2_VERSION) -gt $(ver $CCU2current) ] && [ $SHOW_YAHM_UPDATES -eq 1 ]
+    then
+        progress "New CCU2 firmware: ${NEW_CCU2_VERSION} available, update with 'yahm-lxc update' possible"
+    fi
+fi
+
+if [ $(ver ${NEW_YAHM_VERSION}) -gt $(ver ${YAHM_VERSION}) ] && [ $SHOW_YAHM_UPDATES -eq 1 ]
+then
+    progress "New YAHM version: ${NEW_YAHM_VERSION} available, update with 'yahm-ctl update' possible"
+fi

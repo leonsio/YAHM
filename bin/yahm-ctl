@@ -27,12 +27,13 @@ Flags:
 -v          - Verbose output 
 
 Commands:
-start       - Starting LXC container
-stop        - Stopping LXC container
-restart     - Restarting LXC container
-info        - Show LXC information (IP)
-join        - Enter LXC console
-update      - Update YAHM installation
+start           - Starting LXC container
+stop            - Stopping LXC container
+restart         - Restarting LXC container
+info            - Show LXC information (IP)
+join            - Enter LXC console
+update          - Update YAHM installation
+fw_update       - Update HM-MOD-RPI-PCB Firmware
 EOF
 exit 1
 }
@@ -119,19 +120,91 @@ for key in "$@"; do
         ;;  
         info|status)
             info "YAHM Version: ${YAHM_VERSION}"
+
+            if [ `check_yahm_name $LXCNAME` -eq 0 ] && [ $IS_FORCE -ne 1 ]
+            then
+                die "ERROR: Can not find $LXCNAME container"
+            fi
+
+            CCU2current=`get_yahm_version ${LXCNAME}`
+            info "CCU2 Version: ${CCU2current}"
+
             echo ""
+	        if [ -e ${LXC_ROOT_MODULES}/pivccu-driver ] && [ $(lxc-info -n ${LXCNAME}|grep RUNNING |wc -l) -eq 1 ]
+            then
+                info "Module information"
+                module_serial=$(cat /sys/module/plat_eq3ccu2/parameters/board_serial)
+                module_firmware=$(cat /sys/module/plat_eq3ccu2/parameters/board_extended_info)
+                echo "Module Serial: ${module_serial}"
+                echo "Module Firmware: ${module_firmware}"
+                echo ""
+            fi
             info "LXC container information"
             lxc-info -n ${LXCNAME}
             shift
             break;
         ;;
+        fw_update)
+            # Container muss laufen
+            if [ $(lxc-info -n ${LXCNAME}|grep STOPPED|wc -l) -eq 1 ]
+            then
+                die "ERROR: ${LXCNAME} container is stopped, please start it first"
+            fi
+
+            progress "Detecting actual firmware version"
+            if [ -c ${LXC_ROOT_FS}/dev/bcm2835-raw-uart ]
+            then
+                dev_int="bcm2835-raw-uart"
+            elif [ -c ${LXC_ROOT_FS}/dev/mxs_auart_raw.0 ]
+            then
+                dev_int="mxs_auart_raw.0"
+            else
+                dev_int="ttyAMA0"
+            fi
+
+            lxc-attach -n ${LXCNAME}  -- /etc/init.d/S60multimacd stop 3>&1 1>&2 2>&3 > /dev/null
+            lxc-attach -n ${LXCNAME}  -- /etc/init.d/S61rfd stop 3>&1 1>&2 2>&3 > /dev/null
+
+            # Firmware check
+            firmware_version=`lxc-attach -n ${LXCNAME} -- /bin/eq3configcmd update-coprocessor -p /dev/${dev_int} -c -v 3>&1 1>&2 2>&3  | grep -Po 'Version: \K[^"]*'`
+            info "Existing firmware version: ${firmware_version}"
+
+            progress "Downloading firmware files"
+            mkdir -p ${LXC_ROOT_FS}/firmware/HM-MOD-UART
+            wget $QUIET -O ${LXC_ROOT_FS}/firmware/HM-MOD-UART/fwmap https://raw.githubusercontent.com/eq-3/occu/master/firmware/HM-MOD-UART/fwmap
+            wget $QUIET -O ${LXC_ROOT_FS}/firmware/HM-MOD-UART/dualcopro_si1002_update_blhm.eq3 https://github.com/eq-3/occu/raw/master/firmware/HM-MOD-UART/dualcopro_si1002_update_blhm.eq3
+            cd ${LXC_ROOT_FS}/firmware/HM-MOD-UART
+            # comment out dual firmware
+            sed -i '/dualcopro/s/^#//g' fwmap
+            # comment single firmware
+            sed -i '/coprocessor/s/^/#/g' fwmap
+
+            new_firmware=$(cat fwmap | grep -v "^#" | grep CCU | awk '$1=$1' | cut -d' ' -f 3)
+            info "Newest firmware version: ${new_firmware}"
+
+            if [ $(ver ${firmware_version}) -ge $(ver ${new_firmware}) ] && [ $IS_FORCE -ne 1 ]
+            then
+                lxc-attach -n ${LXCNAME}  -- /etc/init.d/S60multimacd start 3>&1 1>&2 2>&3 > /dev/null
+                lxc-attach -n ${LXCNAME}  -- /etc/init.d/S61rfd start 3>&1 1>&2 2>&3 > /dev/null
+                die "ERROR: No newer firmware version found, exiting"
+            fi
+
+            error "WARNING: Trying to update the module firmware to the newest version including homematic-ip support. To cancel this operation type CTRL+C you have 5 seconds..."
+            countdown
+            info "... too late ;)"
+
+            progress "Updating firmware this cat take some time, please dont turn off your device"
+            lxc-attach -n ${LXCNAME} --  eq3configcmd update-coprocessor -p /dev/${dev_int} -t HM-MOD-UART -u -c -d /firmware/HM-MOD-UART
+            sleep 5
+            do_stop_container
+        ;;
         update)
             cd ${YAHM_DIR}
             progress "Updating YAHM installation, for updatate CCU2 please use 'yahm-lxc update'"
-            git pull
+            git pull --recurse-submodules
             progress "Updating all YAHM modules"
-	        git submodule update --init --recursive
             git submodule foreach git pull origin master
+	        git submodule foreach git submodule update --init --recursive
             progress "Updating CCU2-FW archive"
             cd ${YAHM_LIB}
             wget $QUIET -N https://raw.githubusercontent.com/leonsio/CCU2-FW/master/fw.list
@@ -142,24 +215,20 @@ for key in "$@"; do
                 if [ ! -f $YAHM_DIR/VERSION ]
                 then
                     info "YAHM version 1.0 (or below) found"
-                    YAHM_OLD_VERSION="1.0"
+                    YAHM_VERSION="1.0"
                 else
-                    # wir fangen Update mit der alten Version an
-                    YAHM_OLD_VERSION=$YAHM_VERSION
-                    info "YAHM version ${YAHM_OLD_VERSION} found"
+                    info "YAHM version ${YAHM_VERSION} found"
                 fi
-                # Aktuelle Version bestimmen, kommt aus dem GIT
-                YAHM_NEW_VERSION=$(cat $YAHM_DIR/VERSION)
 
-                if [ $(ver ${YAHM_NEW_VERSION}) -gt $(ver ${YAHM_OLD_VERSION}) ]
+                if [ $(ver ${NEW_YAHM_VERSION}) -gt $(ver ${YAHM_VERSION}) ]
                 then
-                    info "New YAHM version ${YAHM_NEW_VERSION} found, updating"
+                    info "New YAHM version ${NEW_YAHM_VERSION} found, updating"
 
                     # Für das nächste Release müsste ich mir was besseres einfallen lassen
-                    if [ -f ${YAHM_DIR}/share/firmware/patches/YAHM/${YAHM_OLD_VERSION}_${YAHM_NEW_VERSION}.sh ]
+                    if [ -f ${YAHM_DIR}/share/firmware/patches/YAHM/${YAHM_OLD_VERSION}_${NEW_YAHM_VERSION}.sh ]
                     then
-                        progress "Update File ${YAHM_OLD_VERSION}_${YAHM_NEW_VERSION}.sh found, executing"
-                        ${YAHM_DIR}/share/firmware/patches/YAHM/${YAHM_OLD_VERSION}_${YAHM_NEW_VERSION}.sh ${YAHM_DIR}
+                        progress "Update File ${YAHM_OLD_VERSION}_${NEW_YAHM_VERSION}.sh found, executing"
+                        ${YAHM_DIR}/share/firmware/patches/YAHM/${YAHM_VERSION}_${NEW_YAHM_VERSION}.sh ${YAHM_DIR}
                     fi
                 fi
             fi

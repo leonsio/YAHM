@@ -97,6 +97,7 @@ _ctl()
         stop\
         join\
         info\
+        fw_update\
         update"
 
     GLOBAL_FLAGS="\
