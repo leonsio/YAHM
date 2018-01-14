@@ -30,7 +30,7 @@ _(* Die automatische Einrichtung des HM-MOD-RPI-PCB erfolgt ->aktuell<- ausschli
 Es wird automatisch ein aktuelles CCU2 Image installiert und das Netzwerk konfiguriert. Diese Installation ist für wenig erfahrene Benutzer auf einem **frischen minimalen Debian/Raspbian** empfehlenswert.  Die frisch installierte CCU2 wird eine IP per DHCP abrufen, diese kann durch **sudo yahm-ctl info** nach dem Start des Containers angezeigt werden.
 
 ```
-wget -nv -O- https://raw.githubusercontent.com/leonsio/YAHM/master/yahm-init | sudo -E  bash -s quickinstall -
+wget -nv -O- https://raw.githubusercontent.com/leonsio/YAHM/develop/yahm-init | sudo -E  bash -s quickinstall -
 ```
 
 **Hinweis:** Für die Unterstützung von Homematic-IP ist Funkmodul (HM-MOD-RPI-PCB) FW-Version ab 2.0.0 notwendig. Falls die Unterstützung nicht gebraucht wird, besteht die Möglichkeit Homematic-IP zu deaktivieren. Eine automatisierte Aktualisierung der HM-MOD-RPI-PCB Modul Firmware erfolgt nicht.
@@ -40,7 +40,7 @@ wget -nv -O- https://raw.githubusercontent.com/leonsio/YAHM/master/yahm-init | s
 "Grafisches" Installationswerkzeug. Diese Möglichkeit ist für wenig bis erfahrene Benutzer geeignet.
 
 ```
-wget -nv -O- https://raw.githubusercontent.com/leonsio/YAHM/master/yahm-init | sudo -E  bash -s ui -
+wget -nv -O- https://raw.githubusercontent.com/leonsio/YAHM/develop/yahm-init | sudo -E  bash -s ui -
 ```
 
 ## Angepasst:
@@ -48,7 +48,7 @@ wget -nv -O- https://raw.githubusercontent.com/leonsio/YAHM/master/yahm-init | s
 Mit dieser Methode wird lediglich die aktuelle YAHM Version runtergeladen und unter **/opt/YAHM/bin** installiert, anschließend muss mit Hilfe von YAHM Tools ein [LXC Container](https://github.com/leonsio/YAHM/wiki/YAHM-LXC) mit der jeweiligen gewünschten CCU2 Version angelegt und das [Netzwerk](https://github.com/leonsio/YAHM/wiki/YAHM-Netzwerk) konfiguriert werden. Sollten Sie bereits **andere Anwendungen und Tools** installiert haben, bzw. eine **angepasste Netzerkkonfiguration** besitzen/wünschen ist diese Möglichkeit genau das richtige für Sie.
 
 ```
-wget -nv -O- https://raw.githubusercontent.com/leonsio/YAHM/master/yahm-init | sudo -E  bash -
+wget -nv -O- https://raw.githubusercontent.com/leonsio/YAHM/develop/yahm-init | sudo -E  bash -
 ```
 
 Folgende Schritte sind **mindestens** notwendig um ein CCU2 Image innerhalb von YAHM zu installieren. Bitte beachten Sie hierfür die Hinweise im  [Wiki](https://github.com/leonsio/YAHM/wiki).
