@@ -1,0 +1,184 @@
+#!/bin/bash
+#
+# Leonid Kogan <leon@leonsio.com>
+# Yet Another Homematic Management 
+#
+# Addons management script, install or remove addons for YAHM
+#
+
+# Stop on Errors
+set -e
+
+ADDON=""
+
+# Hilfe Output
+show_help ()
+{
+cat << EOF
+YAHM addons management script
+
+Usage Example: 
+
+./yahm-addon [FLAG] COMMAND
+./yahm-addon -n mycccu -m addon_name install
+
+Flags:
+-n          - LXC container name.
+-f          - Force operation (no halt on errors).
+-v          - Verbose output 
+-a          - Addon name
+
+Commands:
+install     - Enable addon
+uninstall   - Disable addon
+update      - Update addon
+available   - Show available addon
+installed   - Show installed addon
+EOF
+exit 1
+}
+
+PARAMETER="a:vfn:"
+
+# Include laden
+source /opt/YAHM/share/include.sh
+
+mkdir -p ${YAHM_LIB_ADDONS}
+
+_addon_installed()
+{
+    ADDON_NAME=$1
+    if [ -e ${YAHM_LIB_ADDONS}/${ADDON_NAME} ] ; then
+        echo 1    
+    else
+        echo 0 
+    fi
+}
+
+available_addons()
+{
+    local description
+    progress "Available addons:"
+    files=`ls ${YAHM_DIR}/share/addons/`
+    for file in $files
+    do
+        if [ "${file}" = "LICENSE" ] || [ "${file}" = "README.md" ]
+        then
+            continue
+        fi
+
+        if [[ -f ${YAHM_DIR}/share/addons/${file}/${file}_yahm_installer.sh ]]
+        then
+            description=`cat ${YAHM_DIR}/share/addons/${file}/${file}_yahm_installer.sh  | grep description -m1 | cut -d'"' -f2`
+            printf "\t%-20s%s\n" "$file" "$description"
+        fi
+    done    
+}
+
+installed_addons()
+{
+    local description
+    progress "Installed addons:"
+    files=`ls ${YAHM_LIB_ADDONS}/`
+    for file in $files
+    do
+    	    description=`cat ${YAHM_DIR}/share/addons/${file}/${file}_yahm_installer.sh  | grep description -m1 | cut -d'"' -f2`
+	        printf "\t%-20s%s\n" "$file" "$description"
+    done
+}
+
+_do_action_addon()
+{
+    local ACTION=$1
+    local ACTION_FUNCTION="_addon_${ACTION}"
+
+    if [ "$ADDON" = "" ]
+    then
+        die "ERROR: Please specify addon name with -m ADDON_NAME, show available addons with 'yahm-addon available'"
+    fi
+
+    # validation checks
+    if [ "${ACTION}" = "install" ]
+    then
+        if [ `_addon_installed $ADDON` -eq 1 ] && [ $IS_FORCE -ne 1 ]
+        then
+            die "ERROR: Addon ${ADDON} is already installed, use -f to overwrite it"
+        fi
+    else
+        if [ `_addon_installed $ADDON` -eq 0 ] && [ $IS_FORCE -ne 1 ]
+        then
+            die "ERROR: Addon ${ADDON} is not installed, please install it first or use -f force this operation"
+        fi
+    fi
+
+    progress "Executing ${ADDON} addon_${ACTION}()"
+    source ${YAHM_DIR}/share/addons/${ADDON}/${ADDON}_yahm_installer.sh
+
+    # pre_run
+    if [ "${ACTION}" = "install" ]
+    then
+        for required in $addon_required
+        do
+          if [ `_addon_installed ${required}` -eq 0 ] && [ $IS_FORCE -ne 1 ]
+          then
+            die "ERROR: Addon ${required} must be installed first"
+          fi
+        done
+    fi
+
+    # Action
+    $ACTION_FUNCTION
+
+    # post_run
+    if [ "${ACTION}" = "install" ]
+    then
+        info "STATUS: Addon ${ADDON} was successfully installed"
+        touch ${YAHM_LIB_ADDONS}/${ADDON}
+    elif [ "${ACTION}" = "uninstall" ]
+    then
+        info "STATUS: Addon ${ADDON} was successfully removed"
+        rm ${YAHM_LIB_ADDONS}/${ADDON}
+    else
+        info "STATUS: Addon ${ADDON} was successfully updated"
+    fi
+
+}
+
+if [[ $# != 1 ]]; then
+    show_help
+fi
+
+for key in "$@"; do
+    case $key in
+        install)
+            _do_action_addon "install"
+            shift
+            break;
+        ;;
+        uninstall)
+            _do_action_addon "uninstall"
+            shift
+            break;
+        ;;
+        update)
+            _do_action_addon "update"
+            shift
+            break;
+        ;;
+        available)
+            available_addons
+            shift
+            break;
+        ;;  
+        installed)
+            installed_addons
+            shift
+            break;
+        ;;
+        *)
+            show_help
+            exit 0
+        ;;
+    esac
+done
+
