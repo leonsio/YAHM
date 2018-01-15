@@ -89,7 +89,7 @@ enable_modules()
 {
     if [ "$MODULE" = "" ]
     then
-        die "ERROR: Please specify module name with -m MODULE, show available modules with 'yahm-modules available'"
+        die "ERROR: Please specify module name with -m MODULE, show available modules with 'yahm-module available'"
     fi
 
     if [ `check_yahm_name $LXCNAME` -eq 0 ] && [ $IS_FORCE -ne 1 ]
@@ -116,7 +116,7 @@ disable_modules()
 {   
     if [ "$MODULE" = "" ]
     then
-        die "ERROR: Please specify module name with -m MODULE, show available modules with 'yahm-modules available'"
+        die "ERROR: Please specify module name with -m MODULE, show available modules with 'yahm-module available'"
     fi
 
     if [ `check_yahm_name $LXCNAME` -eq 0 ] && [ $IS_FORCE -ne 1 ]

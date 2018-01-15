@@ -160,6 +160,14 @@ do
                 die "Specified patch file can not be found"
             fi
             ;;
+        a)
+            ADDON=$OPTARG
+            # Pruefen ob Modul existiert
+            if [ ! -d "${YAHM_DIR}/share/addons/${ADDON}" ]
+            then
+                die "Specified addon can not be found"
+            fi
+            ;;
         m)
             MODULE=$OPTARG
             # Pruefen ob Modul existiert
@@ -200,6 +208,7 @@ shift $((OPTIND-1))
 LXC_ROOT=/var/lib/lxc/$LXCNAME
 LXC_ROOT_FS=/var/lib/lxc/$LXCNAME/root
 LXC_ROOT_MODULES=/var/lib/lxc/$LXCNAME/.modules
+YAHM_LIB_ADDONS=${YAHM_LIB}/addons
 
 # Develop Branch warning
 cd ${YAHM_DIR}

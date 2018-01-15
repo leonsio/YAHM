@@ -13,3 +13,6 @@
 [submodule "share/firmware"]
 	path = share/firmware
 	url = https://github.com/leonsio/YAHM-Firmware
+[submodule "share/addons"]
+	path = share/addons
+	url = https://github.com/leonsio/YAHM-Addons.git
