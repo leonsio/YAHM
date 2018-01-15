@@ -347,6 +347,14 @@ update_lxc_container()
     if [ $IS_DEBUG -eq 1 ] ; then
         info "Calling: remove_lxc_container"
     fi
+
+    progress "Backup virtual SD-Card"
+    if [ -d ${LXC_ROOT}/sd-mmcblk0 ]
+    then
+        mkdir -p ${YAHM_LIB}/SDcard/${LXCNAME}/sd-mmcblk0
+        cp -rf ${LXC_ROOT}/sd-mmcblk0/* ${YAHM_LIB}/SDcard/${LXCNAME}/sd-mmcblk0/
+    fi
+    
     remove_lxc_container
 
     progress "Create new YAHM Container version: $CCU2Version"
@@ -357,6 +365,14 @@ update_lxc_container()
 
     progress "Restoring old LXC config"
     cp ${YAHM_TMP}_update/${LXCNAME}/conf* ${LXC_ROOT}/
+
+    # moving SDCard path
+    if [ $( cat ${LXC_ROOT}/config | grep SDcard | wc -l ) -eq 0 ]
+    then
+        # removing old value
+        sed -i ${LXC_ROOT}/config  -e '/sd-mmcblk0/d'
+        echo "lxc.mount.entry = /var/lib/yahm/SDcard/${LXCNAME}/sd-mmcblk0  media/sd-mmcblk0/ none defaults,bind 0 0" >> ${LXC_ROOT}/config
+    fi
 
     progress "Trying to restore old CCU2 backup, calling 'yahm-backup data_restore'"
     if [ $IS_DEBUG -eq 1 ] ; then
