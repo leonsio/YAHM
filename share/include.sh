@@ -106,10 +106,23 @@ die () {
     exit 1
 }
 
+RUNNING_TIME=$(date +%s)
+
+
 # Load system information
 if [ -f ${YAHM_LIB}/systeminfo ]
 then
-    source ${YAHM_LIB}/systeminfo
+    CREATED_TIME=$(stat -c %Y ${YAHM_LIB}/systeminfo)
+
+    if [ $((RUNNING_TIME-CREATED_TIME)) -gt 170800 ]
+    then
+        source ${YAHM_LIB}/systeminfo
+    else
+        source ${YAHM_TOOLS}/arm-board-detect/armhwinfo.sh
+        echo "BOARD_TYPE='$BOARD_TYPE'" > ${YAHM_LIB}/systeminfo
+        echo "ARCH='$ARCH'" >> ${YAHM_LIB}/systeminfo
+        echo "BOARD_VERSION='$BOARD_VERSION'" >> ${YAHM_LIB}/systeminfo
+    fi
 else
     mkdir -p ${YAHM_LIB}
     source ${YAHM_TOOLS}/arm-board-detect/armhwinfo.sh
@@ -300,6 +313,8 @@ get_ccu2_bridge()
     echo $CCU2_BRIDGE
 }
 
+timestamp() { date +"%F_%T_%Z"; }
+
 # Achtung gibt nur das Erste Interface zurück, mehrere Interfaces werden nicht unterstützt
 get_bridge_interface()
 {
@@ -317,6 +332,24 @@ get_yahm_name()
             echo 0
     fi
 
+}
+
+get_ip_to_route()
+{
+    local DESTINATION=$1
+
+    if [ "${DESTINATION}" == "" ]
+    then
+        DESTINATION="1"
+    fi
+
+    echo $(ip route get ${DESTINATION} | awk '{print $NF;exit}')
+}
+
+get_lxc_ip()
+{
+    local LXC_NAME=$1
+    echo $(lxc-info -i -n ${LXC_NAME} | awk '{print $2}')
 }
 
 check_yahm_name()
@@ -409,7 +442,8 @@ check_install_deb()
     done
 }
 
-install_package() {
+install_package()
+{
     package=$1
     info "install ${package}"
     apt-get -qq -y install $package 2>&1 > /dev/null
@@ -482,8 +516,6 @@ else
     echo -e "NEW_CCU2_VERSION=\nNEW_YAHM_VERSION=" > ${YAHM_LIB}/version_status
     CREATED_TIME=123456789
 fi
-
-RUNNING_TIME=$(date +%s)
 
 if [ $((RUNNING_TIME-CREATED_TIME)) -gt 86400 ]
 then

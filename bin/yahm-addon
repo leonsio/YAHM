@@ -23,7 +23,6 @@ Usage Example:
 ./yahm-addon -n mycccu -m addon_name install
 
 Flags:
--n          - LXC container name.
 -f          - Force operation (no halt on errors).
 -v          - Verbose output 
 -a          - Addon name
@@ -38,12 +37,28 @@ EOF
 exit 1
 }
 
-PARAMETER="a:vfn:"
+PARAMETER="a:vf"
 
 # Include laden
 source /opt/YAHM/share/include.sh
 
 mkdir -p ${YAHM_LIB_ADDONS}
+
+fail_inprogress()
+{
+    cat ${LOG_FILE}
+    error "\n$(timestamp) [HOST] [${ADDON}] Initial setup exiting with an error!\n\n"
+    info "Trying to rollback installed addon. To cancel this operation type CTRL+C you have 5 seconds..."
+    countdown
+    info "... too late ;)"
+    # set force
+    IS_FORCE=1
+    # run uninstall
+    _do_action "uninstall"
+
+}
+
+#trap fail_inprogress EXIT SIGINT SIGTERM
 
 _addon_installed()
 {
@@ -58,6 +73,7 @@ _addon_installed()
 available_addons()
 {
     local description
+    echo ""
     progress "Available addons:"
     files=`ls ${YAHM_DIR}/share/addons/`
     for file in $files
@@ -67,12 +83,17 @@ available_addons()
             continue
         fi
 
-        if [[ -f ${YAHM_DIR}/share/addons/${file}/${file}_yahm_installer.sh ]]
+        if [[ -f ${YAHM_DIR}/share/addons/${file}/${file}_yahm_conf.sh ]]
         then
-            description=`cat ${YAHM_DIR}/share/addons/${file}/${file}_yahm_installer.sh  | grep description -m1 | cut -d'"' -f2`
+            description=`cat ${YAHM_DIR}/share/addons/${file}/${file}_yahm_conf.sh  | grep description -m1 | cut -d'"' -f2`
+            if [ $(cat ${YAHM_DIR}/share/addons/${file}/${file}_yahm_conf.sh | grep addon_internal | wc -l ) -eq 1 ]
+            then
+                continue
+            fi
             printf "\t%-20s%s\n" "$file" "$description"
         fi
-    done    
+    done
+    echo ""
 }
 
 installed_addons()
@@ -82,15 +103,147 @@ installed_addons()
     files=`ls ${YAHM_LIB_ADDONS}/`
     for file in $files
     do
-    	    description=`cat ${YAHM_DIR}/share/addons/${file}/${file}_yahm_installer.sh  | grep description -m1 | cut -d'"' -f2`
-	        printf "\t%-20s%s\n" "$file" "$description"
+        description=`cat ${YAHM_DIR}/share/addons/${file}/${file}_yahm_conf.sh  | grep description -m1 | cut -d'"' -f2`
+        printf "\t%-20s%s\n" "$file" "$description"
     done
 }
 
-_do_action_addon()
+###############
+#   Install   #
+###############
+
+_do_pre_install()
+{
+    local FILE=$1
+
+    source ${YAHM_DIR}/share/addons/${FILE}/${FILE}_yahm_conf.sh
+
+    for required in $addon_required
+    do
+        echo "REQ $required"
+        if [ `_addon_installed ${required}` -eq 0 ]
+        then
+            if [ $addon_required_autoinstall -eq 1 ]
+            then
+                progress "Installing required addon: $required"
+                _do_action_install $required
+            else
+                die "ERROR: Addon ${required} must be installed first"
+            fi
+        fi
+    done
+}
+
+_do_action_install()
+{
+    local FILE=$1
+    local ACTION_FUNCTION="_${FILE}_install"
+
+    _do_pre_install $FILE
+
+    progress "Executing ${FILE}_install()"
+    source ${YAHM_DIR}/share/addons/${FILE}/${FILE}_yahm_installer.sh
+
+    # Action
+    $ACTION_FUNCTION
+
+    _do_post_install $FILE
+
+}
+
+_do_post_install()
+{
+    local FILE=$1
+
+    if [ $(cat ${YAHM_DIR}/share/addons/${FILE}/${FILE}_yahm_conf.sh | grep addon_internal | wc -l ) -eq 0 ]
+    then
+        touch ${YAHM_LIB_ADDONS}/${FILE}
+    fi
+}
+
+
+#################
+#   Uninstall   #
+#################
+
+_do_pre_uninstall()
+{
+    progress "Executing ${FILE}_pre_uninstall()"
+    # liste aller installierten addons besorgen
+}
+
+
+_do_action_uninstall()
+{
+    local FILE=$1
+    local ACTION_FUNCTION="_${FILE}_uninstall"
+
+    echo "ADDON_UNINSTALL: $FILE"
+
+    _do_pre_uninstall $FILE
+
+    progress "Executing ${FILE}_uninstall()"
+    source ${YAHM_DIR}/share/addons/${FILE}/${FILE}_yahm_installer.sh
+
+    info  "uninstall"
+    # Action
+    $ACTION_FUNCTION
+
+    _do_post_uninstall $FILE
+}
+
+_do_post_uninstall()
+{
+    rm ${YAHM_LIB_ADDONS}/${ADDON}
+}
+
+#################
+#   Update   #
+#################
+_do_pre_update()
+{
+    progress "Executing ${FILE}_pre_update()"
+
+}
+
+_do_action_update()
+{
+    local FILE=$1
+    local ACTION_FUNCTION="_${FILE}_update"
+
+    _do_pre_update $FILE
+
+    progress "Executing ${FILE}_update()"
+    source ${YAHM_DIR}/share/addons/${FILE}/${FILE}_yahm_installer.sh
+
+    # Action
+    $ACTION_FUNCTION
+
+    _do_post_update $FILE
+}
+
+_do_post_update()
+{
+    progress "Executing ${FILE}_post_update()"
+}
+
+
+##########################
+
+_do_action()
 {
     local ACTION=$1
-    local ACTION_FUNCTION="_addon_${ACTION}"
+    local ACTION_FUNCTION="_do_action_${ACTION}"
+
+    mkdir -p /var/log/yahm/addons/
+    LOG_FILE=/var/log/yahm/addons/${ADDON}_${ACTION}.log
+
+#    if [ $IS_VERBOSE -eq 1 ]
+#    then
+#        LOG_ACTION="tee -a $LOG_FILE"
+#    else
+#        LOG_ACTION="dd oflag=append conv=notrunc status=none of=$LOG_FILE"
+#    fi
 
     if [ "$ADDON" = "" ]
     then
@@ -111,58 +264,32 @@ _do_action_addon()
         fi
     fi
 
-    progress "Executing ${ADDON} addon_${ACTION}()"
-    source ${YAHM_DIR}/share/addons/${ADDON}/${ADDON}_yahm_installer.sh
-
-    # pre_run
-    if [ "${ACTION}" = "install" ]
-    then
-        for required in $addon_required
-        do
-          if [ `_addon_installed ${required}` -eq 0 ] && [ $IS_FORCE -ne 1 ]
-          then
-            die "ERROR: Addon ${required} must be installed first"
-          fi
-        done
-    fi
-
-    # Action
-    $ACTION_FUNCTION
-
-    # post_run
-    if [ "${ACTION}" = "install" ]
-    then
-        info "STATUS: Addon ${ADDON} was successfully installed"
-        touch ${YAHM_LIB_ADDONS}/${ADDON}
-    elif [ "${ACTION}" = "uninstall" ]
-    then
-        info "STATUS: Addon ${ADDON} was successfully removed"
-        rm ${YAHM_LIB_ADDONS}/${ADDON}
-    else
-        info "STATUS: Addon ${ADDON} was successfully updated"
-    fi
+    $ACTION_FUNCTION $ADDON
 
 }
 
-if [[ $# != 1 ]]; then
-    show_help
-fi
+#if [[ $# != 1 ]]; then
+#    show_help
+#fi
 
 for key in "$@"; do
     case $key in
         install)
-            _do_action_addon "install"
             shift
+            [ "$1" = "--" ] && shift
+            _do_action "install"
             break;
         ;;
         uninstall)
-            _do_action_addon "uninstall"
             shift
+            [ "$1" = "--" ] && shift
+            _do_action "uninstall"
             break;
         ;;
         update)
-            _do_action_addon "update"
             shift
+            [ "$1" = "--" ] && shift
+            _do_action "update"
             break;
         ;;
         available)

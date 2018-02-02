@@ -5,7 +5,7 @@ source /etc/default/yahm
 LXC_ROOT=/var/lib/lxc/$LXCNAME
 LXC_ROOT_FS=/var/lib/lxc/$LXCNAME/root
 LXC_ROOT_MODULES=/var/lib/lxc/$LXCNAME/.modules
-YAHM_LIB_ADDONS=${YAHM_LIB}/addons
+YAHM_DIR_ADDONS=${YAHM_DIR}/share/addons/
 
 # @todo Wildcard Handling überarbeiten
 # @todo GLOBAL_FLAGS wirklich global machen (-n -f -v) und in Funktion mit lokalen mergen
@@ -300,7 +300,7 @@ _addon()
             return 0
         ;;
         -a)
-            YAHM_ADDONS=$(find ${YAHM_LIB_ADDONS} -maxdepth 1 -type f -printf '%f\n')
+            YAHM_ADDONS=$(find ${YAHM_DIR_ADDONS} -maxdepth 1 -type d -printf '%f\n')
             COMPREPLY=( $(compgen -W "${YAHM_ADDONS}" -- $cur) )
             return 0
         ;;
@@ -359,20 +359,8 @@ _network()
             return 0
         ;;
         -i)
-#            INTERFACES=$(find /sys/class/net/ -maxdepth 1 -type l -printf '%f\n')
-#            unset PHYS_VLAN
-#            for i in $INTERFACES
-#            do
-#                if [ `check_interface_name $i` == "physical" ] || [ `check_interface_name $i` == "vlan" ]
-#                then
-#                    PHYS_VLAN+=($i)
-#                fi
-#            done
-#            #echo ${PHYS_VLAN[*]}
-#            COMPREPLY=( $(compgen -W "${PHYS_VLAN[@]}" -- $cur) )
-
-            # @todo geht bestimmt besser
-            INTERFACES=$(systemctl -a | grep net-devices | grep -v "/sys/subsystem" | awk '{print $1}' | cut -d"-" -f5 | cut -d"." -f1)
+            # @todo geht bestimmt besser, vlans fehlen
+            INTERFACES=$(systemctl -a | grep sys-devices-platform | grep '\-net-' | awk '{n=split($1,A,"-"); print A[n]}' | cut -d"." -f1)
             COMPREPLY=( $(compgen -W "${INTERFACES}" -- $cur) )
             return 0
         ;;
@@ -406,3 +394,4 @@ complete -F _ctl yahm-ctl
 complete -F _lxc yahm-lxc
 complete -F _network yahm-network
 complete -F _module yahm-module
+complete -F _addon yahm-addon
